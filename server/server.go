@@ -42,6 +42,10 @@ func (srv *Server) serveClient(c *Client) {
 				log.Printf("reponse writer flush data error %+v", err)
 				return
 			}
+			if err := c.requestReader.SkipCmd(); err != nil {
+				log.Printf("server skip the current command %+v", name)
+				return
+			}
 		}
 		log.Printf("No more data for current connection")
 	}
@@ -54,7 +58,7 @@ func (srv *Server) Serve(lis net.Listener) error {
 		if err != nil {
 			return err
 		}
-		log.Printf("new client come in !")
+		log.Printf("new client come in ! from %+v", cn.RemoteAddr().String())
 		go srv.serveClient(newClient(cn))
 	}
 }
