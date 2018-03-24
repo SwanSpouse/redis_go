@@ -1,6 +1,9 @@
 package resp
 
-import "io"
+import (
+	"io"
+	"github.com/labstack/gommon/log"
+)
 
 type RequestReader struct {
 	reader *bufIoReader
@@ -21,16 +24,33 @@ func (r *RequestReader) Reset(rd io.Reader) {
 	r.reader.Reset(rd)
 }
 
-func (r *RequestReader) PeekCmd() (string, error) {
+// peek next command name
+func (r *RequestReader) PeekCmdName() (string, error) {
 	return r.peekCmd(0)
 }
 
+// construct a command from bufIoReader
 func (r *RequestReader) ReadCmd(cmd *Command) (*Command, error) {
 	if cmd == nil {
-		cmd = new(Command)
-	} else {
+		cmd = NewCommand()
 	}
-	//return cmd, readCommand(cmd, r.reader)
+	len, err := r.reader.ReadArrayLen()
+	if err != nil {
+		return nil, err
+	}
+	for i := 0; i < len; i ++ {
+		arg, err := r.reader.ReadBulkString()
+		if err != nil {
+			return nil, err
+		}
+		// first string is command name
+		if i == 0 {
+			cmd.SetName(arg)
+		} else {
+			cmd.AddArgs(CommandArgument([]byte(arg)))
+		}
+	}
+	log.Printf("current cmd %+v", cmd)
 	return cmd, nil
 }
 

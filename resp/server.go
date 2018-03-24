@@ -1,11 +1,10 @@
-package server
+package resp
 
 import (
 	"sync"
 	"net"
 	"redis_go/conf"
-	"log"
-	"strings"
+	"github.com/labstack/gommon/log"
 )
 
 // Redis server
@@ -29,27 +28,24 @@ func (srv *Server) serveClient(c *Client) {
 	defer c.release()
 	for !c.closed {
 		for more := true; more; more = c.requestReader.Buffered() != 0 {
-			name, err := c.requestReader.PeekCmd()
+			cmd, err := c.requestReader.ReadCmd(nil)
 			if err != nil {
-				c.requestReader.SkipCmd()
+				c.responseWriter.AppendErrorf("read command error %+v", err)
+				continue
 			}
-			norm := strings.ToLower(name)
-			if _, ok := srv.commands[norm]; !ok {
-				log.Printf("command not found %s", name)
+			log.Printf("get command from client %+v", cmd)
+			if _, ok := srv.commands[cmd.GetName()]; !ok {
+				log.Printf("command not found %s", cmd.GetName())
 				c.responseWriter.AppendError("command not found")
 			}
 			if err := c.responseWriter.Flush(); err != nil {
-				log.Printf("reponse writer flush data error %+v", err)
-				return
-			}
-			if err := c.requestReader.SkipCmd(); err != nil {
-				log.Printf("server skip the current command %+v", name)
+				log.Printf("response writer flush data error %+v", err)
 				return
 			}
 		}
 		log.Printf("No more data for current connection")
 	}
-	log.Printf("connection clonsed")
+	log.Printf("connection closed")
 }
 
 func (srv *Server) Serve(lis net.Listener) error {

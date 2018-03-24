@@ -1,9 +1,8 @@
-package server
+package resp
 
 import (
 	"net"
 	"sync/atomic"
-	"redis_go/resp"
 	"sync"
 )
 
@@ -17,9 +16,11 @@ type Client struct {
 	id             uint64
 	cn             net.Conn
 	closed         bool
-	requestReader  *resp.RequestReader
-	responseWriter resp.ResponseWriter
-	cmd            *resp.Command
+	requestReader  *RequestReader
+	responseWriter ResponseWriter
+	args           uint64   // args number of command
+	cmd            *Command // current command
+	lastCmd        *Command // last command
 }
 
 func (c *Client) reset(cn net.Conn) {
@@ -28,18 +29,18 @@ func (c *Client) reset(cn net.Conn) {
 		cn: cn,
 	}
 	if v := readerPool.Get(); v != nil {
-		rd := v.(*resp.RequestReader)
+		rd := v.(*RequestReader)
 		rd.Reset(cn)
 		c.requestReader = rd
 	} else {
-		c.requestReader = resp.NewRequestReader(cn)
+		c.requestReader = NewRequestReader(cn)
 	}
 	if v := writerPool.Get(); v != nil {
-		wr := v.(resp.ResponseWriter)
+		wr := v.(ResponseWriter)
 		wr.Reset(cn)
 		c.responseWriter = wr
 	} else {
-		c.responseWriter = resp.NewResponseWriter(cn)
+		c.responseWriter = NewResponseWriter(cn)
 	}
 }
 

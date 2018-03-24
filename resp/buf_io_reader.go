@@ -3,6 +3,7 @@ package resp
 import (
 	"bytes"
 	"io"
+	"github.com/labstack/gommon/log"
 )
 
 type bufIoReader struct {
@@ -60,6 +61,7 @@ func (b *bufIoReader) fill() error {
 	if b.w < len(b.buf) {
 		n, err := b.rd.Read(b.buf[b.w:])
 		b.w += n
+		log.Printf("current io reader buffer %s", string(b.buf[b.r:b.w]))
 		return err
 	}
 	return nil
@@ -98,7 +100,7 @@ func (b *bufIoReader) PeekLine(offset int) (buffer, error) {
 	if index < 0 {
 		return nil, errInlineRequestTooLong
 	}
-	return buffer(b.buf[start : start+index+1]), nil
+	return buffer(b.buf[start: start+index+1]), nil
 }
 
 /*
@@ -138,7 +140,7 @@ func (b *bufIoReader) PeekN(offset, n int) ([]byte, error) {
 	if err := b.require(offset + n); err != nil {
 		return nil, err
 	}
-	return b.buf[b.r+offset : b.r+offset+n], nil
+	return b.buf[b.r+offset: b.r+offset+n], nil
 }
 
 // return the next line until CRLF
@@ -225,7 +227,7 @@ func (b *bufIoReader) ReadBulkString() (string, error) {
 	if err := b.require(int(sz + 2)); err != nil {
 		return "", err
 	}
-	s := string(b.buf[b.r : b.r+int(sz)])
+	s := string(b.buf[b.r: b.r+int(sz)])
 	b.r += int(sz + 2)
 	return s, nil
 }
