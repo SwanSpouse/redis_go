@@ -131,3 +131,49 @@ func NewResponseWriter(wr io.Writer) ResponseWriter {
 	w.reset(mkStdBuffer(), wr)
 	return w
 }
+
+// --------------------------------------------------------------------
+
+// ResponseParser is a basic response parser
+type ResponseParser interface {
+	// PeekType returns the type of the next response block
+	PeekType() (ResponseType, error)
+	// ReadNil reads a nil value
+	ReadNil() error
+	// ReadBulkString reads a bulk and returns a string
+	ReadBulkString() (string, error)
+	// ReadBulk reads a bulk and returns bytes (optionally appending to a passed p buffer)
+	ReadBulk(p []byte) ([]byte, error)
+	// StreamBulk parses a bulk responses and returns a streaming reader object
+	// Returned responses must be closed.
+	//StreamBulk() (io.ReadCloser, error)
+	// ReadInt reads an int value
+	ReadInt() (int64, error)
+	// ReadArrayLen reads the array length
+	ReadArrayLen() (int, error)
+	// ReadError reads an error string
+	ReadError() (string, error)
+	// ReadInlineString reads a status string
+	ReadInlineString() (string, error)
+	// Scan scans results into the given values.
+	Scan(vv ...interface{}) error
+}
+
+// ResponseReader is used by clients to wrap a server connection and
+// parse responses.
+type ResponseReader interface {
+	ResponseParser
+
+	// Buffered returns the number of buffered (unread) bytes.
+	Buffered() int
+	// Reset resets the reader to a new reader and recycles internal buffers.
+	Reset(r io.Reader)
+}
+
+// NewResponseReader returns ResponseReader, which wraps any reader interface, but
+// normally a net.Conn.
+func NewResponseReader(rd io.Reader) ResponseReader {
+	r := new(bufIoReader)
+	r.reset(mkStdBuffer(), rd)
+	return r
+}
