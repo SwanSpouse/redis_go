@@ -1,6 +1,8 @@
 package resp
 
-import "strings"
+import (
+	"strings"
+)
 
 // CommandArgument is an argument of a command
 type CommandArgument []byte
@@ -9,6 +11,8 @@ type Command struct {
 	name             string               // command name
 	redisCommandProc func(client *Client) // function deal with the command
 	arity            int                  // command args
+	sflags           rune                 //
+	flags            int                  //
 	args             []CommandArgument    // command args
 	microsecond      int64                // execute time in microsecond
 	calls            int64                // call times
