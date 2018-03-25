@@ -1,4 +1,4 @@
-package resp
+package networking
 
 import (
 	"bytes"

@@ -9,7 +9,7 @@ import (
 
 func TestConnection(t *testing.T) {
 	// start a mock server
-	server := resp.NewServer(nil)
+	server := networking.NewServer(nil)
 	lis, err := net.Listen("tcp", "127.0.0.1:6379")
 	go server.Serve(lis)
 
@@ -19,8 +19,8 @@ func TestConnection(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	w := resp.NewRequestWriter(cn)
-	r := resp.NewResponseReader(cn)
+	w := networking.NewRequestWriter(cn)
+	r := networking.NewResponseReader(cn)
 
 	w.WriteCmdString("PING")
 	if err := w.Flush(); err != nil {
@@ -32,7 +32,7 @@ func TestConnection(t *testing.T) {
 		t.Fatal(err)
 	}
 	switch responseType {
-	case resp.TypeInline:
+	case networking.TypeInline:
 		s, _ := r.ReadInlineString()
 		fmt.Println(s)
 	default:

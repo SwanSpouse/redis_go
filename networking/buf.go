@@ -1,4 +1,4 @@
-package resp
+package networking
 
 type buffer []byte
 
