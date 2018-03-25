@@ -48,3 +48,8 @@ func (c *Command) GetMicrosecond() int64 {
 func (c *Command) GetCalls() int64 {
 	return c.calls
 }
+
+func PING(client *Client, command *Command) error {
+	client.responseWriter.AppendInlineString("PONG")
+	return nil
+}
