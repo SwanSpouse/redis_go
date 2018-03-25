@@ -127,7 +127,7 @@ func (b *bufIoWriter) AppendNil() {
 // appends OK to the output buffer
 func (b *bufIoWriter) AppendOK() {
 	b.mu.Lock()
-	b.buf = append(b.buf, binNIL...)
+	b.buf = append(b.buf, binOK...)
 	b.mu.Unlock()
 }
 
