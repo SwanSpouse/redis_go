@@ -74,7 +74,9 @@ func (srv *Server) Serve(lis net.Listener) error {
 	}
 }
 
+// register all command handlers
 func (srv *Server) populateCommandTable() {
 	connectionHandler := new(handlers.ConnectionHandler)
-	srv.commands["ping"] = connectionHandler
+	srv.commands["PING"] = connectionHandler
+	srv.commands["TEST"] = connectionHandler
 }

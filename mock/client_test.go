@@ -3,13 +3,15 @@ package mock
 import (
 	"fmt"
 	"net"
-	"redis_go/resp"
 	"testing"
+	"redis_go/server"
+	"redis_go/protocol"
+	"redis_go/tcp"
 )
 
-func TestConnection(t *testing.T) {
+func TestBasicCommand(t *testing.T) {
 	// start a mock server
-	server := networking.NewServer(nil)
+	server := server.NewServer(nil)
 	lis, err := net.Listen("tcp", "127.0.0.1:6379")
 	go server.Serve(lis)
 
@@ -19,8 +21,8 @@ func TestConnection(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	w := networking.NewRequestWriter(cn)
-	r := networking.NewResponseReader(cn)
+	w := protocol.NewRequestWriter(cn)
+	r := protocol.NewResponseReader(cn)
 
 	w.WriteCmdString("PING")
 	if err := w.Flush(); err != nil {
@@ -32,11 +34,11 @@ func TestConnection(t *testing.T) {
 		t.Fatal(err)
 	}
 	switch responseType {
-	case networking.TypeInline:
+	case tcp.TypeInline:
 		s, _ := r.ReadInlineString()
 		fmt.Println(s)
 	default:
-		fmt.Println("No such method")
+		t.Fatalf("response type error %+v", responseType)
 	}
 
 }

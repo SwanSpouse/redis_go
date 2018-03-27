@@ -31,11 +31,15 @@ func (c *Command) AddArgs(arg tcp.CommandArgument) {
 }
 
 func (c *Command) GetName() string {
+	return strings.ToUpper(c.name)
+}
+
+func (c *Command) GetOriginName() string {
 	return c.name
 }
 
 func (c *Command) SetName(name string) {
-	c.name = strings.ToLower(name)
+	c.name = name
 }
 
 func (c *Command) GetMicrosecond() int64 {

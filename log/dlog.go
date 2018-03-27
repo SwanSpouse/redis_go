@@ -11,10 +11,10 @@ import (
 )
 
 type Logger struct {
-	mu        sync.Mutex
-	prefix    string
-	out       io.Writer
-	showGrtid bool
+	mu              sync.Mutex
+	prefix          string
+	out             io.Writer
+	showGoRoutineId bool
 }
 
 func New(out io.Writer, prefix string) *Logger {
@@ -23,14 +23,14 @@ func New(out io.Writer, prefix string) *Logger {
 
 func (l *Logger) header(tm time.Time, file string, line int, s string) string {
 	ms := tm.Nanosecond() / int(time.Millisecond)
-	grtid := ""
-	if l.showGrtid {
-		grtid = "grtid" + GetGID()
+	goRoutineId := ""
+	if l.showGoRoutineId {
+		goRoutineId = "goRoutineId" + GetGID()
 	}
-	return fmt.Sprintf("%s.%03d %s %s file %s line %d ", tm.Format("2006-01-02 15:04:05"), ms, l.prefix, grtid, file, line)
+	return fmt.Sprintf("%s.%03d %s %s file %s line %d ", tm.Format("2006-01-02 15:04:05"), ms, l.prefix, goRoutineId, file, line)
 }
 
-func (l *Logger) Output(calldepth int, s string) error {
+func (l *Logger) Output(callDepth int, s string) error {
 	s = strings.Replace(s, "\r\n", "\\r\\n", -1)
 	now := time.Now() // get this early.
 	var file string
@@ -38,7 +38,7 @@ func (l *Logger) Output(calldepth int, s string) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	var ok bool
-	_, file, line, ok = runtime.Caller(calldepth)
+	_, file, line, ok = runtime.Caller(callDepth)
 	if !ok {
 		file = "???"
 		line = 0
