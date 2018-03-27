@@ -1,80 +1,9 @@
-package networking
+package protocol
 
 import (
-	"fmt"
 	"io"
+	"redis_go/tcp"
 )
-
-// response type iota
-const (
-	TypeUnknown ResponseType = iota
-	TypeArray
-	TypeBulk
-	TypeInline
-	TypeError
-	TypeInt
-	TypeNil
-)
-
-type ResponseType uint8
-
-func (t ResponseType) String() string {
-	switch t {
-	case TypeArray:
-		return "Array"
-	case TypeBulk:
-		return "Bulk"
-	case TypeInline:
-		return "Inline"
-	case TypeError:
-		return "Error"
-	case TypeInt:
-		return "Int"
-	case TypeNil:
-		return "Nil"
-	}
-	return "Unknown"
-}
-
-type protoError string
-
-func (p protoError) Error() string { return string(p) }
-
-func protoErrorf(m string, args ...interface{}) error {
-	return protoError(fmt.Sprintf(m, args...))
-}
-
-// IsProtocolError returns true if the error is a protocol error
-func IsProtocolError(err error) bool {
-	_, ok := err.(protoError)
-	return ok
-}
-
-var (
-	binCRLF = []byte("\r\n")
-	binOK   = []byte("+OK\r\n")
-	binZERO = []byte(":0\r\n")
-	binONE  = []byte(":1\r\n")
-	binNIL  = []byte("$-1\r\n")
-)
-
-const (
-	errInvalidMultiBulkLength = protoError("Protocol error: invalid multibulk length")
-	errInvalidBulkLength      = protoError("Protocol error: invalid bulk length")
-	errBlankBulkLength        = protoError("Protocol error: expected '$', got ' '")
-	errInlineRequestTooLong   = protoError("Protocol error: too big inline request")
-	errNotANumber             = protoError("Protocol error: expected a number")
-	errNotANilMessage         = protoError("Protocol error: expected a nil")
-	errBadResponseType        = protoError("Protocol error: bad response type")
-)
-
-// MaxBufferSize is the max request/response buffer size
-const MaxBufferSize = 64 * 1024
-
-// len of \r\n
-const CRLFLen = 2
-
-func mkStdBuffer() []byte { return make([]byte, MaxBufferSize) }
 
 type ResponseWriter interface {
 	io.Writer
@@ -127,8 +56,8 @@ type ResponseWriter interface {
 // NewResponseWriter wraps any writer interface, but
 // normally a net.Conn.
 func NewResponseWriter(wr io.Writer) ResponseWriter {
-	w := new(bufIoWriter)
-	w.reset(mkStdBuffer(), wr)
+	w := new(tcp.BufIoWriter)
+	w.Reset(wr)
 	return w
 }
 
@@ -137,7 +66,7 @@ func NewResponseWriter(wr io.Writer) ResponseWriter {
 // ResponseParser is a basic response parser
 type ResponseParser interface {
 	// PeekType returns the type of the next response block
-	PeekType() (ResponseType, error)
+	PeekType() (tcp.ResponseType, error)
 	// ReadNil reads a nil value
 	ReadNil() error
 	// ReadBulkString reads a bulk and returns a string
@@ -173,7 +102,7 @@ type ResponseReader interface {
 // NewResponseReader returns ResponseReader, which wraps any reader interface, but
 // normally a net.Conn.
 func NewResponseReader(rd io.Reader) ResponseReader {
-	r := new(bufIoReader)
-	r.reset(mkStdBuffer(), rd)
+	r := new(tcp.BufIoReader)
+	r.Reset(rd)
 	return r
 }

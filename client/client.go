@@ -1,9 +1,10 @@
-package networking
+package client
 
 import (
 	"net"
-	"sync/atomic"
+	"redis_go/protocol"
 	"sync"
+	"sync/atomic"
 )
 
 var (
@@ -15,12 +16,12 @@ var (
 type Client struct {
 	id             uint64
 	cn             net.Conn
-	closed         bool
-	requestReader  *RequestReader
-	responseWriter ResponseWriter
-	args           uint64   // args number of command
-	cmd            *Command // current command
-	lastCmd        *Command // last command
+	Closed         bool
+	RequestReader  *protocol.RequestReader
+	ResponseWriter protocol.ResponseWriter
+	args           uint64            // args number of command
+	cmd            *protocol.Command // current command
+	lastCmd        *protocol.Command // last command
 }
 
 func (c *Client) reset(cn net.Conn) {
@@ -29,30 +30,30 @@ func (c *Client) reset(cn net.Conn) {
 		cn: cn,
 	}
 	if v := readerPool.Get(); v != nil {
-		rd := v.(*RequestReader)
+		rd := v.(*protocol.RequestReader)
 		rd.Reset(cn)
-		c.requestReader = rd
+		c.RequestReader = rd
 	} else {
-		c.requestReader = NewRequestReader(cn)
+		c.RequestReader = protocol.NewRequestReader(cn)
 	}
 	if v := writerPool.Get(); v != nil {
-		wr := v.(ResponseWriter)
+		wr := v.(protocol.ResponseWriter)
 		wr.Reset(cn)
-		c.responseWriter = wr
+		c.ResponseWriter = wr
 	} else {
-		c.responseWriter = NewResponseWriter(cn)
+		c.ResponseWriter = protocol.NewResponseWriter(cn)
 	}
 }
 
 func (c *Client) Close() {
-	c.closed = true
+	c.Closed = true
 }
 
-func (c *Client) release() {
+func (c *Client) Release() {
 	_ = c.cn.Close()
 }
 
-func newClient(cn net.Conn) *Client {
+func NewClient(cn net.Conn) *Client {
 	c := new(Client)
 	c.reset(cn)
 	return c

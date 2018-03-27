@@ -1,18 +1,19 @@
-package networking
+package protocol
 
 import (
 	"io"
-	"github.com/labstack/gommon/log"
+	"log"
+	"redis_go/tcp"
 )
 
 type RequestReader struct {
-	reader *bufIoReader
+	reader *tcp.BufIoReader
 }
 
 // NewRequestReader wraps any reader interface
 func NewRequestReader(rd io.Reader) *RequestReader {
-	r := new(bufIoReader)
-	r.reset(mkStdBuffer(), rd)
+	r := new(tcp.BufIoReader)
+	r.Reset(rd)
 	return &RequestReader{reader: r}
 }
 
@@ -38,7 +39,7 @@ func (r *RequestReader) ReadCmd(cmd *Command) (*Command, error) {
 	if err != nil {
 		return nil, err
 	}
-	for i := 0; i < len; i ++ {
+	for i := 0; i < len; i++ {
 		arg, err := r.reader.ReadBulkString()
 		if err != nil {
 			return nil, err
@@ -47,7 +48,7 @@ func (r *RequestReader) ReadCmd(cmd *Command) (*Command, error) {
 		if i == 0 {
 			cmd.SetName(arg)
 		} else {
-			cmd.AddArgs(CommandArgument([]byte(arg)))
+			cmd.AddArgs(tcp.CommandArgument([]byte(arg)))
 		}
 	}
 	log.Printf("current cmd %+v", cmd)
@@ -67,7 +68,7 @@ func (r *RequestReader) peekCmd(offset int) (string, error) {
 		return line.FirstWord(), nil
 	}
 
-	n, err := line.ParseSize('*', errInvalidMultiBulkLength)
+	n, err := line.ParseSize('*', tcp.ErrInvalidMultiBulkLength)
 	if err != nil {
 		return "", err
 	}
@@ -82,7 +83,7 @@ func (r *RequestReader) peekCmd(offset int) (string, error) {
 	}
 	offset += len(line)
 
-	n, err = line.ParseSize('$', errInvalidBulkLength)
+	n, err = line.ParseSize('$', tcp.ErrInvalidBulkLength)
 	if err != nil {
 		return "", err
 	}
@@ -108,7 +109,7 @@ func (r *RequestReader) SkipCmd() error {
 	if n < 1 {
 		return r.SkipCmd()
 	}
-	for i := 0; i < n; i ++ {
+	for i := 0; i < n; i++ {
 		if err := r.reader.SkipBulk(); err != nil {
 			return err
 		}
@@ -119,13 +120,13 @@ func (r *RequestReader) SkipCmd() error {
 // --------------------------------------------------------------------
 
 type RequestWriter struct {
-	w *bufIoWriter
+	w *tcp.BufIoWriter
 }
 
 // NewRequestWriter wraps any writer interface
 func NewRequestWriter(wr io.Writer) *RequestWriter {
-	w := new(bufIoWriter)
-	w.reset(mkStdBuffer(), wr)
+	w := new(tcp.BufIoWriter)
+	w.Reset(wr)
 	return &RequestWriter{w: w}
 }
 
@@ -159,7 +160,7 @@ func (w *RequestWriter) WriteCmdString(cmd string, args ...string) {
 
 func (w *RequestWriter) WriteMultiBulkSize(n int) error {
 	if n < 0 {
-		return errInvalidMultiBulkLength
+		return tcp.ErrInvalidMultiBulkLength
 	}
 	w.w.AppendArrayLen(n)
 	return nil

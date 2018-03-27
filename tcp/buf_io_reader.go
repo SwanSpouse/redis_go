@@ -1,12 +1,12 @@
-package networking
+package tcp
 
 import (
 	"bytes"
 	"io"
-	"github.com/labstack/gommon/log"
+	"log"
 )
 
-type bufIoReader struct {
+type BufIoReader struct {
 	rd  io.Reader
 	buf []byte
 	r   int // reader index
@@ -14,12 +14,12 @@ type bufIoReader struct {
 }
 
 // reset buffer & rd
-func (b *bufIoReader) reset(buf []byte, rd io.Reader) {
-	*b = bufIoReader{buf: buf, rd: rd}
+func (b *BufIoReader) reset(buf []byte, rd io.Reader) {
+	*b = BufIoReader{buf: buf, rd: rd}
 }
 
 // compact moves the unread chunk to the beginning of the buffer
-func (b *bufIoReader) compact() {
+func (b *BufIoReader) compact() {
 	if b.r > 0 {
 		copy(b.buf, b.buf[b.r:b.w])
 		b.w = b.w - b.r
@@ -28,12 +28,12 @@ func (b *bufIoReader) compact() {
 }
 
 // returns the number of buffered bytes unread
-func (b *bufIoReader) Buffered() int {
+func (b *BufIoReader) Buffered() int {
 	return b.w - b.r
 }
 
 // make sure that sz bytes can be buffered
-func (b *bufIoReader) require(sz int) error {
+func (b *BufIoReader) require(sz int) error {
 	extra := sz - b.Buffered()
 	if extra < 1 {
 		return nil
@@ -55,7 +55,7 @@ func (b *bufIoReader) require(sz int) error {
 }
 
 // tries to read more data into the buffer
-func (b *bufIoReader) fill() error {
+func (b *BufIoReader) fill() error {
 	b.compact()
 
 	if b.w < len(b.buf) {
@@ -68,7 +68,7 @@ func (b *bufIoReader) fill() error {
 }
 
 // peek byte of the buffer
-func (b *bufIoReader) PeekByte() (byte, error) {
+func (b *BufIoReader) PeekByte() (byte, error) {
 	if err := b.require(1); err != nil {
 		return 0, err
 	}
@@ -76,7 +76,7 @@ func (b *bufIoReader) PeekByte() (byte, error) {
 }
 
 // PeekLine returns the next line until CRLF without reading it
-func (b *bufIoReader) PeekLine(offset int) (buffer, error) {
+func (b *BufIoReader) PeekLine(offset int) (buffer, error) {
 	index := -1
 
 	// try to find the end of the line
@@ -98,9 +98,9 @@ func (b *bufIoReader) PeekLine(offset int) (buffer, error) {
 
 	// fail if still nothing found
 	if index < 0 {
-		return nil, errInlineRequestTooLong
+		return nil, ErrInlineRequestTooLong
 	}
-	return buffer(b.buf[start: start+index+1]), nil
+	return buffer(b.buf[start : start+index+1]), nil
 }
 
 /*
@@ -110,7 +110,7 @@ func (b *bufIoReader) PeekLine(offset int) (buffer, error) {
 	批量回复(bulk reply)    的第一个字节是        $
 	多条批量回复(multi bulk reply)的第一个字节是   *
 */
-func (b *bufIoReader) PeekType() (t ResponseType, err error) {
+func (b *BufIoReader) PeekType() (t ResponseType, err error) {
 	if err = b.require(1); err != nil {
 		return
 	}
@@ -136,32 +136,32 @@ func (b *bufIoReader) PeekType() (t ResponseType, err error) {
 	return
 }
 
-func (b *bufIoReader) PeekN(offset, n int) ([]byte, error) {
+func (b *BufIoReader) PeekN(offset, n int) ([]byte, error) {
 	if err := b.require(offset + n); err != nil {
 		return nil, err
 	}
-	return b.buf[b.r+offset: b.r+offset+n], nil
+	return b.buf[b.r+offset : b.r+offset+n], nil
 }
 
 // return the next line until CRLF
-func (b *bufIoReader) ReadLine() (buffer, error) {
+func (b *BufIoReader) ReadLine() (buffer, error) {
 	line, err := b.PeekLine(0)
 	b.r += len(line)
 	return line, err
 }
 
-func (b *bufIoReader) ReadNil() error {
+func (b *BufIoReader) ReadNil() error {
 	line, err := b.ReadLine()
 	if err != nil {
 		return err
 	}
-	if len(line) < 3 || !bytes.Equal(line[:3], binNIL[:3]) {
-		return errNotANilMessage
+	if len(line) < 3 || !bytes.Equal(line[:3], BinNIL[:3]) {
+		return ErrNotANilMessage
 	}
 	return nil
 }
 
-func (b *bufIoReader) ReadInt() (int64, error) {
+func (b *BufIoReader) ReadInt() (int64, error) {
 	line, err := b.ReadLine()
 	if err != nil {
 		return 0, err
@@ -169,7 +169,7 @@ func (b *bufIoReader) ReadInt() (int64, error) {
 	return line.ParseInt()
 }
 
-func (b *bufIoReader) ReadError() (string, error) {
+func (b *BufIoReader) ReadError() (string, error) {
 	line, err := b.ReadLine()
 	if err != nil {
 		return "", err
@@ -177,7 +177,7 @@ func (b *bufIoReader) ReadError() (string, error) {
 	return line.ParseMessage('-')
 }
 
-func (b *bufIoReader) ReadInlineString() (string, error) {
+func (b *BufIoReader) ReadInlineString() (string, error) {
 	line, err := b.ReadLine()
 	if err != nil {
 		return "", err
@@ -185,27 +185,27 @@ func (b *bufIoReader) ReadInlineString() (string, error) {
 	return line.ParseMessage('+')
 }
 
-func (b *bufIoReader) ReadArrayLen() (int, error) {
+func (b *BufIoReader) ReadArrayLen() (int, error) {
 	line, err := b.ReadLine()
 	if err != nil {
 		return 0, err
 	}
-	sz, err := line.ParseSize('*', errInvalidMultiBulkLength)
+	sz, err := line.ParseSize('*', ErrInvalidMultiBulkLength)
 	if err != nil {
 		return 0, err
 	}
 	return int(sz), nil
 }
 
-func (b *bufIoReader) ReadBulkLen() (int64, error) {
+func (b *BufIoReader) ReadBulkLen() (int64, error) {
 	line, err := b.ReadLine()
 	if err != nil {
 		return 0, err
 	}
-	return line.ParseSize('$', errInvalidBulkLength)
+	return line.ParseSize('$', ErrInvalidBulkLength)
 }
 
-func (b *bufIoReader) ReadBulk(p []byte) ([]byte, error) {
+func (b *BufIoReader) ReadBulk(p []byte) ([]byte, error) {
 	sz, err := b.ReadBulkLen()
 	if err != nil {
 		return p, err
@@ -219,7 +219,7 @@ func (b *bufIoReader) ReadBulk(p []byte) ([]byte, error) {
 	return p, nil
 }
 
-func (b *bufIoReader) ReadBulkString() (string, error) {
+func (b *BufIoReader) ReadBulkString() (string, error) {
 	sz, err := b.ReadBulkLen()
 	if err != nil {
 		return "", err
@@ -227,28 +227,28 @@ func (b *bufIoReader) ReadBulkString() (string, error) {
 	if err := b.require(int(sz + 2)); err != nil {
 		return "", err
 	}
-	s := string(b.buf[b.r: b.r+int(sz)])
+	s := string(b.buf[b.r : b.r+int(sz)])
 	b.r += int(sz + 2)
 	return s, nil
 }
 
-func (b *bufIoReader) Scan(vv ...interface{}) error {
+func (b *BufIoReader) Scan(vv ...interface{}) error {
 	//TODO lmj
 	return nil
 }
 
-func (b *bufIoReader) Reset(r io.Reader) {
-	b.reset(b.buf, r)
+func (b *BufIoReader) Reset(r io.Reader) {
+	b.reset(MkStdBuffer(), r)
 }
 
-func (b *bufIoReader) skip(sz int) {
+func (b *BufIoReader) skip(sz int) {
 	if b.Buffered() >= sz {
 		b.r += sz
 	}
 	//TODO lmj need first compact ?
 }
 
-func (b *bufIoReader) SkipBulk() error {
+func (b *BufIoReader) SkipBulk() error {
 	sz, err := b.ReadBulkLen()
 	if err != nil {
 		return err
@@ -256,7 +256,7 @@ func (b *bufIoReader) SkipBulk() error {
 	return b.skipN(sz + 2)
 }
 
-func (b *bufIoReader) skipN(sz int64) error {
+func (b *BufIoReader) skipN(sz int64) error {
 	// if bulk doesn't overflow buffer
 	extra := sz - int64(b.Buffered())
 	if extra < 1 {

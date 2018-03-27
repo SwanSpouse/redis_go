@@ -4,7 +4,7 @@ import (
 	"flag"
 	"log"
 	"net"
-	"redis_go/networking"
+	"redis_go/server"
 )
 
 var flags struct {
@@ -16,7 +16,7 @@ func init() {
 }
 
 func run() error {
-	server := networking.NewServer(nil)
+	server := server.NewServer(nil)
 	lis, err := net.Listen("tcp", flags.addr)
 	if err != nil {
 		return err
