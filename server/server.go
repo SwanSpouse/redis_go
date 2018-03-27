@@ -1,11 +1,11 @@
 package server
 
 import (
-	"log"
 	"net"
 	"redis_go/client"
 	"redis_go/conf"
 	"redis_go/handlers"
+	"redis_go/log"
 	"sync"
 )
 
@@ -46,21 +46,21 @@ func (srv *Server) serveClient(c *client.Client) {
 				如果不在command table中,则返回command not found
 				如果在command table中，则获取到相应的command handler来进行处理。
 			*/
-			log.Printf("get command from client %+v", cmd)
+			log.Debug("get command from client %+v", cmd)
 			if handler, ok := srv.commands[cmd.GetName()]; ok {
 				handler.Process(c, cmd)
 			} else {
-				log.Printf("command not found %s", cmd.GetName())
+				log.Info("command not found %s", cmd.GetName())
 				c.ResponseWriter.AppendError("command not found")
 			}
 			if err := c.ResponseWriter.Flush(); err != nil {
-				log.Printf("response writer flush data error %+v", err)
+				log.Info("response writer flush data error %+v", err)
 				return
 			}
 		}
-		log.Printf("No more data for current connection")
+		log.Debug("No more data for current connection")
 	}
-	log.Printf("connection closed")
+	log.Debug("connection closed")
 }
 
 func (srv *Server) Serve(lis net.Listener) error {
@@ -69,7 +69,7 @@ func (srv *Server) Serve(lis net.Listener) error {
 		if err != nil {
 			return err
 		}
-		log.Printf("new client come in ! from %+v", cn.RemoteAddr().String())
+		log.Info("new client come in ! from %+v", cn.RemoteAddr().String())
 		go srv.serveClient(client.NewClient(cn))
 	}
 }

@@ -2,9 +2,10 @@ package main
 
 import (
 	"flag"
-	"log"
+	"redis_go/log"
 	"net"
 	"redis_go/server"
+	"fmt"
 )
 
 var flags struct {
@@ -22,15 +23,14 @@ func run() error {
 		return err
 	}
 	defer lis.Close()
-	log.Printf("waiting for connections on %s", lis.Addr().String())
+	log.Info("waiting for connections on %s", lis.Addr().String())
 
 	return server.Serve(lis)
 }
 
 func main() {
 	flag.Parse()
-
 	if err := run(); err != nil {
-		log.Fatalln(err)
+		log.Fatal(fmt.Sprintf("start server error %+v", err))
 	}
 }

@@ -3,7 +3,7 @@ package tcp
 import (
 	"bytes"
 	"io"
-	"log"
+	"redis_go/log"
 )
 
 type BufIoReader struct {
@@ -61,7 +61,7 @@ func (b *BufIoReader) fill() error {
 	if b.w < len(b.buf) {
 		n, err := b.rd.Read(b.buf[b.w:])
 		b.w += n
-		log.Printf("current io reader buffer %s", string(b.buf[b.r:b.w]))
+		log.Info("current io reader buffer %s", string(b.buf[b.r:b.w]))
 		return err
 	}
 	return nil

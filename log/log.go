@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/kusora/raven-go"
 	"os"
-	"time"
 )
 
 const (
@@ -19,26 +18,10 @@ const (
 
 var Level int64 = INFO
 
-var (
-	sendMailCount int64
-	MAXMAILCOUNT  int64 = 3000
-)
-
 var lg *Logger
 
 func init() {
 	lg = New(os.Stdout, "")
-	ticker := time.NewTicker(time.Hour * 24)
-	go func() {
-		for t := range ticker.C {
-			fmt.Println("Zero send mail count", t)
-			sendMailCount = 0
-		}
-	}()
-}
-
-func ShowGoroutineId(showGrtId bool) {
-	lg.showGrtid = showGrtId
 }
 
 func Info(format string, v ...interface{}) {
@@ -57,14 +40,6 @@ func Errorf(format string, v ...interface{}) {
 	if Level >= ERROR {
 		msg := fmt.Sprintf("[ERROR] "+format+"\n", v...)
 		lg.Output(2, msg)
-	}
-}
-
-func ErrorNWithCode(n int, code, format string, v ...interface{}) {
-	if Level >= ERROR {
-		msg := fmt.Sprintf(format+"\n", v...)
-		lg.Output(2+n, "[ERROR] "+msg)
-		raven.CaptureError(errors.New(msg), map[string]string{"code": code})
 	}
 }
 

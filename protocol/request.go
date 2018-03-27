@@ -2,7 +2,7 @@ package protocol
 
 import (
 	"io"
-	"log"
+	"redis_go/log"
 	"redis_go/tcp"
 )
 
@@ -51,7 +51,7 @@ func (r *RequestReader) ReadCmd(cmd *Command) (*Command, error) {
 			cmd.AddArgs(tcp.CommandArgument([]byte(arg)))
 		}
 	}
-	log.Printf("current cmd %+v", cmd)
+	log.Info("current cmd %+v", cmd)
 	return cmd, nil
 }
 
