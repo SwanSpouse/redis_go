@@ -45,10 +45,6 @@ func (c *Client) reset(cn net.Conn) {
 	}
 }
 
-func (c *Client) Close() {
-	c.Closed = true
-}
-
 func (c *Client) Release() {
 	_ = c.cn.Close()
 }

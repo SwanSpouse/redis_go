@@ -31,36 +31,33 @@ func NewServer(config *conf.ServerConfig) *Server {
 
 func (srv *Server) serveClient(c *client.Client) {
 	defer c.Release()
-	for !c.Closed {
-		// TODO lmj 增加Timeout的判断
-
-		// loop to handle redis command
-		for more := true; more; more = c.RequestReader.Buffered() != 0 {
-			cmd, err := c.RequestReader.ReadCmd(nil)
-			if err != nil {
-				c.ResponseWriter.AppendErrorf("read command error %+v", err)
-				continue
-			}
-			/**
-			首先判断是否在command table中,
-				如果不在command table中,则返回command not found
-				如果在command table中，则获取到相应的command handler来进行处理。
-			*/
-			log.Debug("get command from client %+v", cmd)
-			if handler, ok := srv.commands[cmd.GetName()]; ok {
-				handler.Process(c, cmd)
-			} else {
-				log.Info("command not found %s", cmd.GetName())
-				c.ResponseWriter.AppendError("command not found")
-			}
-			if err := c.ResponseWriter.Flush(); err != nil {
-				log.Info("response writer flush data error %+v", err)
-				return
-			}
+	// TODO lmj 增加Timeout的判断
+	// TODO lmj 除了Timeout的方式，还有什么好的办法能够判断client端是否已经断开连接
+	// loop to handle redis command
+	for more := true; more; more = c.RequestReader.Buffered() != 0 {
+		cmd, err := c.RequestReader.ReadCmd(nil)
+		if err != nil {
+			c.ResponseWriter.AppendErrorf("read command error %+v", err)
+			continue
 		}
-		log.Debug("No more data for current connection")
+		/**
+		首先判断是否在command table中,
+			如果不在command table中,则返回command not found
+			如果在command table中，则获取到相应的command handler来进行处理。
+		*/
+		log.Debug("get command from client %+v", cmd)
+		if handler, ok := srv.commands[cmd.GetName()]; ok {
+			handler.Process(c, cmd)
+		} else {
+			log.Errorf("command not found %s", cmd.GetOriginName())
+			c.ResponseWriter.AppendError("command not found")
+		}
+		if err := c.ResponseWriter.Flush(); err != nil {
+			log.Info("response writer flush data error %+v", err)
+			return
+		}
 	}
-	log.Debug("connection closed")
+	log.Debug("No more data for current connection")
 }
 
 func (srv *Server) Serve(lis net.Listener) error {
@@ -69,8 +66,8 @@ func (srv *Server) Serve(lis net.Listener) error {
 		if err != nil {
 			return err
 		}
-		log.Info("new client come in ! from %+v", cn.RemoteAddr().String())
 		go srv.serveClient(client.NewClient(cn))
+		log.Info("new client come in ! from %+v", cn.RemoteAddr().String())
 	}
 }
 
