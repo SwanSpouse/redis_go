@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"sync"
 	"time"
+	"strings"
 )
 
 type Logger struct {
@@ -30,6 +31,7 @@ func (l *Logger) header(tm time.Time, file string, line int, s string) string {
 }
 
 func (l *Logger) Output(calldepth int, s string) error {
+	s = strings.Replace(s, "\r\n", "\\r\\n", -1)
 	now := time.Now() // get this early.
 	var file string
 	var line int
