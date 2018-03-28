@@ -24,7 +24,6 @@ func run() error {
 	}
 	defer lis.Close()
 	log.Info("waiting for connections on %s", lis.Addr().String())
-
 	return server.Serve(lis)
 }
 

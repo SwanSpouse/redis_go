@@ -56,7 +56,7 @@ func (srv *Server) serveClient(c *client.Client) {
 			c.ResponseWriter.AppendError("command not found")
 		}
 		if err := c.ResponseWriter.Flush(); err != nil {
-			log.Info("response writer flush data error %+v", err)
+			log.Errorf("response writer flush data error %+v", err)
 			return
 		}
 	}

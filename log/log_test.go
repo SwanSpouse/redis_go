@@ -3,7 +3,6 @@ package log
 import (
 	"testing"
 	"fmt"
-	"strings"
 )
 
 func TestLogColor(t *testing.T) {
@@ -42,13 +41,4 @@ func TestLogColor(t *testing.T) {
 	fmt.Printf("%c[1;40;32m%s%c[0m", 0x1B, "testPrintColor", 0x1B)
 	fmt.Println()
 	fmt.Printf("%s\n", "testPrintColor")
-}
-
-func TestLogPrintLRCF(t *testing.T) {
-	msg := "this is a test\r\n"
-	fmt.Println("[1]" + msg)
-	fmt.Printf("[1]" + msg)
-	fmt.Println("[1]" + strings.Replace(msg, "\r\n", "\\r\\n", -1))
-	fmt.Println("====================end===================")
-
 }

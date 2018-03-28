@@ -26,26 +26,26 @@ func init() {
 
 func Info(format string, v ...interface{}) {
 	if Level >= INFO {
-		lg.Output(2, fmt.Sprintf("[INFO] "+format+"\n", v...))
+		lg.Output(2, fmt.Sprintf("%c[1;40;32m%s%c[0m\n", 0x1B, fmt.Sprintf("[INFO] "+format, v...), 0x1B))
 	}
 }
 
 func Warn(format string, v ...interface{}) {
 	if Level >= WARN {
-		lg.Output(2, fmt.Sprintf("[WARN] "+format+"\n", v...))
+		lg.Output(2, fmt.Sprintf("%c[1;40;33m%s%c[0m\n", 0x1B, fmt.Sprintf("[WARN] "+format, v...), 0x1B))
 	}
 }
 
 func Errorf(format string, v ...interface{}) {
 	if Level >= ERROR {
-		msg := fmt.Sprintf("[ERROR] "+format+"\n", v...)
+		msg := fmt.Sprintf("%c[1;40;31m%s%c[0m\n", 0x1B, fmt.Sprintf("[ERROR] "+format, v...), 0x1B)
 		lg.Output(2, msg)
 	}
 }
 
 func Debug(format string, v ...interface{}) {
 	if Level >= DEBUG {
-		lg.Output(2, fmt.Sprintf("[DEBUG] "+format+"\n", v...))
+		lg.Output(2, fmt.Sprintf("%c[1;40;44m%s%c[0m\n", 0x1B, fmt.Sprintf("[DEBUG] "+format, v...), 0x1B))
 	}
 }
 
