@@ -4,14 +4,13 @@ import (
 	"redis_go/client"
 	"redis_go/log"
 	"redis_go/protocol"
-	"redis_go/redis_database"
 	"strings"
 )
 
 type ConnectionHandler struct {
 }
 
-func (sh *ConnectionHandler) Process(databases []*redis_database.Database, client *client.Client, command *protocol.Command) {
+func (sh *ConnectionHandler) Process(client *client.Client, command *protocol.Command) {
 	switch strings.ToUpper(command.GetName()) {
 	case "PING":
 		sh.Ping(client, command)

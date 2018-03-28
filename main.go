@@ -2,10 +2,10 @@ package main
 
 import (
 	"flag"
-	"redis_go/log"
-	"net"
-	"redis_go/server"
 	"fmt"
+	"net"
+	"redis_go/log"
+	"redis_go/server"
 )
 
 var flags struct {

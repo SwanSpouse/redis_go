@@ -50,7 +50,7 @@ func (srv *Server) serveClient(c *client.Client) {
 		*/
 		log.Debug("get command from client %+v", cmd)
 		if handler, ok := srv.commands[cmd.GetName()]; ok {
-			handler.Process(srv.Databases, c, cmd)
+			handler.Process(c, cmd)
 		} else {
 			log.Errorf("command not found %s", cmd.GetOriginName())
 			c.ResponseWriter.AppendError("command not found")
@@ -69,7 +69,7 @@ func (srv *Server) Serve(lis net.Listener) error {
 		if err != nil {
 			return err
 		}
-		go srv.serveClient(client.NewClient(cn))
+		go srv.serveClient(client.NewClient(cn, srv.getDefaultDB()))
 		log.Info("new client come in ! from %+v", cn.RemoteAddr().String())
 	}
 }
@@ -78,6 +78,13 @@ func (srv *Server) initDB() {
 	srv.Databases = make([]*redis_database.Database, 0)
 	// add default database
 	srv.Databases = append(srv.Databases, redis_database.NewDatabase())
+}
+
+func (srv *Server) getDefaultDB() *redis_database.Database {
+	if srv.Databases == nil {
+		srv.initDB()
+	}
+	return srv.Databases[0]
 }
 
 // register all command handlers

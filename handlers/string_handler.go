@@ -11,35 +11,38 @@ import (
 type StringHandler struct {
 }
 
-func (sh *StringHandler) Process(databases []*redis_database.Database, client *client.Client, command *protocol.Command) {
+func (sh *StringHandler) Process(client *client.Client, command *protocol.Command) {
 	switch strings.ToUpper(command.GetName()) {
 	case "SET":
-		sh.Set(databases, client, command)
+		sh.Set(client, command)
 	case "GET":
-		sh.Get(databases, client, command)
+		sh.Get(client, command)
 	default:
 		client.ResponseWriter.AppendErrorf("ERR unknown command %s", command.GetOriginName())
 		return
 	}
 }
 
-func (sh *StringHandler) Set(databases []*redis_database.Database, client *client.Client, command *protocol.Command) {
+func (sh *StringHandler) Set(client *client.Client, command *protocol.Command) {
 	args := command.GetArgs()
 	if len(args) != 2 {
 		client.ResponseWriter.AppendErrorf(tcp.ErrWrongNumberOfArgs, command.GetOriginName())
 	}
 	key := args[0]
 	value := redis_database.NewRedisObject(args[1])
-	databases[0].SetKeyInDB(key, value)
+	client.GetChosenDB().SetKeyInDB(key, value)
 	client.ResponseWriter.AppendOK()
 }
 
-func (sh *StringHandler) Get(databases []*redis_database.Database, client *client.Client, command *protocol.Command) {
+func (sh *StringHandler) Get(client *client.Client, command *protocol.Command) {
 	args := command.GetArgs()
 	if len(args) != 1 {
 		client.ResponseWriter.AppendErrorf(tcp.ErrWrongNumberOfArgs, command.GetOriginName())
 	}
 	key := args[0]
-	obj := databases[0].SearchKeyInDB(key)
-	client.ResponseWriter.AppendBulkString(obj.GetValue())
+	if obj := client.GetChosenDB().SearchKeyInDB(key); obj != nil {
+		client.ResponseWriter.AppendBulkString(obj.GetValue())
+	} else {
+		client.ResponseWriter.AppendNil()
+	}
 }

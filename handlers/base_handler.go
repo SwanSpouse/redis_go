@@ -3,7 +3,6 @@ package handlers
 import (
 	"redis_go/client"
 	"redis_go/protocol"
-	"redis_go/redis_database"
 )
 
 var (
@@ -12,5 +11,5 @@ var (
 )
 
 type BaseHandler interface {
-	Process([]*redis_database.Database, *client.Client, *protocol.Command)
+	Process(*client.Client, *protocol.Command)
 }
