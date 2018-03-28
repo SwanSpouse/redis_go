@@ -70,6 +70,7 @@ const (
 	ErrNotANumber             = protoError("Protocol error: expected a number")
 	ErrNotANilMessage         = protoError("Protocol error: expected a nil")
 	ErrBadResponseType        = protoError("Protocol error: bad response type")
+	ErrUnknown                = protoError("Protocol error: unknown")
 )
 
 const (

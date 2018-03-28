@@ -2,8 +2,8 @@ package protocol
 
 import (
 	"io"
-	"redis_go/log"
 	"redis_go/tcp"
+	"redis_go/log"
 )
 
 type RequestReader struct {
@@ -30,28 +30,50 @@ func (r *RequestReader) PeekCmdName() (string, error) {
 	return r.peekCmd(0)
 }
 
-// construct a command from bufIoReader
-func (r *RequestReader) ReadCmd(cmd *Command) (*Command, error) {
-	if cmd == nil {
-		cmd = NewCommand()
-	}
-	len, err := r.reader.ReadArrayLen()
-	if err != nil {
+/**
+construct a command from bufIoReader
+
+command format:
+	1. status reply     : +OK\r\n
+	2. error reply      : -ERROR\r\n
+	3. integer replay   : :1\r\n
+	4. bulk reply       : $4\r\nPING\r\n
+	5. multi bulk reply : *3\r\n$3\r\nSET\r\n$5\r\nMyKey\r\n$7\r\nMyValue\r\n
+*/
+func (r *RequestReader) ReadCmd() (*Command, error) {
+	// read one line from buffer
+	line, err := r.reader.PeekLine(0)
+	if err != nil || len(line) == 0 {
 		return nil, err
 	}
-	for i := 0; i < len; i++ {
-		arg, err := r.reader.ReadBulkString()
-		if err != nil {
+	cmd := NewCommand()
+	switch line[0] {
+	case '+', '-', ':':
+		cmd.SetName(line.FirstWord())
+	case '$':
+		cmdName, err := r.reader.ReadBulkString()
+		if err != nil || cmdName == "" {
 			return nil, err
 		}
-		// first string is command name
-		if i == 0 {
-			cmd.SetName(arg)
-		} else {
-			cmd.AddArgs(tcp.CommandArgument([]byte(arg)))
+		cmd.SetName(cmdName)
+	case '*':
+		arrayLen, err := r.reader.ReadArrayLen()
+		if err != nil || arrayLen == 0 {
+			return nil, err
+		}
+		for i := 0; i < arrayLen; i ++ {
+			arg, err := r.reader.ReadBulkString()
+			if err != nil || arg == "" {
+				return nil, err
+			}
+			if i == 0 {
+				cmd.SetName(arg)
+			} else {
+				cmd.AddArgs(tcp.CommandArgument(arg))
+			}
 		}
 	}
-	log.Info("current cmd %+v", cmd)
+	log.Info("current command we received is %+v", cmd)
 	return cmd, nil
 }
 

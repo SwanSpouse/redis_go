@@ -38,7 +38,7 @@ func (srv *Server) serveClient(c *client.Client) {
 	// TODO lmj 除了Timeout的方式，还有什么好的办法能够判断client端是否已经断开连接
 	// loop to handle redis command
 	for more := true; more; more = c.RequestReader.Buffered() != 0 {
-		cmd, err := c.RequestReader.ReadCmd(nil)
+		cmd, err := c.RequestReader.ReadCmd()
 		if err != nil {
 			c.ResponseWriter.AppendErrorf("read command error %+v", err)
 			continue
