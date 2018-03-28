@@ -2,9 +2,9 @@ package handlers
 
 import (
 	"redis_go/client"
+	"redis_go/log"
 	"redis_go/protocol"
 	"strings"
-	"redis_go/log"
 )
 
 type BaseHandler interface {
@@ -29,6 +29,7 @@ func (sh *ConnectionHandler) Process(client *client.Client, command *protocol.Co
 func (sh *ConnectionHandler) Ping(client *client.Client, command *protocol.Command) {
 	msg := "PONG"
 	log.Info("message we send to client %+v", msg)
+	client.ResponseWriter.AppendArrayLen(1)
 	client.ResponseWriter.AppendBulkString("PONG")
 }
 
