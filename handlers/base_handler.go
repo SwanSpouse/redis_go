@@ -29,7 +29,7 @@ func (sh *ConnectionHandler) Process(client *client.Client, command *protocol.Co
 func (sh *ConnectionHandler) Ping(client *client.Client, command *protocol.Command) {
 	msg := "PONG"
 	log.Info("message we send to client %+v", msg)
-	client.ResponseWriter.AppendInlineString("PONG")
+	client.ResponseWriter.AppendBulkString("PONG")
 }
 
 func (sh *ConnectionHandler) Auth(client *client.Client, command *protocol.Command) {
