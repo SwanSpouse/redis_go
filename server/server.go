@@ -6,14 +6,16 @@ import (
 	"redis_go/conf"
 	"redis_go/handlers"
 	"redis_go/log"
+	"redis_go/redis_database"
 	"sync"
 )
 
 // Redis server
 type Server struct {
-	config   *conf.ServerConfig
-	commands map[string]handlers.BaseHandler
-	mu       sync.RWMutex
+	config    *conf.ServerConfig
+	commands  map[string]handlers.BaseHandler
+	mu        sync.RWMutex
+	Databases []*redis_database.Database // database
 }
 
 func NewServer(config *conf.ServerConfig) *Server {
@@ -24,6 +26,7 @@ func NewServer(config *conf.ServerConfig) *Server {
 		config:   config,
 		commands: make(map[string]handlers.BaseHandler),
 	}
+	server.initDB()
 	// init commands table
 	server.populateCommandTable()
 	return server
@@ -47,7 +50,7 @@ func (srv *Server) serveClient(c *client.Client) {
 		*/
 		log.Debug("get command from client %+v", cmd)
 		if handler, ok := srv.commands[cmd.GetName()]; ok {
-			handler.Process(c, cmd)
+			handler.Process(srv.Databases, c, cmd)
 		} else {
 			log.Errorf("command not found %s", cmd.GetOriginName())
 			c.ResponseWriter.AppendError("command not found")
@@ -71,9 +74,18 @@ func (srv *Server) Serve(lis net.Listener) error {
 	}
 }
 
+func (srv *Server) initDB() {
+	srv.Databases = make([]*redis_database.Database, 0)
+	// add default database
+	srv.Databases = append(srv.Databases, redis_database.NewDatabase())
+}
+
 // register all command handlers
 func (srv *Server) populateCommandTable() {
 	connectionHandler := new(handlers.ConnectionHandler)
+	stringHandler := new(handlers.StringHandler)
 	srv.commands["PING"] = connectionHandler
 	srv.commands["TEST"] = connectionHandler
+	srv.commands["SET"] = stringHandler
+	srv.commands["GET"] = stringHandler
 }

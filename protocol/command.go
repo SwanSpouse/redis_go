@@ -19,8 +19,16 @@ func NewCommand() *Command {
 	return &Command{args: make([]tcp.CommandArgument, 0)}
 }
 
-func (c *Command) GetArgs() []tcp.CommandArgument {
+func (c *Command) GetOriginArgs() []tcp.CommandArgument {
 	return c.args
+}
+
+func (c *Command) GetArgs() []string {
+	args := make([]string, 0)
+	for _, arg := range c.args {
+		args = append(args, string(arg))
+	}
+	return args
 }
 
 func (c *Command) AddArgs(arg tcp.CommandArgument) {
