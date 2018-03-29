@@ -10,25 +10,25 @@ import (
 type ConnectionHandler struct {
 }
 
-func (sh *ConnectionHandler) Process(client *client.Client, command *protocol.Command) {
+func (handler *ConnectionHandler) Process(client *client.Client, command *protocol.Command) {
 	switch strings.ToUpper(command.GetName()) {
 	case "PING":
-		sh.Ping(client, command)
+		handler.ping(client, command)
 	case "AUTH":
-		sh.Auth(client, command)
+		handler.auth(client, command)
 	default:
 		client.ResponseWriter.AppendErrorf("ERR unknown command %s", command.GetOriginName())
 		return
 	}
 }
 
-func (sh *ConnectionHandler) Ping(client *client.Client, command *protocol.Command) {
+func (handler *ConnectionHandler) ping(client *client.Client, command *protocol.Command) {
 	msg := "PONG"
 	log.Info("message we send to client %+v", msg)
 	client.ResponseWriter.AppendArrayLen(1)
 	client.ResponseWriter.AppendBulkString("PONG")
 }
 
-func (sh *ConnectionHandler) Auth(client *client.Client, command *protocol.Command) {
+func (handler *ConnectionHandler) auth(client *client.Client, command *protocol.Command) {
 
 }

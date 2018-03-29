@@ -11,19 +11,21 @@ import (
 type StringHandler struct {
 }
 
-func (sh *StringHandler) Process(client *client.Client, command *protocol.Command) {
+func (handler *StringHandler) Process(client *client.Client, command *protocol.Command) {
 	switch strings.ToUpper(command.GetName()) {
+	case "APPEND":
+	case "INCR":
 	case "SET":
-		sh.Set(client, command)
+		handler.Set(client, command)
 	case "GET":
-		sh.Get(client, command)
+		handler.Get(client, command)
 	default:
 		client.ResponseWriter.AppendErrorf("ERR unknown command %s", command.GetOriginName())
 		return
 	}
 }
 
-func (sh *StringHandler) Set(client *client.Client, command *protocol.Command) {
+func (handler *StringHandler) Set(client *client.Client, command *protocol.Command) {
 	args := command.GetArgs()
 	if len(args) != 2 {
 		client.ResponseWriter.AppendErrorf(tcp.ErrWrongNumberOfArgs, command.GetOriginName())
@@ -36,7 +38,7 @@ func (sh *StringHandler) Set(client *client.Client, command *protocol.Command) {
 	client.ResponseWriter.AppendOK()
 }
 
-func (sh *StringHandler) Get(client *client.Client, command *protocol.Command) {
+func (handler *StringHandler) Get(client *client.Client, command *protocol.Command) {
 	args := command.GetArgs()
 	if len(args) != 1 {
 		client.ResponseWriter.AppendErrorf(tcp.ErrWrongNumberOfArgs, command.GetOriginName())
