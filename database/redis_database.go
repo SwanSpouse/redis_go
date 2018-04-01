@@ -1,4 +1,4 @@
-package redis_database
+package database
 
 import (
 	"sync/atomic"

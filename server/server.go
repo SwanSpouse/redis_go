@@ -4,9 +4,9 @@ import (
 	"net"
 	"redis_go/client"
 	"redis_go/conf"
+	"redis_go/database"
 	"redis_go/handlers"
 	"redis_go/log"
-	"redis_go/redis_database"
 	"sync"
 )
 
@@ -15,7 +15,7 @@ type Server struct {
 	config    *conf.ServerConfig
 	commands  map[string]handlers.BaseHandler
 	mu        sync.RWMutex
-	Databases []*redis_database.Database // database
+	Databases []*database.Database // database
 }
 
 func NewServer(config *conf.ServerConfig) *Server {
@@ -75,12 +75,12 @@ func (srv *Server) Serve(lis net.Listener) error {
 }
 
 func (srv *Server) initDB() {
-	srv.Databases = make([]*redis_database.Database, 0)
+	srv.Databases = make([]*database.Database, 0)
 	// add default database
-	srv.Databases = append(srv.Databases, redis_database.NewDatabase())
+	srv.Databases = append(srv.Databases, database.NewDatabase())
 }
 
-func (srv *Server) getDefaultDB() *redis_database.Database {
+func (srv *Server) getDefaultDB() *database.Database {
 	if srv.Databases == nil {
 		srv.initDB()
 	}

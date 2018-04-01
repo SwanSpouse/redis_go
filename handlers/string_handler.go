@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"redis_go/client"
+	"redis_go/database"
 	"redis_go/protocol"
-	"redis_go/redis_database"
 	"redis_go/tcp"
 	"strings"
 )
@@ -33,7 +33,7 @@ func (handler *StringHandler) Set(client *client.Client, command *protocol.Comma
 		return
 	}
 	key := args[0]
-	value := redis_database.NewRedisObject(args[1])
+	value := database.NewRedisObject(args[1])
 	client.GetChosenDB().SetKeyInDB(key, value)
 	client.ResponseWriter.AppendOK()
 }

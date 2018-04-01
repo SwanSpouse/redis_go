@@ -1,4 +1,4 @@
-package redis_database
+package database
 
 type RedisObject struct {
 	objectType int         // 类型

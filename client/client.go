@@ -2,8 +2,8 @@ package client
 
 import (
 	"net"
+	"redis_go/database"
 	"redis_go/protocol"
-	"redis_go/redis_database"
 	"sync"
 	"sync/atomic"
 )
@@ -17,7 +17,7 @@ var (
 type Client struct {
 	id             uint64
 	cn             net.Conn
-	db             *redis_database.Database // chosen database
+	db             *database.Database // chosen database
 	Closed         bool
 	RequestReader  *protocol.RequestReader
 	ResponseWriter protocol.ResponseWriter
@@ -51,7 +51,7 @@ func (c *Client) Release() {
 	_ = c.cn.Close()
 }
 
-func NewClient(cn net.Conn, defaultDB *redis_database.Database) *Client {
+func NewClient(cn net.Conn, defaultDB *database.Database) *Client {
 	c := new(Client)
 	c.reset(cn)
 	c.db = defaultDB
@@ -66,6 +66,6 @@ func (c *Client) RemoteAddr() net.Addr {
 	return c.cn.RemoteAddr()
 }
 
-func (c *Client) GetChosenDB() *redis_database.Database {
+func (c *Client) GetChosenDB() *database.Database {
 	return c.db
 }
