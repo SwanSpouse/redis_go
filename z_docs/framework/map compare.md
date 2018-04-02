@@ -191,6 +191,13 @@ Java 1.7 HashMap
                 }
                 int i = indexFor(e.hash, newCapacity);
                 // 头插法，先将e.next指向newTable i位置的元素，然后将e赋值给newTable的位置元素
+                // 在并发的条件下，HashMap容易形成回路。造成死循环。
+                /*
+                假如有两个线程P1、P2，以及链表 a=>b=>null
+                    1、P1先运行，运行完"Entry<K,V> next = e.next;"代码后发生堵塞，或者其它情况不再运行下去，此时e=a。next=b
+                    2、而P2已经运行完整段代码，于是当前的新链表newTable[i]为b=>a=>null
+                    3、P1又继续运行"Entry<K,V> next = e.next;"之后的代码，则运行完"e=next;"后，newTable[i]为a<=>b。则造成回路，while(e!=null)一直死循环
+                */
                 e.next = newTable[i];
                 newTable[i] = e;
                 e = next;
@@ -443,8 +450,37 @@ Java 1.8 HashMap
     }
 ```
 
+Java ConcurrentHashMap
+
+ConcurrentHashMap为了提高本身的并发能力，在内部采用了一个叫做Segment的结构，一个Segment其实就是一个类Hash Table的结构，Segment内部维护了一个链表数组。
+
+ConcurrentHashMap定位一个元素的过程需要进行两次Hash操作，第一次Hash定位到Segment，第二次Hash定位到元素所在的链表的头部，因此，这一种结构的带来的副作用是Hash的过程要比普通的HashMap要长，
+但是带来的好处是写操作的时候可以只对元素所在的Segment进行加锁即可，不会影响到其他的Segment，这样，在最理想的情况下，ConcurrentHashMap可以最高同时支持Segment数量大小的写操作
+（刚好这些写操作都非常平均地分布在所有的Segment上），所以，通过这一种结构，ConcurrentHashMap的并发能力可以大大的提高。
+
+结合在实际中的应用，感觉concurrentHashMap更加适用于redis。所以打算采用这个对hashMap进行实现。
 
 
+```Java
+    static final class HashEntry<K,V> {
+        final K key;
+        final int hash;
+        volatile V value;
+        final HashEntry<K,V> next;
+    }
+```
+
+
+上述代码中，除了value其他所有的变量都是final的。这意味着不能从hash链的中间或尾部添加或删除节点，因为这需要修改next引用值，所有的节点的修改只能从头部开始。
+
+对于put操作，可以一律添加到Hash链的头部。但是对于remove操作，可能需要从中间删除一个节点，这就需要将要删除节点的前面所有节点整个复制一遍，最后一个节点指向要删除结点的下一个结点。
+
+为了确保读操作能够看到最新的值，将value设置成volatile，这避免了加锁。 remove操作要注意一个问题：如果某个读操作在删除时已经定位到了旧的链表上，那么此操作仍然将能读到数据，只不过读取到的是旧数据而已，这在多线程里面是没有问题的。
+
+HashEntry 类的 value 域被声明为 Volatile 型，Java 的内存模型可以保证：某个写线程对 value 域的写入马上可以被后续的某个读线程“看”到。
+
+#### reference
+* https://www.cnblogs.com/slwenyi/p/6393829.html
 
 
 
