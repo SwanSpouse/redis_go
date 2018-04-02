@@ -191,6 +191,13 @@ Java 1.7 HashMap
                 }
                 int i = indexFor(e.hash, newCapacity);
                 // 头插法，先将e.next指向newTable i位置的元素，然后将e赋值给newTable的位置元素
+                // 在并发的条件下，HashMap容易形成回路。造成死循环。
+                /*
+                假如有两个线程P1、P2，以及链表 a=>b=>null
+                    1、P1先运行，运行完"Entry<K,V> next = e.next;"代码后发生堵塞，或者其它情况不再运行下去，此时e=a。next=b
+                    2、而P2已经运行完整段代码，于是当前的新链表newTable[i]为b=>a=>null
+                    3、P1又继续运行"Entry<K,V> next = e.next;"之后的代码，则运行完"e=next;"后，newTable[i]为a<=>b。则造成回路，while(e!=null)一直死循环
+                */
                 e.next = newTable[i];
                 newTable[i] = e;
                 e = next;
@@ -443,9 +450,7 @@ Java 1.8 HashMap
     }
 ```
 
-
-
-
+Java ConcurrentHashMap
 
 
 
