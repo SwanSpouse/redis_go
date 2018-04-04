@@ -47,7 +47,7 @@ func (handler *StringHandler) Get(client *client.Client, command *protocol.Comma
 	}
 	key := args[0]
 	if obj := client.GetChosenDB().SearchKeyInDB(key); obj != nil {
-		client.ResponseWriter.AppendBulkString(obj.GetValue())
+		client.ResponseWriter.AppendBulkString("")
 	} else {
 		client.ResponseWriter.AppendNil()
 	}
