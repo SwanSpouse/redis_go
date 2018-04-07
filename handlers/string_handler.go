@@ -6,7 +6,6 @@ import (
 	"redis_go/database"
 	re "redis_go/error"
 	"redis_go/protocol"
-	"strings"
 )
 
 // StringHandler可以处理的三种rawType
@@ -19,7 +18,7 @@ var stringEncodingTypeDict = map[string]bool{
 type StringHandler struct{}
 
 func (handler *StringHandler) Process(client *client.Client, command *protocol.Command) {
-	switch strings.ToUpper(command.GetName()) {
+	switch command.GetName() {
 	case "APPEND":
 	case "BITCOUNT", "BITOP", "GETBIT", "SETBIT":
 		client.ResponseWriter.AppendErrorf(re.ErrFunctionNotImplement)
@@ -77,19 +76,16 @@ func (handler *StringHandler) Get(client *client.Client, command *protocol.Comma
 	key := args[0]
 
 	/* 获取key在数据库中对应的value(TBase:BaseType)
-	 *      1. 处理database error
+	 *      1. 处理没有找到的情况
 	 *      2. 验证BaseType的类型和编码方式
 	 */
-	baseType, err := client.SelectedDatabase().SearchKeyInDB(key)
-	if err != nil {
-		client.ResponseWriter.AppendErrorf("error type of %s", key)
-		return
-	}
+	baseType := client.SelectedDatabase().SearchKeyInDB(key)
 	// 数据库中没有这个Key
 	if baseType == nil {
 		client.ResponseWriter.AppendNil()
 		return
 	}
+	// 首先验证type类型是否合法
 	if _, ok := stringEncodingTypeDict[baseType.GetEncoding()]; !ok || baseType.GetObjectType() != database.RedisTypeString {
 		client.ResponseWriter.AppendErrorf("error object type or encoding. type:%s, encoding:%s", baseType.GetObjectType(), baseType.GetEncoding())
 		return

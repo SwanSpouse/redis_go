@@ -38,7 +38,9 @@ func NewRedisStringObjectWithTTL(value string, ttl int) (TBase, error) {
 		ttl:        ttl,
 		value:      value,
 	}
-	obj.expireTime = time.Now().Add(time.Duration(ttl) * time.Second)
+	if ttl > 0 {
+		obj.expireTime = time.Now().Add(time.Duration(ttl) * time.Second)
+	}
 	return obj, nil
 }
 
@@ -96,6 +98,10 @@ func (obj *RedisObject) SetValue(value interface{}) {
 	obj.value = value
 }
 
-func (obj *RedisObject) GetExpiredTime() time.Time {
-	return obj.expireTime
+func (obj *RedisObject) IsExpired() bool {
+	// 如果过期时间是有效值，并且当前时间在过期时间之后，说明已经过期。
+	if !obj.expireTime.IsZero() && time.Now().After(obj.expireTime) {
+		return true
+	}
+	return false
 }
