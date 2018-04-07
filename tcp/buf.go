@@ -1,11 +1,13 @@
 package tcp
 
+import re "redis_go/error"
+
 type buffer []byte
 
 // remove CRLF
 func (buf buffer) TrimCRLF() buffer {
 	n := len(buf)
-	for ; n > 0; n -- {
+	for ; n > 0; n-- {
 		if c := buf[n-1]; c != '\r' && c != '\n' {
 			break
 		}
@@ -40,9 +42,9 @@ func (buf buffer) FirstWord() string {
 func (buf buffer) ParseInt() (int64, error) {
 	data := buf.TrimCRLF()
 	if len(data) < 2 {
-		return 0, ProtoErrorf("Protocol error: expected ':', got ' '")
+		return 0, re.ProtoErrorf("Protocol error: expected ':', got ' '")
 	} else if data[0] != ':' {
-		return 0, ProtoErrorf("Protocol error: expected ':', got '%s'", string(data[0]))
+		return 0, re.ProtoErrorf("Protocol error: expected ':', got '%s'", string(data[0]))
 	}
 
 	n, m := int64(0), int64(1)
@@ -52,7 +54,7 @@ func (buf buffer) ParseInt() (int64, error) {
 		} else if c == '-' && i == 0 {
 			m = -1
 		} else {
-			return 0, ErrNotANumber
+			return 0, re.ErrNotANumber
 		}
 	}
 	return n * m, nil
@@ -62,9 +64,9 @@ func (buf buffer) ParseInt() (int64, error) {
 func (buf buffer) ParseMessage(prefix byte) (string, error) {
 	data := buf.TrimCRLF()
 	if len(data) < 1 {
-		return "", ProtoErrorf("Protocol error: expected '%s', got ' '", string(prefix))
+		return "", re.ProtoErrorf("Protocol error: expected '%s', got ' '", string(prefix))
 	} else if data[0] != prefix {
-		return "", ProtoErrorf("Protocol error: expected '%s', got '%s'", string(prefix), string(data[0]))
+		return "", re.ProtoErrorf("Protocol error: expected '%s', got '%s'", string(prefix), string(data[0]))
 	}
 	return string(data[1:]), nil
 }
@@ -74,9 +76,9 @@ func (buf buffer) ParseSize(prefix byte, fallback error) (int64, error) {
 	data := buf.TrimCRLF()
 
 	if len(data) == 0 {
-		return 0, ProtoErrorf("Protocol error: expected '%s', got ' '", string(prefix))
+		return 0, re.ProtoErrorf("Protocol error: expected '%s', got ' '", string(prefix))
 	} else if data[0] != prefix {
-		return 0, ProtoErrorf("Protocol error: expected '%s', got '%s'", string(prefix), string(data[0]))
+		return 0, re.ProtoErrorf("Protocol error: expected '%s', got '%s'", string(prefix), string(data[0]))
 	} else if len(data) < 2 {
 		return 0, fallback
 	}

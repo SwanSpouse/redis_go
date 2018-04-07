@@ -2,8 +2,9 @@ package protocol
 
 import (
 	"io"
-	"redis_go/tcp"
+	re "redis_go/error"
 	"redis_go/log"
+	"redis_go/tcp"
 )
 
 type RequestReader struct {
@@ -61,7 +62,7 @@ func (r *RequestReader) ReadCmd() (*Command, error) {
 		if err != nil || arrayLen == 0 {
 			return nil, err
 		}
-		for i := 0; i < arrayLen; i ++ {
+		for i := 0; i < arrayLen; i++ {
 			arg, err := r.reader.ReadBulkString()
 			if err != nil || arg == "" {
 				return nil, err
@@ -90,7 +91,7 @@ func (r *RequestReader) peekCmd(offset int) (string, error) {
 		return line.FirstWord(), nil
 	}
 
-	n, err := line.ParseSize('*', tcp.ErrInvalidMultiBulkLength)
+	n, err := line.ParseSize('*', re.ErrInvalidMultiBulkLength)
 	if err != nil {
 		return "", err
 	}
@@ -105,7 +106,7 @@ func (r *RequestReader) peekCmd(offset int) (string, error) {
 	}
 	offset += len(line)
 
-	n, err = line.ParseSize('$', tcp.ErrInvalidBulkLength)
+	n, err = line.ParseSize('$', re.ErrInvalidBulkLength)
 	if err != nil {
 		return "", err
 	}
@@ -182,7 +183,7 @@ func (w *RequestWriter) WriteCmdString(cmd string, args ...string) {
 
 func (w *RequestWriter) WriteMultiBulkSize(n int) error {
 	if n < 0 {
-		return tcp.ErrInvalidMultiBulkLength
+		return re.ErrInvalidMultiBulkLength
 	}
 	w.w.AppendArrayLen(n)
 	return nil

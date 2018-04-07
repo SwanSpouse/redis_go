@@ -3,6 +3,7 @@ package tcp
 import (
 	"bytes"
 	"io"
+	re "redis_go/error"
 	"redis_go/log"
 )
 
@@ -98,7 +99,7 @@ func (b *BufIoReader) PeekLine(offset int) (buffer, error) {
 
 	// fail if still nothing found
 	if index < 0 {
-		return nil, ErrInlineRequestTooLong
+		return nil, re.ErrInlineRequestTooLong
 	}
 	return buffer(b.buf[start : start+index+1]), nil
 }
@@ -156,7 +157,7 @@ func (b *BufIoReader) ReadNil() error {
 		return err
 	}
 	if len(line) < 3 || !bytes.Equal(line[:3], BinNIL[:3]) {
-		return ErrNotANilMessage
+		return re.ErrNotANilMessage
 	}
 	return nil
 }
@@ -190,7 +191,7 @@ func (b *BufIoReader) ReadArrayLen() (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	sz, err := line.ParseSize('*', ErrInvalidMultiBulkLength)
+	sz, err := line.ParseSize('*', re.ErrInvalidMultiBulkLength)
 	if err != nil {
 		return 0, err
 	}
@@ -202,7 +203,7 @@ func (b *BufIoReader) ReadBulkLen() (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return line.ParseSize('$', ErrInvalidBulkLength)
+	return line.ParseSize('$', re.ErrInvalidBulkLength)
 }
 
 func (b *BufIoReader) ReadBulk(p []byte) ([]byte, error) {
