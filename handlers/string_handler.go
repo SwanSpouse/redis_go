@@ -16,17 +16,33 @@ var stringEncodingTypeDict = map[string]bool{
 	database.RedisEncodingEmbStr: true,
 }
 
-type StringHandler struct {
-}
+type StringHandler struct{}
 
 func (handler *StringHandler) Process(client *client.Client, command *protocol.Command) {
 	switch strings.ToUpper(command.GetName()) {
 	case "APPEND":
-	case "INCR":
-	case "SET":
-		handler.Set(client, command)
+	case "BITCOUNT", "BITOP", "GETBIT", "SETBIT":
+		client.ResponseWriter.AppendErrorf(re.ErrFunctionNotImplement)
+	case "DECR":
+	case "DECRBY":
 	case "GET":
 		handler.Get(client, command)
+	case "GETRANGE":
+	case "GETSET":
+	case "INCR":
+	case "INCRBY":
+	case "INCRBYFLOAT":
+	case "MGET":
+	case "MSET":
+	case "MSETNX":
+	case "PSETEX":
+	case "SET":
+		handler.Set(client, command)
+	case "SETEX":
+	case "SETNX":
+	case "SETRANGE":
+	case "STRLEN":
+
 	default:
 		client.ResponseWriter.AppendErrorf("ERR unknown command %s", command.GetOriginName())
 	}
@@ -41,7 +57,7 @@ func (handler *StringHandler) Set(client *client.Client, command *protocol.Comma
 		return
 	}
 	key := args[0]
-	// 根据变量的值来判断创建什么样Encoding的StringObject
+	// TODO lmj 根据变量的值来判断创建什么样Encoding的StringObject
 	if value, err := database.NewRedisStringObject(args[1]); err != nil || value == nil {
 		client.ResponseWriter.AppendError(re.ErrUnknown.Error())
 	} else {
@@ -67,6 +83,11 @@ func (handler *StringHandler) Get(client *client.Client, command *protocol.Comma
 	baseType, err := client.SelectedDatabase().SearchKeyInDB(key)
 	if err != nil {
 		client.ResponseWriter.AppendErrorf("error type of %s", key)
+		return
+	}
+	// 数据库中没有这个Key
+	if baseType == nil {
+		client.ResponseWriter.AppendNil()
 		return
 	}
 	if _, ok := stringEncodingTypeDict[baseType.GetEncoding()]; !ok || baseType.GetObjectType() != database.RedisTypeString {

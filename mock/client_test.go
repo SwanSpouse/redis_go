@@ -3,19 +3,19 @@ package mock
 import (
 	"fmt"
 	"net"
-	"testing"
-	"redis_go/server"
 	"redis_go/protocol"
+	"redis_go/server"
 	"redis_go/tcp"
+	"testing"
 )
 
 func TestBasicCommand(t *testing.T) {
 	// start a mock server
 	server := server.NewServer(nil)
-	lis, err := net.Listen("tcp", "127.0.0.1:6379")
+	lis, err := net.Listen("tcp", "127.0.0.1:9736")
 	go server.Serve(lis)
 
-	cn, err := net.Dial("tcp", "127.0.0.1:6379")
+	cn, err := net.Dial("tcp", "127.0.0.1:9736")
 	defer cn.Close()
 	if err != nil {
 		t.Fatal(err)

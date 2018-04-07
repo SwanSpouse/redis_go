@@ -25,8 +25,7 @@ func (handler *ConnectionHandler) Process(client *client.Client, command *protoc
 func (handler *ConnectionHandler) ping(client *client.Client, command *protocol.Command) {
 	msg := "PONG"
 	log.Info("message we send to client %+v", msg)
-	client.ResponseWriter.AppendArrayLen(1)
-	client.ResponseWriter.AppendBulkString("PONG")
+	client.ResponseWriter.AppendInlineString("PONG")
 }
 
 func (handler *ConnectionHandler) auth(client *client.Client, command *protocol.Command) {
