@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"net"
+	"redis_go/conf"
 	"redis_go/log"
 	"redis_go/server"
 )
@@ -13,7 +14,7 @@ var flags struct {
 }
 
 func init() {
-	flag.StringVar(&flags.addr, "addr", ":9736", "The TCP address to bing to ")
+	flag.StringVar(&flags.addr, "addr", fmt.Sprintf("%s:%d", conf.RedisServerAddr, conf.RedisServerPort), "The TCP address to bing to ")
 }
 
 func run() error {

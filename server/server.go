@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"net"
 	"redis_go/client"
 	"redis_go/conf"
@@ -12,23 +13,26 @@ import (
 
 // Redis server
 type Server struct {
-	config    *conf.ServerConfig
+	Config    *conf.ServerConfig
+	Databases []*database.Database /* database*/
+	password  string               /* Pass for AUTH command, or NULL */
 	commands  map[string]handlers.BaseHandler
 	mu        sync.RWMutex
-	Databases []*database.Database // database
 }
 
 func NewServer(config *conf.ServerConfig) *Server {
 	if config == nil {
-		config = new(conf.ServerConfig)
+		config = conf.InitServerConfig()
 	}
 	server := &Server{
-		config:   config,
+		Config:   config,
 		commands: make(map[string]handlers.BaseHandler),
 	}
+	log.Info("redis server config: %+v", config)
 	server.initDB()
 	// init commands table
 	server.populateCommandTable()
+	log.Info("redis server: %+v", server)
 	return server
 }
 
@@ -53,7 +57,7 @@ func (srv *Server) serveClient(c *client.Client) {
 			handler.Process(c, cmd)
 		} else {
 			log.Errorf("command not found %s", cmd.GetOriginName())
-			c.ResponseWriter.AppendError("command not found")
+			c.ResponseWriter.AppendError(fmt.Sprintf("command not found %s", cmd.GetOriginName()))
 		}
 		if err := c.ResponseWriter.Flush(); err != nil {
 			log.Errorf("response writer flush data error %+v", err)
@@ -75,9 +79,11 @@ func (srv *Server) Serve(lis net.Listener) error {
 }
 
 func (srv *Server) initDB() {
-	srv.Databases = make([]*database.Database, 0)
+	srv.Databases = make([]*database.Database, srv.Config.DBNum)
 	// add default database
-	srv.Databases = append(srv.Databases, database.NewDatabase())
+	for i := 0; i < srv.Config.DBNum; i++ {
+		srv.Databases[i] = database.NewDatabase()
+	}
 }
 
 func (srv *Server) getDefaultDB() *database.Database {

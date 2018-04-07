@@ -66,6 +66,6 @@ func (c *Client) RemoteAddr() net.Addr {
 	return c.cn.RemoteAddr()
 }
 
-func (c *Client) GetChosenDB() *database.Database {
+func (c *Client) SelectedDatabase() *database.Database {
 	return c.db
 }
