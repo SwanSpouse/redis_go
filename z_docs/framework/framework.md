@@ -8,7 +8,16 @@ log处理
 tcp层，和tcp通信打交道，负责数据的接收和发送。
 
 ### database
+
 数据库，底层的数据库实现
+
+定义五种redis基本类型
+
+### raw_type
+
+redis 五种基本类型的具体某个encoding的实现
+
+string | list | hash | set | zset
 
 ### conf
 配置，关于配置的一些常量。
