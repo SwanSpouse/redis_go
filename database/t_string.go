@@ -1,15 +1,10 @@
 package database
 
-import (
-	"redis_go/client"
-	"redis_go/protocol"
-)
-
 type TString interface {
 	GetObjectType() string
 	SetObjectType(string)
-	GetEncoding() int
-	SetEncoding(int)
+	GetEncoding() string
+	SetEncoding(string)
 	GetLRU() int
 	SetLRU(int)
 	GetRefCount() int
@@ -19,8 +14,8 @@ type TString interface {
 	SetTTL(int)
 	GetValue() string
 	SetValue(interface{})
-	Set(client *client.Client, command *protocol.Command) (int, error)
-	Get(client *client.Client, command *protocol.Command) (string, error)
+	Set() (int, error)
+	Get() (string, error)
 	Append()
 	IncrByFloat()
 	IncrBy()

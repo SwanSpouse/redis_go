@@ -22,15 +22,17 @@ type Server struct {
 
 func NewServer(config *conf.ServerConfig) *Server {
 	if config == nil {
-		config = new(conf.ServerConfig)
+		config = conf.InitServerConfig()
 	}
 	server := &Server{
 		Config:   config,
 		commands: make(map[string]handlers.BaseHandler),
 	}
+	log.Info("redis server config: %+v", config)
 	server.initDB()
 	// init commands table
 	server.populateCommandTable()
+	log.Info("redis server: %+v", server)
 	return server
 }
 
@@ -80,7 +82,7 @@ func (srv *Server) initDB() {
 	srv.Databases = make([]*database.Database, srv.Config.DBNum)
 	// add default database
 	for i := 0; i < srv.Config.DBNum; i++ {
-		srv.Databases[0] = database.NewDatabase()
+		srv.Databases[i] = database.NewDatabase()
 	}
 }
 

@@ -1,5 +1,7 @@
 package database
 
+import "time"
+
 const (
 	/**
 	RedisTypeString  ->  RedisEncodingInt	 	: 使用整数值实现的字符串对象
@@ -36,8 +38,8 @@ const (
 type TBase interface {
 	GetObjectType() string
 	SetObjectType(string)
-	GetEncoding() int
-	SetEncoding(int)
+	GetEncoding() string
+	SetEncoding(string)
 	GetLRU() int
 	SetLRU(int)
 	GetRefCount() int
@@ -47,4 +49,5 @@ type TBase interface {
 	SetTTL(int)
 	GetValue() interface{}
 	SetValue(interface{})
+	GetExpiredTime() time.Time
 }
