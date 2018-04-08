@@ -66,6 +66,12 @@ type BufIoWriter struct {
 	mu  sync.Mutex
 }
 
+func NewBufIoWriter(wr io.Writer) *BufIoWriter {
+	w := new(BufIoWriter)
+	w.Reset(wr)
+	return w
+}
+
 // returns the number of buffered bytes
 func (b *BufIoWriter) Buffered() int {
 	b.mu.Lock()

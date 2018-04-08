@@ -14,6 +14,12 @@ type BufIoReader struct {
 	w   int // writer index
 }
 
+func NewBufIoReader(rd io.Reader) *BufIoReader {
+	r := new(BufIoReader)
+	r.Reset(rd)
+	return r
+}
+
 // reset buffer & rd
 func (b *BufIoReader) reset(buf []byte, rd io.Reader) {
 	*b = BufIoReader{buf: buf, rd: rd}

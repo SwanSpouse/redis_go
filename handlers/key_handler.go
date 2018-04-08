@@ -3,18 +3,21 @@ package handlers
 import (
 	"redis_go/client"
 	re "redis_go/error"
-	"redis_go/protocol"
 )
 
 type KeyHandler struct{}
 
-func (handler *KeyHandler) Process(client *client.Client, command *protocol.Command) {
-	switch command.GetName() {
+func (handler *KeyHandler) Process(client *client.Client) {
+	if client.Cmd == nil {
+		client.AppendErrorf("ERR nil command")
+		return
+	}
+	switch client.Cmd.GetName() {
 	case "DEL":
-		handler.Del(client, command)
+		handler.Del(client)
 	case "DUMP":
 	case "EXISTS":
-		handler.Exists(client, command)
+		handler.Exists(client)
 	case "EXPIRE":
 	case "EXPIREAT":
 	case "KEYS":
@@ -34,27 +37,27 @@ func (handler *KeyHandler) Process(client *client.Client, command *protocol.Comm
 	case "TYPE":
 	case "SCAN":
 	default:
-		client.ResponseWriter.AppendErrorf("ERR unknown command %s", command.GetOriginName())
+		client.AppendErrorf("ERR unknown command %s", client.Cmd.GetOriginName())
 	}
-	client.ResponseWriter.Flush()
+	client.Flush()
 }
 
-func (handler *KeyHandler) Del(client *client.Client, command *protocol.Command) {
-	args := command.GetArgs()
+func (handler *KeyHandler) Del(client *client.Client) {
+	args := client.Cmd.GetArgs()
 	if len(args) < 2 {
-		client.ResponseWriter.AppendErrorf(re.ErrWrongNumberOfArgs, command.GetOriginName())
+		client.AppendErrorf(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
 		return
 	}
 	successCount := client.SelectedDatabase().RemoveKeyInDB(args[1:])
-	client.ResponseWriter.AppendInt(successCount)
+	client.AppendInt(successCount)
 }
 
-func (handler *KeyHandler) Exists(client *client.Client, command *protocol.Command) {
-	args := command.GetArgs()
+func (handler *KeyHandler) Exists(client *client.Client) {
+	args := client.Cmd.GetArgs()
 	if len(args) < 2 {
-		client.ResponseWriter.AppendErrorf(re.ErrWrongNumberOfArgs, command.GetOriginName())
+		client.AppendErrorf(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
 		return
 	}
 	successCount, _ := client.SelectedDatabase().SearchKeysInDB(args[1:])
-	client.ResponseWriter.AppendInt(int64(len(successCount)))
+	client.AppendInt(int64(len(successCount)))
 }

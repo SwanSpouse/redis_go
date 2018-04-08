@@ -41,10 +41,10 @@ func (srv *Server) serveClient(c *client.Client) {
 	// TODO lmj 增加Timeout的判断
 	// TODO lmj 除了Timeout的方式，还有什么好的办法能够判断client端是否已经断开连接
 	// loop to handle redis command
-	for more := true; more; more = c.RequestReader.Buffered() != 0 {
-		cmd, err := c.RequestReader.ReadCmd()
+	for more := true; more; more = c.Buffered() != 0 {
+		cmd, err := c.ReadCmd()
 		if err != nil {
-			c.ResponseWriter.AppendErrorf("read command error %+v", err)
+			c.AppendErrorf("read command error %+v", err)
 			continue
 		}
 		/**
@@ -54,12 +54,12 @@ func (srv *Server) serveClient(c *client.Client) {
 		*/
 		log.Debug("get command from client %+v", cmd)
 		if handler, ok := srv.commands[cmd.GetName()]; ok {
-			handler.Process(c, cmd)
+			handler.Process(c)
 		} else {
 			log.Errorf("command not found %s", cmd.GetOriginName())
-			c.ResponseWriter.AppendError(fmt.Sprintf("command not found %s", cmd.GetOriginName()))
+			c.AppendError(fmt.Sprintf("command not found %s", cmd.GetOriginName()))
 		}
-		if err := c.ResponseWriter.Flush(); err != nil {
+		if err := c.Flush(); err != nil {
 			log.Errorf("response writer flush data error %+v", err)
 			return
 		}

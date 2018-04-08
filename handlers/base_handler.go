@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"redis_go/client"
-	"redis_go/protocol"
 )
 
 var (
@@ -19,5 +18,5 @@ var (
 )
 
 type BaseHandler interface {
-	Process(*client.Client, *protocol.Command)
+	Process(*client.Client)
 }
