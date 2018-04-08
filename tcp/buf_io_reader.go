@@ -3,8 +3,10 @@ package tcp
 import (
 	"bytes"
 	"io"
+	"net"
 	re "redis_go/error"
 	"redis_go/log"
+	"sync"
 )
 
 type BufIoReader struct {
@@ -14,10 +16,25 @@ type BufIoReader struct {
 	w   int // writer index
 }
 
-func NewBufIoReader(rd io.Reader) *BufIoReader {
-	r := new(BufIoReader)
-	r.Reset(rd)
+var (
+	ReaderPool sync.Pool // Reader连接池
+)
+
+func NewBufIoReader(cn net.Conn) *BufIoReader {
+	var r *BufIoReader
+	if v := ReaderPool.Get(); v != nil {
+		log.Debug("Get BufIoReader from ReaderPool")
+		r = v.(*BufIoReader)
+	} else {
+		log.Debug("Can not get BufIoReader from ReaderPool, return a New BufIOReader")
+		r = new(BufIoReader)
+	}
+	r.Reset(cn)
 	return r
+}
+
+func NewBufIoReaderWithoutConn() *BufIoReader {
+	return new(BufIoReader)
 }
 
 // reset buffer & rd

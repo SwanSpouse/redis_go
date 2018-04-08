@@ -7,14 +7,11 @@ import (
 	"redis_go/log"
 	"redis_go/protocol"
 	"redis_go/tcp"
-	"sync"
 	"sync/atomic"
 )
 
 var (
-	clientInc  = uint64(0)
-	readerPool sync.Pool
-	writerPool sync.Pool
+	clientInc = uint64(0)
 )
 
 type Client struct {
@@ -34,20 +31,8 @@ func (c *Client) reset(cn net.Conn) {
 		id: atomic.AddUint64(&clientInc, 1),
 		cn: cn,
 	}
-	if v := readerPool.Get(); v != nil {
-		rd := v.(*tcp.BufIoReader)
-		rd.Reset(cn)
-		c.reader = rd
-	} else {
-		c.reader = tcp.NewBufIoReader(cn)
-	}
-	if v := writerPool.Get(); v != nil {
-		wr := v.(*tcp.BufIoWriter)
-		wr.Reset(cn)
-		c.writer = wr
-	} else {
-		c.writer = tcp.NewBufIoWriter(cn)
-	}
+	c.reader = tcp.NewBufIoReader(cn)
+	c.writer = tcp.NewBufIoWriter(cn)
 }
 
 func (c *Client) Release() {

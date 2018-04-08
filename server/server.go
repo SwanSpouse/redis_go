@@ -8,6 +8,7 @@ import (
 	"redis_go/database"
 	"redis_go/handlers"
 	"redis_go/log"
+	"redis_go/tcp"
 	"sync"
 )
 
@@ -29,6 +30,11 @@ func NewServer(config *conf.ServerConfig) *Server {
 		commands: make(map[string]handlers.BaseHandler),
 	}
 	log.Info("redis server config: %+v", config)
+	// init general parameters
+	server.initServer()
+	// init Reader & Writer Sync Pool
+	server.initIOPool()
+	// init databases
 	server.initDB()
 	// init commands table
 	server.populateCommandTable()
@@ -54,6 +60,7 @@ func (srv *Server) serveClient(c *client.Client) {
 		*/
 		log.Debug("get command from client %+v", cmd)
 		if handler, ok := srv.commands[cmd.GetName()]; ok {
+			/* 在这里对client端发送过来的命令进行处理 */
 			handler.Process(c)
 		} else {
 			log.Errorf("command not found %s", cmd.GetOriginName())
@@ -78,12 +85,26 @@ func (srv *Server) Serve(lis net.Listener) error {
 	}
 }
 
+func (srv *Server) initServer() {
+	log.Level = srv.Config.LogLevel
+}
+
 func (srv *Server) initDB() {
 	srv.Databases = make([]*database.Database, srv.Config.DBNum)
 	// add default database
 	for i := 0; i < srv.Config.DBNum; i++ {
 		srv.Databases[i] = database.NewDatabase()
 	}
+}
+
+func (srv *Server) initIOPool() {
+	for i := 0; i < srv.Config.ReaderPoolNum; i++ {
+		tcp.ReaderPool.Put(tcp.NewBufIoReaderWithoutConn())
+	}
+	for i := 0; i < srv.Config.WriterPoolNum; i++ {
+		tcp.WriterPool.Put(tcp.NewBufIoWriterWithoutConn())
+	}
+	log.Debug("Successful init reader and writer pool. ReaderPoolSize:%d, WriterPoolSize:%d", srv.Config.ReaderPoolNum, srv.Config.WriterPoolNum)
 }
 
 func (srv *Server) getDefaultDB() *database.Database {

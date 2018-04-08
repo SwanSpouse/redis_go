@@ -10,14 +10,17 @@ import (
 )
 
 var flags struct {
-	addr string
+	addr     string
+	logLevel int64
 }
 
 func init() {
 	flag.StringVar(&flags.addr, "addr", fmt.Sprintf("%s:%d", conf.RedisServerAddr, conf.RedisServerPort), "The TCP address to bing to ")
+	//flag.Int64Var(&flags.logLevel, "log-level", conf.RedisLogLevel, "System Log Level")
 }
 
 func run() error {
+	// TODO lmj 解决这个问题。console输入的参数优先级最高->然后是配置文件里的->然后是系统默认的
 	server := server.NewServer(nil)
 	lis, err := net.Listen("tcp", flags.addr)
 	if err != nil {

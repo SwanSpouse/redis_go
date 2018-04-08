@@ -3,6 +3,8 @@ package tcp
 import (
 	"fmt"
 	"io"
+	"net"
+	"redis_go/log"
 	"reflect"
 	"strconv"
 	"strings"
@@ -60,16 +62,32 @@ func MkStdBuffer() []byte { return make([]byte, MaxBufferSize) }
 type CommandArgument []byte
 
 //------------------------------------------------------------------------------------------------
+
+var (
+	WriterPool sync.Pool // Writer连接池
+)
+
 type BufIoWriter struct {
 	io.Writer
 	buf []byte
 	mu  sync.Mutex
 }
 
-func NewBufIoWriter(wr io.Writer) *BufIoWriter {
-	w := new(BufIoWriter)
-	w.Reset(wr)
+func NewBufIoWriter(cn net.Conn) *BufIoWriter {
+	var w *BufIoWriter
+	if v := WriterPool.Get(); v != nil {
+		log.Debug("Get BufIoWriter from WriterPool")
+		w = v.(*BufIoWriter)
+	} else {
+		log.Debug("Can not get BufIoWriter from WriterPool, return a New BufIoWriter")
+		w = new(BufIoWriter)
+	}
+	w.Reset(cn)
 	return w
+}
+
+func NewBufIoWriterWithoutConn() *BufIoWriter {
+	return new(BufIoWriter)
 }
 
 // returns the number of buffered bytes
