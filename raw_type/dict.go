@@ -24,11 +24,16 @@ type dictEntry struct {
 	Key   interface{}
 	Value interface{} `hash:"ignore"` // 表明在计算哈希值的时候，这个域不参与计算
 	next  *dictEntry  `hash:"ignore"` // 表明在计算哈希值的时候，这个域不参与计算
+	hash  uint64      `hash:"ignore"`
 }
 
 func NewDictEntry(key, value interface{}, next *dictEntry) *dictEntry {
+	if key == nil || value == nil {
+		return nil
+	}
+	hash, _ := hashstructure.Hash(key, nil)
 	return &dictEntry{
-		Key: key, Value: value, next: next,
+		Key: key, Value: value, next: next, hash: hash,
 	}
 }
 
@@ -63,11 +68,10 @@ func (de *dictEntry) equals(obj interface{}) bool {
 /************************************   segment   ***************************************/
 
 type segment struct {
-	
+	table []*dictEntry
 }
 
 /************************************     dict    ***************************************/
 
 type Dict struct {
 }
-
