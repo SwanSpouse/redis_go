@@ -50,7 +50,7 @@ func (srv *Server) serveClient(c *client.Client) {
 	for more := true; more; more = c.Buffered() != 0 {
 		cmd, err := c.ReadCmd()
 		if err != nil {
-			c.AppendErrorf("read command error %+v", err)
+			c.ResponseError("read command error %+v", err)
 			continue
 		}
 		/**
@@ -64,7 +64,7 @@ func (srv *Server) serveClient(c *client.Client) {
 			handler.Process(c)
 		} else {
 			log.Errorf("command not found %s", cmd.GetOriginName())
-			c.AppendError(fmt.Sprintf("command not found %s", cmd.GetOriginName()))
+			c.ResponseError(fmt.Sprintf("command not found %s", cmd.GetOriginName()))
 		}
 		if err := c.Flush(); err != nil {
 			log.Errorf("response writer flush data error %+v", err)

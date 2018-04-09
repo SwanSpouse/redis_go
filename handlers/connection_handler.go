@@ -11,7 +11,7 @@ type ConnectionHandler struct {
 
 func (handler *ConnectionHandler) Process(client *client.Client) {
 	if client.Cmd == nil {
-		client.AppendErrorf("ERR nil command")
+		client.ResponseError("ERR nil command")
 		return
 	}
 	switch strings.ToUpper(client.Cmd.GetName()) {
@@ -20,7 +20,7 @@ func (handler *ConnectionHandler) Process(client *client.Client) {
 	case "AUTH":
 		handler.auth(client)
 	default:
-		client.AppendErrorf("ERR unknown command %s", client.Cmd.GetOriginName())
+		client.ResponseError("ERR unknown command %s", client.Cmd.GetOriginName())
 		return
 	}
 }
@@ -28,7 +28,7 @@ func (handler *ConnectionHandler) Process(client *client.Client) {
 func (handler *ConnectionHandler) ping(client *client.Client) {
 	msg := "PONG"
 	log.Info("message we send to client %+v", msg)
-	client.AppendInlineString("PONG")
+	client.Response("PONG")
 }
 
 func (handler *ConnectionHandler) auth(client *client.Client) {

@@ -149,44 +149,20 @@ func (c *Client) peekCmd(offset int) (string, error) {
 	return string(data), err
 }
 
-func (c *Client) AppendArrayLen(n int) {
-	c.writer.AppendArrayLen(n)
+func (c *Client) Response(value interface{}) {
+	c.writer.Append(value)
 }
 
-func (c *Client) AppendBulk(p []byte) {
-	c.writer.AppendBulk(p)
-}
-
-func (c *Client) AppendBulkString(s string) {
-	c.writer.AppendBulkString(s)
-}
-
-func (c *Client) AppendInline(p []byte) {
-	c.writer.AppendInline(p)
-}
-
-func (c *Client) AppendInlineString(s string) {
-	c.writer.AppendInlineString(s)
-}
-
-func (c *Client) AppendError(msg string) {
-	c.writer.AppendError(msg)
-}
-
-func (c *Client) AppendErrorf(pattern string, args ...interface{}) {
-	c.writer.AppendErrorf(pattern, args)
-}
-
-func (c *Client) AppendInt(n int64) {
-	c.writer.AppendInt(n)
-}
-
-func (c *Client) AppendNil() {
-	c.writer.AppendNil()
-}
-
-func (c *Client) AppendOK() {
+func (c *Client) ResponseOK() {
 	c.writer.AppendOK()
+}
+
+func (c *Client) ResponseError(msg string, args ...interface{}) {
+	if len(args) == 0 {
+		c.writer.AppendError(msg)
+	} else {
+		c.writer.AppendErrorf(msg, args)
+	}
 }
 
 func (c *Client) Flush() error {

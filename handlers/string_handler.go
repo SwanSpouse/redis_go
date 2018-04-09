@@ -18,13 +18,13 @@ type StringHandler struct{}
 
 func (handler *StringHandler) Process(client *client.Client) {
 	if client.Cmd == nil {
-		client.AppendErrorf("ERR nil command")
+		client.ResponseError("ERR nil command")
 		return
 	}
 	switch client.Cmd.GetName() {
 	case "APPEND":
 	case "BITCOUNT", "BITOP", "GETBIT", "SETBIT":
-		client.AppendErrorf(re.ErrFunctionNotImplement)
+		client.ResponseError(re.ErrFunctionNotImplement)
 	case "DECR":
 	case "DECRBY":
 	case "GET":
@@ -46,7 +46,7 @@ func (handler *StringHandler) Process(client *client.Client) {
 	case "STRLEN":
 
 	default:
-		client.AppendErrorf("ERR unknown command %s", client.Cmd.GetOriginName())
+		client.ResponseError("ERR unknown command %s", client.Cmd.GetOriginName())
 	}
 	// 最后统一发送数据
 	client.Flush()
@@ -55,16 +55,16 @@ func (handler *StringHandler) Process(client *client.Client) {
 func (handler *StringHandler) Set(client *client.Client) {
 	args := client.Cmd.GetArgs()
 	if len(args) < 2 {
-		client.AppendErrorf(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
+		client.ResponseError(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
 		return
 	}
 	key := args[0]
 	// TODO lmj 根据变量的值来判断创建什么样Encoding的StringObject
 	if value, err := database.NewRedisStringObject(args[1]); err != nil || value == nil {
-		client.AppendError(re.ErrUnknown.Error())
+		client.ResponseError(re.ErrUnknown.Error())
 	} else {
 		client.SelectedDatabase().SetKeyInDB(key, value)
-		client.AppendOK()
+		client.ResponseOK()
 	}
 }
 
@@ -72,7 +72,7 @@ func (handler *StringHandler) Get(client *client.Client) {
 	args := client.Cmd.GetArgs()
 	// 判断参数个数是否合理
 	if len(args) != 1 {
-		client.AppendErrorf(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
+		client.ResponseError(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
 		return
 	}
 	// 获取args中的Key
@@ -85,25 +85,25 @@ func (handler *StringHandler) Get(client *client.Client) {
 	baseType := client.SelectedDatabase().SearchKeyInDB(key)
 	// 数据库中没有这个Key
 	if baseType == nil {
-		client.AppendNil()
+		client.Response(nil)
 		return
 	}
 	// 首先验证type类型是否合法
 	if _, ok := stringEncodingTypeDict[baseType.GetEncoding()]; !ok || baseType.GetObjectType() != database.RedisTypeString {
-		client.AppendErrorf("error object type or encoding. type:%s, encoding:%s", baseType.GetObjectType(), baseType.GetEncoding())
+		client.ResponseError("error object type or encoding. type:%s, encoding:%s", baseType.GetObjectType(), baseType.GetEncoding())
 		return
 	}
 	// 根据不同的encoding类型对数据进行处理
 	switch baseType.GetEncoding() {
 	case database.RedisEncodingInt, database.RedisEncodingEmbStr, database.RedisEncodingRaw:
-		client.AppendInlineString(fmt.Sprintf("%s", baseType.GetValue()))
+		client.Response(fmt.Sprintf("%s", baseType.GetValue()))
 	}
 }
 
 func (handler *StringHandler) Incr(client *client.Client) {
 	args := client.Cmd.GetArgs()
 	if len(args) != 1 {
-		client.AppendErrorf(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
+		client.ResponseError(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
 		return
 	}
 }

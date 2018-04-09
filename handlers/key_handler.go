@@ -9,7 +9,7 @@ type KeyHandler struct{}
 
 func (handler *KeyHandler) Process(client *client.Client) {
 	if client.Cmd == nil {
-		client.AppendErrorf("ERR nil command")
+		client.ResponseError("ERR nil command")
 		return
 	}
 	switch client.Cmd.GetName() {
@@ -37,7 +37,7 @@ func (handler *KeyHandler) Process(client *client.Client) {
 	case "TYPE":
 	case "SCAN":
 	default:
-		client.AppendErrorf("ERR unknown command %s", client.Cmd.GetOriginName())
+		client.ResponseError("ERR unknown command %s", client.Cmd.GetOriginName())
 	}
 	client.Flush()
 }
@@ -45,19 +45,19 @@ func (handler *KeyHandler) Process(client *client.Client) {
 func (handler *KeyHandler) Del(client *client.Client) {
 	args := client.Cmd.GetArgs()
 	if len(args) < 2 {
-		client.AppendErrorf(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
+		client.ResponseError(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
 		return
 	}
 	successCount := client.SelectedDatabase().RemoveKeyInDB(args[1:])
-	client.AppendInt(successCount)
+	client.Response(successCount)
 }
 
 func (handler *KeyHandler) Exists(client *client.Client) {
 	args := client.Cmd.GetArgs()
 	if len(args) < 2 {
-		client.AppendErrorf(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
+		client.ResponseError(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
 		return
 	}
 	successCount, _ := client.SelectedDatabase().SearchKeysInDB(args[1:])
-	client.AppendInt(int64(len(successCount)))
+	client.Response(int64(len(successCount)))
 }
