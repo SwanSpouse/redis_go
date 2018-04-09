@@ -35,7 +35,7 @@ var _ = Describe("test dictEntry equal", func() {
 		Expect(entry3.equals(entry4)).To(Equal(false))
 	})
 
-	It("compare diff type", func() {
+	It("compare diff type compare", func() {
 		entry1 := NewDictEntry("Key", "Value", nil)
 		entry2 := map[string]string{
 			"Key": "Key", "Value": "Value",

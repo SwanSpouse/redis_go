@@ -16,10 +16,15 @@ Redis原始源码来自： https://github.com/antirez/redis
 * [golang socket](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/socket/socket.md)
 * [tcp layer](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/socket/tcp_layer.md)
 
+
 #### framework
 * [framework](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/framework/framework.md)
 * [map compare](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/framework/map%20compare.md)
 * [hash code](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/framework/hash_code.md)
+
+
+#### 参考源码
+* [java 1.7 CourrentHashMap源码](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/source_code/java_concurrent_hashmap.java)
 
 Show myself the code
 

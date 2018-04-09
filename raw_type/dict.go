@@ -22,9 +22,9 @@ const (
 /************************************  dictEntry  ***************************************/
 type dictEntry struct {
 	Key   interface{}
-	Value interface{} `hash:"ignore"` // 表明在计算哈希值的时候，这个域不参与计算
-	next  *dictEntry  `hash:"ignore"` // 表明在计算哈希值的时候，这个域不参与计算
-	hash  uint64      `hash:"ignore"`
+	Value interface{} `hash:"ignore"` // 这个域不参与哈希值计算
+	next  *dictEntry  `hash:"ignore"` // 这个域不参与哈希值计算
+	hash  uint64      `hash:"ignore"` // 这个域不参与哈希值计算
 }
 
 func NewDictEntry(key, value interface{}, next *dictEntry) *dictEntry {
