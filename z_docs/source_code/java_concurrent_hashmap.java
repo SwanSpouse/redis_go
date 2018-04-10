@@ -493,9 +493,13 @@ public class ConcurrentHashMap<K, V> extends AbstractMap<K, V>
         /**
          * Doubles size of table and repacks entries, also adding the
          * given node to new table
+         * 这里说的很清楚。将table扩大两倍，把老table中的entries挪到新table，同时把新的node添加到新的table中。
          */
         // 对某个segment进行rehash
         @SuppressWarnings("unchecked")
+        // rehash发生在put的过程中。这个node最后就被添加在新的table中了。
+        // 开始还有一个疑问，为什么rehash没有加锁呢。是因为rehash只发生在put的过程中，然鹅put的时候已经加锁了。
+        // so 走到这里的必然是已经加锁的。
         private void rehash(HashEntry<K,V> node) {
             /*
              * Reclassify nodes in each list to new table.  Because we
@@ -513,34 +517,63 @@ public class ConcurrentHashMap<K, V> extends AbstractMap<K, V>
              * array indexing because they are followed by volatile
              * table write.
              */
+            /* 
+             * 其实这个注释已经解释的很清楚了，主要就是因为扩展是按照2的幂次方 
+             * 进行扩展的，所以扩展前在同一个桶中的元素，现在要么还是在原来的 
+             * 序号的桶里，或者就是原来的序号再加上一个2的幂次方，就这两种选择。 
+             * 所以原桶里的元素只有一部分需要移动，其余的都不要移动。该函数为了 
+             * 提高效率，就是找到最后一个不在原桶序号的元素，那么连接到该元素后面 
+             * 的子链表中的元素的序号都是与找到的这个不在原序号的元素的序号是一样的 
+             * 那么就只需要把最后一个不在原序号的元素移到新桶里，那么后面跟的一串 
+             * 子元素自然也就连接上了，而且序号还是相同的。在找到的最后一个不在 
+             * 原桶序号的元素之前的元素就需要逐个的去遍历，加到和原桶序号相同的新桶上 
+             * 或者加到偏移2的幂次方的序号的新桶上。这个都是新创建的元素，因为 
+             * 只能在表头插入元素。这个原因可以参考 
+             * 《探索 ConcurrentHashMap 高并发性的实现机制》中的讲解 
+             */  
             HashEntry<K,V>[] oldTable = table;
             int oldCapacity = oldTable.length;
+            // 新table的容量是旧table的两倍。这里没有一个限制说如果超限制了，然后就不扩大两倍了。
             int newCapacity = oldCapacity << 1;
             threshold = (int)(newCapacity * loadFactor);
-            HashEntry<K,V>[] newTable =
-                (HashEntry<K,V>[]) new HashEntry[newCapacity];
+            // 创建一个新segement
+            HashEntry<K,V>[] newTable = (HashEntry<K,V>[]) new HashEntry[newCapacity];
             int sizeMask = newCapacity - 1;
+            // 遍历老segment中的所有节点
             for (int i = 0; i < oldCapacity ; i++) {
                 HashEntry<K,V> e = oldTable[i];
+                // 如果这个位置上不为空，则把这个位置链表上的所有元素进行遍历。然后放到新的table中。
                 if (e != null) {
                     HashEntry<K,V> next = e.next;
-                    int idx = e.hash & sizeMask;
+                    // idex是e在新table中的位置
+                    int idx = e.hash & sizeMask; 
+                    // 如果hash值相同的只有一个节点，那么整个挪过去就好了。
                     if (next == null)   //  Single node on list
                         newTable[idx] = e;
                     else { // Reuse consecutive sequence at same slot
+
+                    // 如果当前hash值对应的index位置有一个链，不止一个node
                         HashEntry<K,V> lastRun = e;
                         int lastIdx = idx;
-                        for (HashEntry<K,V> last = next;
-                             last != null;
-                             last = last.next) {
-                            int k = last.hash & sizeMask;
+
+                        // 如果连续两个在新表中的index都一样了。那么就把lastRun及以后的节点都挪过去了。
+                        /**
+                         * 这里基于这样的设计。老HashTable中元素的在新table中只有两种情况，一种是在还在原序号的位置，一种是在原序号的位置加上一个2的幂次方。
+                         * 所以连续两个节点在新表中都有相同的序号了。说明后半部分在新表中的序号是一样的。就一起诺过去了。
+                         *
+                         * 这里有个疑问啊。为啥这个链表中的元素是新老表序号能够完全区分开而不是混在一起的呢。N-N-O-O这样，而不是N-O-N-O这样的呢?
+                         */
+                        for (HashEntry<K,V> last = next; last != null; last = last.next) {
+                            int k = last.hash & sizeMask; // k是last在新table中的位置。
                             if (k != lastIdx) {
                                 lastIdx = k;
                                 lastRun = last;
                             }
                         }
                         newTable[lastIdx] = lastRun;
+
                         // Clone remaining nodes
+                        // 这里的操作是把e到lastRun的节点都复制一个，然后放到新的table里。
                         for (HashEntry<K,V> p = e; p != lastRun; p = p.next) {
                             V v = p.value;
                             int h = p.hash;
@@ -551,6 +584,7 @@ public class ConcurrentHashMap<K, V> extends AbstractMap<K, V>
                     }
                 }
             }
+            // 最后才添加这个节点
             int nodeIndex = node.hash & sizeMask; // add the new node
             node.setNext(newTable[nodeIndex]);
             newTable[nodeIndex] = node;
