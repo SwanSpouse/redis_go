@@ -1,6 +1,8 @@
 package raw_type
 
-import "github.com/mitchellh/hashstructure"
+import (
+	"github.com/mitchellh/hashstructure"
+)
 
 const (
 	/**
@@ -17,27 +19,59 @@ const (
 	LoadFactory = 0.75
 )
 
+/************************************  dictEntry  ***************************************/
 type dictEntry struct {
-	key   interface{}
-	value interface{}
-	next  *dictEntry
+	Key   interface{}
+	Value interface{} `hash:"ignore"` // 这个域不参与哈希值计算
+	next  *dictEntry  `hash:"ignore"` // 这个域不参与哈希值计算
+	hash  uint64      `hash:"ignore"` // 这个域不参与哈希值计算
 }
 
-func NewDictEntry(has int, key, value interface{}, next *dictEntry) *dictEntry {
+func NewDictEntry(key, value interface{}, next *dictEntry) *dictEntry {
+	if key == nil || value == nil {
+		return nil
+	}
+	hash, _ := hashstructure.Hash(key, nil)
 	return &dictEntry{
-		key: key, value: value, next: next,
+		Key: key, Value: value, next: next, hash: hash,
 	}
 }
 
 func (de *dictEntry) getKey() interface{} {
-	return de.key
+	return de.Key
 }
 
 func (de *dictEntry) getValue() interface{} {
-	return de.value
+	return de.Value
 }
 
 func (de *dictEntry) hasCode() uint64 {
 	hash, _ := hashstructure.Hash(de, nil)
 	return hash
+}
+
+func (de *dictEntry) equals(obj interface{}) bool {
+	switch obj.(type) {
+	case *dictEntry, dictEntry:
+		if instance, ok := obj.(*dictEntry); ok && instance != nil {
+			return de.Key == instance.Key && de.Value == instance.Value
+		}
+		if instance, ok := obj.(dictEntry); ok {
+			return de.Key == instance.Key && de.Value == instance.Value
+		}
+	default:
+		return false
+	}
+	return false
+}
+
+/************************************   segment   ***************************************/
+
+type segment struct {
+	table []*dictEntry
+}
+
+/************************************     dict    ***************************************/
+
+type Dict struct {
 }

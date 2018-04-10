@@ -481,6 +481,7 @@ HashEntry 类的 value 域被声明为 Volatile 型，Java 的内存模型可以
 
 #### reference
 * https://www.cnblogs.com/slwenyi/p/6393829.html
+* https://www.ibm.com/developerworks/cn/java/java-lo-concurrenthashmap/
 
 
 
