@@ -435,7 +435,7 @@ public class ConcurrentHashMap<K, V> extends AbstractMap<K, V>
         * tryInterruptibly：在锁上等待，直到获取锁，但是会响应中断，这个方法优先考虑响应中断，而不是响应锁的普通获取或重入获取。 
         */
         final V put(K key, int hash, V value, boolean onlyIfAbsent) {
-            // 如果tryLock尝试获得锁成功了。那么node  == null 
+            // 如果tryLock尝试获得锁成功了。那么node  == null，带锁进行后续操作。
             // 如果tryLock尝试获得锁失败了。那么就利用scanAndLockForPut进行加锁？
             HashEntry<K,V> node = tryLock() ? null : scanAndLockForPut(key, hash, value);
             V oldValue;
@@ -443,7 +443,10 @@ public class ConcurrentHashMap<K, V> extends AbstractMap<K, V>
                 HashEntry<K,V>[] tab = table;
                 int index = (tab.length - 1) & hash;
                 HashEntry<K,V> first = entryAt(tab, index);
+                // 从hash值对应index的那个位置开始遍历。
                 for (HashEntry<K,V> e = first;;) {
+                    // 如果e不为空。则需要依次往后进行遍历。
+                    // 在这个if里面是在查找看有没有重复的key
                     if (e != null) {
                         K k;
                         // 如果存在相同的key,则把value进行覆盖
@@ -459,11 +462,14 @@ public class ConcurrentHashMap<K, V> extends AbstractMap<K, V>
                         }
                         e = e.next;
                     } else {
+                        // 如果不为空，就说明已经在scanAndLockForPut找到应该插入的位置了。采用头插法就好了。
                         if (node != null)
                             // 头插法
+                            // 值都创建好了。只需要再设置一个next就好了。
                             node.setNext(first);
                         else
                             // 如果当前的index都没有东西，直接new一个node出来。
+                            // 其实有可能在scanAndLockForPur里面已经创建好了。
                             node = new HashEntry<K,V>(hash, key, value, first);
                         int c = count + 1;
                         // 根据当前segment的容量判断是否需要进行rehash
@@ -562,6 +568,7 @@ public class ConcurrentHashMap<K, V> extends AbstractMap<K, V>
          * @return a new node if key not found, else null
          */
         // 给segment加锁
+        // 这个里面只是把应该插入的node创建好了并返回。省去了创建的步骤。
         private HashEntry<K,V> scanAndLockForPut(K key, int hash, V value) {
             HashEntry<K,V> first = entryForHash(this, hash);
             HashEntry<K,V> e = first;
@@ -570,10 +577,12 @@ public class ConcurrentHashMap<K, V> extends AbstractMap<K, V>
             // 先通过tryLock尝试几次，如果不行的话就直接lock
             while (!tryLock()) {
                 HashEntry<K,V> f; // to recheck first below
+                // 没获取到锁的话，就提前把想做的事情都做了。
                 if (retries < 0) {
                     // 说明hash值对应index上，没有元素。
                     if (e == null) {
                         if (node == null) // speculatively create node
+                            // 其实只是创建了。next都没有赋值。
                             node = new HashEntry<K,V>(hash, key, value, null);
                         retries = 0;
                     // 如果hash对应的index上，存在相同key元素
