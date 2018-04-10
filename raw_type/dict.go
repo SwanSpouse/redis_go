@@ -72,19 +72,19 @@ func (de *dictEntry) equals(obj interface{}) bool {
 
 type segment struct {
 	table      []*dictEntry
-	count      int64
-	modCount   int64
-	threshold  int64
+	count      int
+	modCount   int
+	threshold  int
 	loadFactor float64
 	locker     *sync.RWMutex // locker for segment
 }
 
-func newSegement(lf float64, threshold int64, table []*dictEntry) *segment {
+func newSegment(capacity int, lf float64, threshold int) *segment {
 	return &segment{
+		table:      make([]*dictEntry, capacity),
+		locker:     new(sync.RWMutex),
 		loadFactor: lf,
 		threshold:  threshold,
-		table:      table,
-		locker:     new(sync.RWMutex),
 	}
 }
 
@@ -130,14 +130,82 @@ func (seg *segment) put(key, value interface{}) interface{} {
 	return oldValue
 }
 
+/*
+	先实现一个concurrentHashMap的版本
+
+	TODO 然后再参考redis dict的rehash实现一个版本
+*/
 func (seg *segment) rehash(node *dictEntry) {
+	seg.locker.Lock()
+	defer seg.locker.Lock()
 
+	oldTable := seg.table
+	oldCapacity := len(seg.table)
+	newCapacity := oldCapacity << 1
+	threshold := newCapacity * LoadFactory
+
+	newTable := newSegment(newCapacity, LoadFactory, threshold)
+	// 将老table中的数据迁移到新table中去
+	for i := 0; i < oldCapacity; i++ {
+		/**
+		rehash:
+			1. 如果oldTable对应序号上无元素，则不需要进行操作
+			2. 如果oldTable对应序号上有元素，利用头插法依次挪动oldTable某个序号上的所有node到新table
+		*/
+		if oldTable[i] == nil {
+			continue
+		}
+		for cur := oldTable[i]; cur != nil; cur = cur.next {
+			newIdx := hash(cur.Key) % len(newTable.table)
+			entry := newTable.table[newIdx]
+			newTable.table[newIdx] = NewDictEntry(hash(cur.Key), cur.Key, cur.Value, entry)
+		}
+	}
+	/**
+		oldTable中的节点迁移完成后，添加新节点(这里可以直接添加是因为进到这里的节点，肯定不会和table中的某个节点key相同)
+	同时在添加结束后没有把table的count++, modCount++ 是因为这些操作都在put里面已经进行过了。
+	*/
+	idx := hash(node.Value) % len(newTable.table)
+	node.next = newTable.table[idx]
+	newTable.table[idx] = node
+	// 在rehash完成的时候切换成新的table
+	seg.table = newTable.table
 }
 
+// 删除segment中的特定元素
 func (seg *segment) remove(key, value interface{}) interface{} {
-	return nil
+	seg.locker.Lock()
+	defer seg.locker.Unlock()
+	var oldValue interface{}
+
+	idx := hash(key) % len(seg.table)
+	if seg.table[idx] == nil {
+		return nil
+	}
+	var pre *dictEntry
+	for cur := seg.table[idx]; cur != nil; cur = cur.next {
+		if cur.hash == hash(key) && cur.Key == key && cur.Value == value {
+			if pre == nil {
+				seg.table[idx] = cur.next
+			} else {
+				pre.next = cur.next
+			}
+			oldValue = cur.Value
+			seg.count -= 1
+			seg.modCount += 1
+			break
+		}
+		pre = cur
+	}
+	return oldValue
 }
 
+/**
+用newValue替换segment中key对应的oldValue
+	@param key:
+	@param oldValue: key对应的原有的值
+	@param newValue: 需要替换成为的值
+*/
 func (seg *segment) replace(key, oldValue, newValue interface{}) bool {
 	seg.locker.Lock()
 	defer seg.locker.Unlock()
@@ -154,6 +222,7 @@ func (seg *segment) replace(key, oldValue, newValue interface{}) bool {
 	return false
 }
 
+// 清空整个segment
 func (seg *segment) clear() {
 	seg.locker.Lock()
 	defer seg.locker.Lock()
