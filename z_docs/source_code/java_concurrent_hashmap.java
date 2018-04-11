@@ -865,29 +865,34 @@ public class ConcurrentHashMap<K, V> extends AbstractMap<K, V>
                              float loadFactor, int concurrencyLevel) {
         if (!(loadFactor > 0) || initialCapacity < 0 || concurrencyLevel <= 0)
             throw new IllegalArgumentException();
+
+        // 不能超过默认最大值
         if (concurrencyLevel > MAX_SEGMENTS)
             concurrencyLevel = MAX_SEGMENTS;
         // Find power-of-two sizes best matching arguments
+        // 并发数量必须是2的幂次。所以找到最小的一个大于concurrencyLevel的2的幂次。
         int sshift = 0;
         int ssize = 1;
         while (ssize < concurrencyLevel) {
             ++sshift;
             ssize <<= 1;
         }
+
         this.segmentShift = 32 - sshift;
         this.segmentMask = ssize - 1;
+        // 限制一下初始化的最大容量
         if (initialCapacity > MAXIMUM_CAPACITY)
             initialCapacity = MAXIMUM_CAPACITY;
+        // 上面的容量是整体的容量。这里计算每一个小的segment的容量。
         int c = initialCapacity / ssize;
         if (c * ssize < initialCapacity)
             ++c;
         int cap = MIN_SEGMENT_TABLE_CAPACITY;
+        // 保证都是2的幂次
         while (cap < c)
             cap <<= 1;
         // create segments and segments[0]
-        Segment<K,V> s0 =
-            new Segment<K,V>(loadFactor, (int)(cap * loadFactor),
-                             (HashEntry<K,V>[])new HashEntry[cap]);
+        Segment<K,V> s0 = new Segment<K,V>(loadFactor, (int)(cap * loadFactor), (HashEntry<K,V>[])new HashEntry[cap]);
         Segment<K,V>[] ss = (Segment<K,V>[])new Segment[ssize];
         UNSAFE.putOrderedObject(ss, SBASE, s0); // ordered write of segments[0]
         this.segments = ss;
@@ -963,6 +968,9 @@ public class ConcurrentHashMap<K, V> extends AbstractMap<K, V>
          * constructions for stability checks.
          */
         long sum = 0L;
+        // 不加锁进行统计。如果在遍历的过程中发现segment.count > 0则直接返回false
+        // 遍历结束后发现没有所有segment.count都是0，且没有改动过。直接返回true
+        // 如果所有的count都是0但是有改动。还需要再统计一次。如果在统计本次的过程中还有改动。则直接返回false
         final Segment<K,V>[] segments = this.segments;
         for (int j = 0; j < segments.length; ++j) {
             Segment<K,V> seg = segmentAt(segments, j);
