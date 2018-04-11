@@ -2,6 +2,7 @@ package raw_type
 
 import (
 	"github.com/mitchellh/hashstructure"
+	"reflect"
 	"sync"
 )
 
@@ -57,10 +58,10 @@ func (de *dictEntry) equals(obj interface{}) bool {
 	switch obj.(type) {
 	case *dictEntry, dictEntry:
 		if instance, ok := obj.(*dictEntry); ok && instance != nil {
-			return de.Key == instance.Key && de.Value == instance.Value
+			return reflect.DeepEqual(de.Key, instance.Key) && reflect.DeepEqual(de.Value, instance.Value)
 		}
 		if instance, ok := obj.(dictEntry); ok {
-			return de.Key == instance.Key && de.Value == instance.Value
+			return reflect.DeepEqual(de.Key, instance.Key) && reflect.DeepEqual(de.Value, instance.Value)
 		}
 	default:
 		return false
@@ -105,7 +106,7 @@ func (seg *segment) put(key, value interface{}) interface{} {
 	for true {
 		if e != nil {
 			// 如果找到相同元素，先记录oldValue，再覆盖
-			if hash(key) == e.hash && key == e.Key {
+			if hash(key) == e.hash && reflect.DeepEqual(key, e.Key) {
 				oldValue = e.Value
 				e.Value = value
 				seg.modCount += 1
@@ -184,7 +185,7 @@ func (seg *segment) remove(key, value interface{}) interface{} {
 	}
 	var pre *dictEntry
 	for cur := seg.table[idx]; cur != nil; cur = cur.next {
-		if cur.hash == hash(key) && cur.Key == key && cur.Value == value {
+		if cur.hash == hash(key) && reflect.DeepEqual(key, cur.Key) && reflect.DeepEqual(value, cur.Value) {
 			if pre == nil {
 				seg.table[idx] = cur.next
 			} else {
@@ -213,7 +214,7 @@ func (seg *segment) replace(key, oldValue, newValue interface{}) bool {
 	index := hash(key) % len(seg.table)
 	for e := seg.table[index]; e != nil; e = e.next {
 		// 查找目标元素
-		if hash(key) == e.hash && key == e.Key && oldValue == e.Value {
+		if hash(key) == e.hash && reflect.DeepEqual(key, e.Key) && reflect.DeepEqual(oldValue, e.Value) {
 			e.Value = newValue
 			seg.modCount += 1
 			return true
@@ -241,7 +242,11 @@ type Dict struct {
 	segments []*segment
 }
 
-/************************************   common   ***************************************/
+func NewDict() *Dict {
+	return nil
+}
+
+/************************************     common   **************************************/
 func hash(value interface{}) int {
 	hash, _ := hashstructure.Hash(value, nil)
 	return int(hash)
