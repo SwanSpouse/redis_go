@@ -1,6 +1,9 @@
 package conf
 
-import "redis_go/log"
+import (
+	"redis_go/log"
+	"time"
+)
 
 const (
 	RedisServerAddr   = ""
@@ -17,8 +20,9 @@ const (
 // redis server configuration
 type ServerConfig struct {
 	/* General */
-	SentinelMode int   /* True if this instance is a Sentinel. */
-	LogLevel     int64 /* log levels*/
+	SentinelMode int           /* True if this instance is a Sentinel. */
+	LogLevel     int64         /* log levels*/
+	Timeout      time.Duration // Timeout represents the per-request socket read/write timeout. Default 0(disable)
 
 	/* Networking */
 	Port          int    /* TCP listening Port */
@@ -39,6 +43,7 @@ func InitServerConfig() *ServerConfig {
 	sc.Port = RedisServerPort
 	sc.DBNum = RedisDefaultDBNum
 	sc.LogLevel = RedisLogLevel
+	sc.Timeout = 5 * time.Second
 	sc.ReaderPoolNum = RedisIOReaderPoolThreadNum
 	sc.WriterPoolNum = RedisIOWriterPoolThreadNum
 	return sc

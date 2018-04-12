@@ -8,6 +8,7 @@ import (
 	"redis_go/protocol"
 	"redis_go/tcp"
 	"sync/atomic"
+	"time"
 )
 
 var (
@@ -37,6 +38,10 @@ func (c *Client) reset(cn net.Conn) {
 
 func (c *Client) Release() {
 	_ = c.cn.Close()
+	c.reader.ReturnBufIoReader()
+	c.writer.ReturnBufIoWriter()
+	c.reader = nil
+	c.writer = nil
 }
 
 func NewClient(cn net.Conn, defaultDB *database.Database) *Client {
@@ -60,6 +65,14 @@ func (c *Client) SelectedDatabase() *database.Database {
 
 func (c *Client) Buffered() int {
 	return c.reader.Buffered()
+}
+
+func (c *Client) Close() {
+	c.Closed = true
+}
+
+func (c *Client) SetDeadline(d time.Duration) error {
+	return c.cn.SetDeadline(time.Now().Add(d))
 }
 
 /**
