@@ -10,6 +10,11 @@ func TestWriteTest(t *testing.T) {
 	// 编写Test的时候在这里写，写好了再迁移到Describe里
 }
 
+func TestDict(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Test Dict")
+}
+
 var _ = Describe("test dict base operations", func() {
 	dict := NewDict()
 	inputSize := 100
@@ -83,8 +88,3 @@ var _ = Describe("test dict base operations", func() {
 	})
 
 })
-
-func TestDict(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Test Dict")
-}
