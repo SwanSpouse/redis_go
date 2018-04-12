@@ -65,7 +65,7 @@ func (de *dictEntry) equals(obj interface{}) bool {
 }
 
 func (de *dictEntry) String() string {
-	return fmt.Sprintf("{%s=%s}", de.Key, de.Value)
+	return fmt.Sprintf("{%v=%v}", de.Key, de.Value)
 }
 
 /************************************   segment   ***************************************/
@@ -140,7 +140,7 @@ func (seg *segment) rehash(node *dictEntry) {
 	oldCapacity := len(seg.table)
 	newCapacity := oldCapacity << 1
 	threshold := int(float32(newCapacity) * LoadFactory)
-	log.Info("segment start rehash enlarge size from %d to %d", oldCapacity, newCapacity)
+	log.Debug("segment start rehash enlarge size from %d to %d", oldCapacity, newCapacity)
 	newTable := newSegment(newCapacity, LoadFactory, threshold)
 	// 将老table中的数据迁移到新table中去
 	for i := 0; i < oldCapacity; i++ {
@@ -388,11 +388,11 @@ func (dict *Dict) ContainsKey(key interface{}) bool {
 */
 func (dict *Dict) ContainsValue(value interface{}) bool {
 	for i := 0; i < len(dict.segments); i++ {
-		dict.segments[i].locker.Lock()
+		dict.segments[i].locker.RLock()
 	}
 	defer func() {
 		for i := 0; i < len(dict.segments); i++ {
-			dict.segments[i].locker.Unlock()
+			dict.segments[i].locker.RUnlock()
 		}
 	}()
 
@@ -418,10 +418,6 @@ func (dict *Dict) Put(key, value interface{}) {
 	}
 	hashCode := hash(key)
 	segmentIdx := hashCode % len(dict.segments)
-
-	dict.segments[segmentIdx].locker.Lock()
-	defer dict.segments[segmentIdx].locker.Unlock()
-
 	dict.segments[segmentIdx].put(hashCode, key, value)
 }
 
@@ -438,10 +434,6 @@ func (dict *Dict) Remove(key, value interface{}) interface{} {
 	}
 	hashCode := hash(key)
 	segmentIdx := hashCode % len(dict.segments)
-
-	dict.segments[segmentIdx].locker.Lock()
-	defer dict.segments[segmentIdx].locker.Unlock()
-
 	return dict.segments[segmentIdx].remove(hashCode, key, value)
 }
 
@@ -455,26 +447,13 @@ func (dict *Dict) Replace(key, oldValue, newValue interface{}) interface{} {
 	}
 	hashCode := hash(key)
 	segmentIdx := hashCode % len(dict.segments)
-
-	dict.segments[segmentIdx].locker.Lock()
-	defer dict.segments[segmentIdx].locker.Unlock()
-
 	return dict.segments[segmentIdx].replace(hashCode, key, oldValue, newValue)
 }
 
 /*
-	TODO 这样先都锁起来，再进行操作不会导致死锁吗？为啥不是用一个锁一个呢？
-	TODO 明显的资源竞争和依赖
+清空Dict中所有的k-v
 */
-func (dict *Dict) clear() {
-	for i := 0; i < len(dict.segments); i++ {
-		dict.segments[i].locker.Lock()
-	}
-	defer func() {
-		for i := 0; i < len(dict.segments); i++ {
-			dict.segments[i].locker.Unlock()
-		}
-	}()
+func (dict *Dict) Clear() {
 	for i := 0; i < len(dict.segments); i++ {
 		if dict.segments[i] != nil {
 			dict.segments[i].clear()
@@ -494,6 +473,17 @@ func (dict *Dict) KeySet() map[interface{}]bool {
 */
 func (dict *Dict) Values() map[interface{}]bool {
 	return nil
+}
+
+func (dict *Dict) printDictForDebug() {
+	fmt.Printf("dict has %d segment and %d entries\n", len(dict.segments), dict.Size())
+	for i := 0; i < len(dict.segments); i++ {
+		if dict.segments[i] == nil {
+			continue
+		}
+		fmt.Printf("==========   segement[%d]   ==========\n", i)
+		dict.segments[i].printSegForDebug()
+	}
 }
 
 /************************************     common   **************************************/

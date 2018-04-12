@@ -8,14 +8,9 @@ import (
 	"testing"
 )
 
-func TestWriteTest(t *testing.T) {
-	// 编写Test的时候在这里写，写好了再迁移到Describe里
-	seg := newSegment(12, 0.75, 9)
-
-	for i := 0; i < 30; i++ {
-		seg.put(0, fmt.Sprintf("%d", i), "VALUE")
-	}
-	seg.printSegForDebug()
+func TestSegment(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Test Dict")
 }
 
 var _ = Describe("test dictEntry equal", func() {
@@ -177,7 +172,7 @@ var _ = Describe("test for remove", func() {
 		}
 	})
 
-	It("test segment for clear", func() {
+	It("test segment for Clear", func() {
 		seg.clear()
 		Expect(seg.count).To(Equal(0))
 		for i := 0; i < len(seg.table); i++ {
@@ -185,7 +180,7 @@ var _ = Describe("test for remove", func() {
 		}
 	})
 
-	It("test segment for concurrent clear", func() {
+	It("test segment for concurrent Clear", func() {
 		var wg sync.WaitGroup
 		wg.Add(5)
 		for no := 1; no <= 5; no++ {
@@ -201,11 +196,6 @@ var _ = Describe("test for remove", func() {
 		}
 	})
 })
-
-func TestDict(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Test Dict")
-}
 
 // 生成假的hashCode
 func generateHashCodeForTest(hashCode, cap int) int {
