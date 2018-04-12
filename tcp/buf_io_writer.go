@@ -289,3 +289,11 @@ func (w *BufIoWriter) Append(v interface{}) error {
 	}
 	return nil
 }
+
+// 来啥写啥，一点儿不变
+func (b *BufIoWriter) AppendRawString(rawInput []byte) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	log.Debug("raw string %s", string(rawInput))
+	b.buf = append(b.buf, rawInput...)
+}

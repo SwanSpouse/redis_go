@@ -1,7 +1,9 @@
 package protocol
 
 import (
+	"fmt"
 	"io"
+	"redis_go/log"
 	"redis_go/tcp"
 )
 
@@ -50,4 +52,62 @@ func (r *ResponseReader) ReadError() (string, error) {
 
 func (r *ResponseReader) ReadInlineString() (string, error) {
 	return r.r.ReadInlineString()
+}
+
+func (r *ResponseReader) Read() ([]string, error) {
+	ret := make([]string, 0)
+	responseType, err := r.PeekType()
+	if err != nil {
+		return nil, err
+	}
+
+	log.Debug("RESPONSE TYPE %s", responseType.String())
+
+	switch responseType {
+	case tcp.TypeInt:
+		val, err := r.ReadInt()
+		if err != nil {
+			return ret, err
+		}
+		ret = append(ret, fmt.Sprintf("%d", val))
+	case tcp.TypeInline:
+		val, err := r.ReadInlineString()
+		if err != nil {
+			return ret, err
+		}
+		ret = append(ret, val)
+	case tcp.TypeError:
+		val, err := r.ReadError()
+		if err != nil {
+			return ret, err
+		}
+		ret = append(ret, val)
+	case tcp.TypeBulk:
+		val, err := r.ReadBulkString()
+		if err != nil {
+			return ret, err
+		}
+		ret = append(ret, string(val))
+	case tcp.TypeNil:
+		err := r.ReadNil()
+		if err != nil {
+			return ret, err
+		}
+		ret = append(ret, "NIL")
+	case tcp.TypeArray:
+		arrayLen, err := r.ReadArrayLen()
+		if err != nil {
+			return ret, err
+		}
+		for i := 0; i < arrayLen; i++ {
+			tempRet, err := r.Read()
+			if err != nil {
+				return ret, err
+			}
+			ret = append(ret, tempRet...)
+		}
+	case tcp.TypeUnknown:
+		log.Errorf("unknown type %v", responseType)
+	}
+	return ret, nil
 }

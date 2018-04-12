@@ -53,6 +53,7 @@ func (b *BufIoReader) compact() {
 
 // returns the number of buffered bytes unread
 func (b *BufIoReader) Buffered() int {
+	log.Debug("[BUFFERED DATA]:%s", string(b.buf[b.r:b.w]))
 	return b.w - b.r
 }
 
@@ -234,7 +235,6 @@ func (b *BufIoReader) ReadBulk(p []byte) ([]byte, error) {
 	if err != nil {
 		return p, err
 	}
-	//TODO lmj sz + 2 means size + \r\n ?
 	if err := b.require(int(sz + 2)); err != nil {
 		return p, err
 	}
