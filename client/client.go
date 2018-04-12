@@ -16,15 +16,16 @@ var (
 )
 
 type Client struct {
-	id      uint64
-	cn      net.Conn
-	db      *database.Database // chosen database
-	Closed  bool
-	reader  *tcp.BufIoReader  // request reader
-	writer  *tcp.BufIoWriter  // response writer
-	args    uint64            // args number of command
-	Cmd     *protocol.Command // current command
-	lastCmd *protocol.Command // last command
+	id          uint64
+	cn          net.Conn
+	db          *database.Database // chosen database
+	Closed      bool
+	reader      *tcp.BufIoReader  // request reader
+	writer      *tcp.BufIoWriter  // response writer
+	args        uint64            // args number of command
+	Cmd         *protocol.Command // current command
+	lastCmd     *protocol.Command // last command
+	timeoutTime time.Time         // timeout time
 }
 
 func (c *Client) reset(cn net.Conn) {
@@ -71,8 +72,15 @@ func (c *Client) Close() {
 	c.Closed = true
 }
 
-func (c *Client) SetDeadline(d time.Duration) error {
-	return c.cn.SetDeadline(time.Now().Add(d))
+func (c *Client) SetTimeout(duration time.Duration) {
+	c.timeoutTime = time.Now().Add(duration)
+}
+
+func (c *Client) IsTimeout() bool {
+	if c.timeoutTime.IsZero() {
+		return false
+	}
+	return c.timeoutTime.Before(time.Now())
 }
 
 /**

@@ -49,11 +49,21 @@ func (srv *Server) serveClient(c *client.Client) {
 	// loop to handle redis command
 
 	for !c.Closed {
-		// set deadline
-		if d := srv.Config.Timeout; d > 0 {
-			log.Debug("[SET DEADLINE FOR CLIENT]")
-			c.SetDeadline(d)
+		/**
+		这个timeout是单次请求超时时间:
+		如果client端一直没有数据。那么for函数不会执行。每次到这里都没有timeout，然后deadline就会被重新设置。
+		*/
+		if c.IsTimeout() {
+			c.Close()
+			return
+		} else {
+			// set deadline
+			if d := srv.Config.Timeout; d > 0 {
+				log.Debug("[SET DEADLINE FOR CLIENT]")
+				c.SetTimeout(d)
+			}
 		}
+
 		for more := true; more; more = c.Buffered() != 0 {
 			cmd, err := c.ReadCmd()
 			if err != nil {
