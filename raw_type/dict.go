@@ -1,7 +1,10 @@
 package raw_type
 
 import (
+	"fmt"
 	"github.com/mitchellh/hashstructure"
+	"math"
+	"redis_go/log"
 	"reflect"
 	"sync"
 )
@@ -59,6 +62,10 @@ func (de *dictEntry) equals(obj interface{}) bool {
 		return false
 	}
 	return false
+}
+
+func (de *dictEntry) String() string {
+	return fmt.Sprintf("{%s=%s}", de.Key, de.Value)
 }
 
 /************************************   segment   ***************************************/
@@ -129,14 +136,11 @@ func (seg *segment) put(hashCode int, key, value interface{}) interface{} {
 	TODO 然后再参考redis dict的rehash实现一个版本
 */
 func (seg *segment) rehash(node *dictEntry) {
-	seg.locker.Lock()
-	defer seg.locker.Lock()
-
 	oldTable := seg.table
 	oldCapacity := len(seg.table)
 	newCapacity := oldCapacity << 1
 	threshold := int(float32(newCapacity) * LoadFactory)
-
+	log.Info("segment start rehash enlarge size from %d to %d", oldCapacity, newCapacity)
 	newTable := newSegment(newCapacity, LoadFactory, threshold)
 	// 将老table中的数据迁移到新table中去
 	for i := 0; i < oldCapacity; i++ {
@@ -163,6 +167,8 @@ func (seg *segment) rehash(node *dictEntry) {
 	newTable.table[idx] = node
 	// 在rehash完成的时候切换成新的table
 	seg.table = newTable.table
+	seg.threshold = threshold
+	seg.loadFactor = LoadFactory
 }
 
 /*
@@ -224,7 +230,7 @@ func (seg *segment) replace(hashCode int, key, oldValue, newValue interface{}) b
 // 清空整个segment
 func (seg *segment) clear() {
 	seg.locker.Lock()
-	defer seg.locker.Lock()
+	defer seg.locker.Unlock()
 
 	// 将所有entry置为nil
 	for i := 0; i < len(seg.table); i++ {
@@ -232,6 +238,19 @@ func (seg *segment) clear() {
 	}
 	seg.modCount += 1
 	seg.count = 0
+}
+
+func (seg *segment) printSegForDebug() {
+	fmt.Printf("segement has %d slots and %d entries, threshold:%d\n", len(seg.table), seg.count, seg.threshold)
+	for i := 0; i < len(seg.table); i++ {
+		if seg.table[i] != nil {
+			fmt.Printf("SEG[%d]\t->", i)
+			for e := seg.table[i]; e != nil; e = e.next {
+				fmt.Printf("%s->", e)
+			}
+			fmt.Printf("\n")
+		}
+	}
 }
 
 /************************************     dict    ***************************************/
@@ -480,5 +499,5 @@ func (dict *Dict) Values() map[interface{}]bool {
 /************************************     common   **************************************/
 func hash(value interface{}) int {
 	hashCode, _ := hashstructure.Hash(value, nil)
-	return int(hashCode)
+	return int(hashCode % uint64(math.MaxInt32))
 }
