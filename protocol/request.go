@@ -7,9 +7,9 @@ import (
 )
 
 /**
-    @author lmj
-    RequestWriter 主要用于mock测试，mock client利用RequestWriter构造请求
- */
+  @author lmj
+  RequestWriter 主要用于mock测试，mock client利用RequestWriter构造请求
+*/
 type RequestWriter struct {
 	w *tcp.BufIoWriter
 }
@@ -55,4 +55,8 @@ func (w *RequestWriter) WriteMultiBulkSize(n int) error {
 	}
 	w.w.AppendArrayLen(n)
 	return nil
+}
+
+func (w *RequestWriter) WriteRawString(rawInput string) {
+	w.w.AppendRawString([]byte(rawInput))
 }
