@@ -11,6 +11,8 @@ Redis原始源码来自： https://github.com/antirez/redis
 
 同时这里也会记录一些自己学习的经历。希望自己能够坚持下来。
 
+#### redis
+* [redis](https://github.com/antirez/redis)
 
 #### socket
 * [golang socket](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/socket/socket.md)
