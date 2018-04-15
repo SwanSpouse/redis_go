@@ -33,91 +33,95 @@ func NewBufIoReader(cn net.Conn) *BufIoReader {
 	return r
 }
 
+func (r *BufIoReader) ReturnBufIoReader() {
+	ReaderPool.Put(r)
+}
+
 func NewBufIoReaderWithoutConn() *BufIoReader {
 	return new(BufIoReader)
 }
 
 // reset buffer & rd
-func (b *BufIoReader) reset(buf []byte, rd io.Reader) {
-	*b = BufIoReader{buf: buf, rd: rd}
+func (r *BufIoReader) reset(buf []byte, rd io.Reader) {
+	*r = BufIoReader{buf: buf, rd: rd}
 }
 
 // compact moves the unread chunk to the beginning of the buffer
-func (b *BufIoReader) compact() {
-	if b.r > 0 {
-		copy(b.buf, b.buf[b.r:b.w])
-		b.w = b.w - b.r
-		b.r = 0
+func (r *BufIoReader) compact() {
+	if r.r > 0 {
+		copy(r.buf, r.buf[r.r:r.w])
+		r.w = r.w - r.r
+		r.r = 0
 	}
 }
 
 // returns the number of buffered bytes unread
-func (b *BufIoReader) Buffered() int {
-	log.Debug("[BUFFERED DATA]:%s", string(b.buf[b.r:b.w]))
-	return b.w - b.r
+func (r *BufIoReader) Buffered() int {
+	log.Debug("[BUFFERED DATA]:%s", string(r.buf[r.r:r.w]))
+	return r.w - r.r
 }
 
 // make sure that sz bytes can be buffered
-func (b *BufIoReader) require(sz int) error {
-	extra := sz - b.Buffered()
+func (r *BufIoReader) require(sz int) error {
+	extra := sz - r.Buffered()
 	if extra < 1 {
 		return nil
 	}
 	// compact first
-	b.compact()
+	r.compact()
 
 	// grow the buffer if necessary
-	if n := b.w + extra; n > len(b.buf) {
+	if n := r.w + extra; n > len(r.buf) {
 		buf := make([]byte, n)
-		copy(buf, buf[:b.w])
-		b.buf = buf
+		copy(buf, buf[:r.w])
+		r.buf = buf
 	}
 
 	// read data into buffer
-	n, err := io.ReadAtLeast(b.rd, b.buf[b.w:], extra)
-	b.w += n
+	n, err := io.ReadAtLeast(r.rd, r.buf[r.w:], extra)
+	r.w += n
 	return err
 }
 
 // tries to read more data into the buffer
-func (b *BufIoReader) fill() error {
-	b.compact()
+func (r *BufIoReader) fill() error {
+	r.compact()
 
-	if b.w < len(b.buf) {
-		n, err := b.rd.Read(b.buf[b.w:])
-		b.w += n
-		log.Info("current io reader buffer %s", string(b.buf[b.r:b.w]))
+	if r.w < len(r.buf) {
+		n, err := r.rd.Read(r.buf[r.w:])
+		r.w += n
+		log.Info("current io reader buffer %s", string(r.buf[r.r:r.w]))
 		return err
 	}
 	return nil
 }
 
 // peek byte of the buffer
-func (b *BufIoReader) PeekByte() (byte, error) {
-	if err := b.require(1); err != nil {
+func (r *BufIoReader) PeekByte() (byte, error) {
+	if err := r.require(1); err != nil {
 		return 0, err
 	}
-	return b.buf[b.r], nil
+	return r.buf[r.r], nil
 }
 
 // PeekLine returns the next line until CRLF without reading it
-func (b *BufIoReader) PeekLine(offset int) (buffer, error) {
+func (r *BufIoReader) PeekLine(offset int) (buffer, error) {
 	index := -1
 
 	// try to find the end of the line
-	start := b.r + offset
-	if start < b.w {
-		index = bytes.IndexByte(b.buf[start:b.w], '\n')
+	start := r.r + offset
+	if start < r.w {
+		index = bytes.IndexByte(r.buf[start:r.w], '\n')
 	}
 
 	// try to read more data into the buffer if not in the buffer
 	if index < 0 {
-		if err := b.fill(); err != nil {
+		if err := r.fill(); err != nil {
 			return nil, err
 		}
-		start = b.r + offset
-		if start < b.w {
-			index = bytes.IndexByte(b.buf[start:b.w], '\n')
+		start = r.r + offset
+		if start < r.w {
+			index = bytes.IndexByte(r.buf[start:r.w], '\n')
 		}
 	}
 
@@ -125,7 +129,7 @@ func (b *BufIoReader) PeekLine(offset int) (buffer, error) {
 	if index < 0 {
 		return nil, re.ErrInlineRequestTooLong
 	}
-	return buffer(b.buf[start : start+index+1]), nil
+	return buffer(r.buf[start : start+index+1]), nil
 }
 
 /*
@@ -135,18 +139,18 @@ func (b *BufIoReader) PeekLine(offset int) (buffer, error) {
 	批量回复(bulk reply)    的第一个字节是        $
 	多条批量回复(multi bulk reply)的第一个字节是   *
 */
-func (b *BufIoReader) PeekType() (t ResponseType, err error) {
-	if err = b.require(1); err != nil {
+func (r *BufIoReader) PeekType() (t ResponseType, err error) {
+	if err = r.require(1); err != nil {
 		return
 	}
-	switch b.buf[b.r] {
+	switch r.buf[r.r] {
 	case '*':
 		t = TypeArray
 	case '$':
-		if err = b.require(2); err != nil {
+		if err = r.require(2); err != nil {
 			return
 		}
-		if b.buf[b.r+1] == '-' {
+		if r.buf[r.r+1] == '-' {
 			t = TypeNil
 		} else {
 			t = TypeBulk
@@ -161,22 +165,22 @@ func (b *BufIoReader) PeekType() (t ResponseType, err error) {
 	return
 }
 
-func (b *BufIoReader) PeekN(offset, n int) ([]byte, error) {
-	if err := b.require(offset + n); err != nil {
+func (r *BufIoReader) PeekN(offset, n int) ([]byte, error) {
+	if err := r.require(offset + n); err != nil {
 		return nil, err
 	}
-	return b.buf[b.r+offset : b.r+offset+n], nil
+	return r.buf[r.r+offset : r.r+offset+n], nil
 }
 
 // return the next line until CRLF
-func (b *BufIoReader) ReadLine() (buffer, error) {
-	line, err := b.PeekLine(0)
-	b.r += len(line)
+func (r *BufIoReader) ReadLine() (buffer, error) {
+	line, err := r.PeekLine(0)
+	r.r += len(line)
 	return line, err
 }
 
-func (b *BufIoReader) ReadNil() error {
-	line, err := b.ReadLine()
+func (r *BufIoReader) ReadNil() error {
+	line, err := r.ReadLine()
 	if err != nil {
 		return err
 	}
@@ -186,32 +190,32 @@ func (b *BufIoReader) ReadNil() error {
 	return nil
 }
 
-func (b *BufIoReader) ReadInt() (int64, error) {
-	line, err := b.ReadLine()
+func (r *BufIoReader) ReadInt() (int64, error) {
+	line, err := r.ReadLine()
 	if err != nil {
 		return 0, err
 	}
 	return line.ParseInt()
 }
 
-func (b *BufIoReader) ReadError() (string, error) {
-	line, err := b.ReadLine()
+func (r *BufIoReader) ReadError() (string, error) {
+	line, err := r.ReadLine()
 	if err != nil {
 		return "", err
 	}
 	return line.ParseMessage('-')
 }
 
-func (b *BufIoReader) ReadInlineString() (string, error) {
-	line, err := b.ReadLine()
+func (r *BufIoReader) ReadInlineString() (string, error) {
+	line, err := r.ReadLine()
 	if err != nil {
 		return "", err
 	}
 	return line.ParseMessage('+')
 }
 
-func (b *BufIoReader) ReadArrayLen() (int, error) {
-	line, err := b.ReadLine()
+func (r *BufIoReader) ReadArrayLen() (int, error) {
+	line, err := r.ReadLine()
 	if err != nil {
 		return 0, err
 	}
@@ -222,80 +226,80 @@ func (b *BufIoReader) ReadArrayLen() (int, error) {
 	return int(sz), nil
 }
 
-func (b *BufIoReader) ReadBulkLen() (int64, error) {
-	line, err := b.ReadLine()
+func (r *BufIoReader) ReadBulkLen() (int64, error) {
+	line, err := r.ReadLine()
 	if err != nil {
 		return 0, err
 	}
 	return line.ParseSize('$', re.ErrInvalidBulkLength)
 }
 
-func (b *BufIoReader) ReadBulk(p []byte) ([]byte, error) {
-	sz, err := b.ReadBulkLen()
+func (r *BufIoReader) ReadBulk(p []byte) ([]byte, error) {
+	sz, err := r.ReadBulkLen()
 	if err != nil {
 		return p, err
 	}
-	if err := b.require(int(sz + 2)); err != nil {
+	if err := r.require(int(sz + 2)); err != nil {
 		return p, err
 	}
-	p = append(p, b.buf[b.r:b.r+int(sz)]...)
-	b.r += int(sz + 2)
+	p = append(p, r.buf[r.r:r.r+int(sz)]...)
+	r.r += int(sz + 2)
 	return p, nil
 }
 
-func (b *BufIoReader) ReadBulkString() (string, error) {
-	sz, err := b.ReadBulkLen()
+func (r *BufIoReader) ReadBulkString() (string, error) {
+	sz, err := r.ReadBulkLen()
 	if err != nil {
 		return "", err
 	}
-	if err := b.require(int(sz + 2)); err != nil {
+	if err := r.require(int(sz + 2)); err != nil {
 		return "", err
 	}
-	s := string(b.buf[b.r : b.r+int(sz)])
-	b.r += int(sz + 2)
+	s := string(r.buf[r.r : r.r+int(sz)])
+	r.r += int(sz + 2)
 	return s, nil
 }
 
-func (b *BufIoReader) Scan(vv ...interface{}) error {
+func (r *BufIoReader) Scan(vv ...interface{}) error {
 	//TODO lmj
 	return nil
 }
 
-func (b *BufIoReader) Reset(r io.Reader) {
-	b.reset(MkStdBuffer(), r)
+func (r *BufIoReader) Reset(r io.Reader) {
+	r.reset(MkStdBuffer(), r)
 }
 
-func (b *BufIoReader) skip(sz int) {
-	if b.Buffered() >= sz {
-		b.r += sz
+func (r *BufIoReader) skip(sz int) {
+	if r.Buffered() >= sz {
+		r.r += sz
 	}
 	//TODO lmj need first compact ?
 }
 
-func (b *BufIoReader) SkipBulk() error {
-	sz, err := b.ReadBulkLen()
+func (r *BufIoReader) SkipBulk() error {
+	sz, err := r.ReadBulkLen()
 	if err != nil {
 		return err
 	}
-	return b.skipN(sz + 2)
+	return r.skipN(sz + 2)
 }
 
-func (b *BufIoReader) skipN(sz int64) error {
+func (r *BufIoReader) skipN(sz int64) error {
 	// if bulk doesn't overflow buffer
-	extra := sz - int64(b.Buffered())
+	extra := sz - int64(r.Buffered())
 	if extra < 1 {
-		b.r += int(sz)
+		r.r += int(sz)
 		return nil
 	}
 	// otherwise, reset buffer
-	b.r = 0
-	b.w = 0
+	r.r = 0
+	r.w = 0
 
 	// ... and discard the extra bytes
 	x := extra
-	r := io.LimitReader(b.rd, x)
+	r := io.LimitReader(r.rd, x)
 	for {
-		n, err := r.Read(b.buf)
+		n, err := r.Read(r.buf)
 		x -= int64(n)
 
 		if err == io.EOF {

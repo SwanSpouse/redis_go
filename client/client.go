@@ -8,6 +8,7 @@ import (
 	"redis_go/protocol"
 	"redis_go/tcp"
 	"sync/atomic"
+	"time"
 )
 
 var (
@@ -15,15 +16,16 @@ var (
 )
 
 type Client struct {
-	id      uint64
-	cn      net.Conn
-	db      *database.Database // chosen database
-	Closed  bool
-	reader  *tcp.BufIoReader  // request reader
-	writer  *tcp.BufIoWriter  // response writer
-	args    uint64            // args number of command
-	Cmd     *protocol.Command // current command
-	lastCmd *protocol.Command // last command
+	id          uint64
+	cn          net.Conn
+	db          *database.Database // chosen database
+	Closed      bool
+	reader      *tcp.BufIoReader  // request reader
+	writer      *tcp.BufIoWriter  // response writer
+	args        uint64            // args number of command
+	Cmd         *protocol.Command // current command
+	lastCmd     *protocol.Command // last command
+	timeoutTime time.Time         // timeout time
 }
 
 func (c *Client) reset(cn net.Conn) {
@@ -37,6 +39,10 @@ func (c *Client) reset(cn net.Conn) {
 
 func (c *Client) Release() {
 	_ = c.cn.Close()
+	c.reader.ReturnBufIoReader()
+	c.writer.ReturnBufIoWriter()
+	c.reader = nil
+	c.writer = nil
 }
 
 func NewClient(cn net.Conn, defaultDB *database.Database) *Client {
@@ -60,6 +66,21 @@ func (c *Client) SelectedDatabase() *database.Database {
 
 func (c *Client) Buffered() int {
 	return c.reader.Buffered()
+}
+
+func (c *Client) Close() {
+	c.Closed = true
+}
+
+func (c *Client) SetTimeout(duration time.Duration) {
+	c.timeoutTime = time.Now().Add(duration)
+}
+
+func (c *Client) IsTimeout() bool {
+	if c.timeoutTime.IsZero() {
+		return false
+	}
+	return c.timeoutTime.Before(time.Now())
 }
 
 /**

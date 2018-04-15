@@ -47,31 +47,48 @@ func (srv *Server) serveClient(c *client.Client) {
 	// TODO lmj 增加Timeout的判断
 	// TODO lmj 除了Timeout的方式，还有什么好的办法能够判断client端是否已经断开连接
 	// loop to handle redis command
-	for more := true; more; more = c.Buffered() != 0 {
-		cmd, err := c.ReadCmd()
-		if err != nil {
-			c.ResponseError("read command error %+v", err)
-			continue
-		}
+
+	for !c.Closed {
 		/**
-		首先判断是否在command table中,
-			如果不在command table中,则返回command not found
-			如果在command table中，则获取到相应的command handler来进行处理。
+		这个timeout是单次请求超时时间:
+		如果client端一直没有数据。那么for函数不会执行。每次到这里都没有timeout，然后deadline就会被重新设置。
 		*/
-		log.Debug("get command from client %+v", cmd)
-		if handler, ok := srv.commands[cmd.GetName()]; ok {
-			/* 在这里对client端发送过来的命令进行处理 */
-			handler.Process(c)
-		} else {
-			log.Errorf("command not found %s", cmd.GetOriginName())
-			c.ResponseError(fmt.Sprintf("command not found %s", cmd.GetOriginName()))
-		}
-		if err := c.Flush(); err != nil {
-			log.Errorf("response writer flush data error %+v", err)
+		if c.IsTimeout() {
+			c.Close()
 			return
+		} else {
+			// set deadline
+			if d := srv.Config.Timeout; d > 0 {
+				log.Debug("[SET DEADLINE FOR CLIENT]")
+				c.SetTimeout(d)
+			}
+		}
+
+		for more := true; more; more = c.Buffered() != 0 {
+			cmd, err := c.ReadCmd()
+			if err != nil {
+				c.ResponseError("read command error %+v", err)
+				continue
+			}
+			/**
+			首先判断是否在command table中,
+				如果不在command table中,则返回command not found
+				如果在command table中，则获取到相应的command handler来进行处理。
+			*/
+			log.Debug("get command from client %+v", cmd)
+			if handler, ok := srv.commands[cmd.GetName()]; ok {
+				/* 在这里对client端发送过来的命令进行处理 */
+				handler.Process(c)
+			} else {
+				log.Errorf("command not found %s", cmd.GetOriginName())
+				c.ResponseError(fmt.Sprintf("command not found %s", cmd.GetOriginName()))
+			}
+			if err := c.Flush(); err != nil {
+				log.Errorf("response writer flush data error %+v", err)
+				return
+			}
 		}
 	}
-	log.Debug("No more data for current connection")
 }
 
 func (srv *Server) Serve(lis net.Listener) error {
