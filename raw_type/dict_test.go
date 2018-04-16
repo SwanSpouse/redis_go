@@ -15,6 +15,10 @@ func TestDict(t *testing.T) {
 	RunSpecs(t, "Test Dict")
 }
 
+var _ = Describe(" test dict rehash process", func() {
+
+})
+
 var _ = Describe("test dict base operations", func() {
 	dict := NewDict()
 	inputSize := 100
@@ -23,6 +27,7 @@ var _ = Describe("test dict base operations", func() {
 			dict.Put(i, i)
 		}
 		Expect(dict.Size()).To(Equal(inputSize))
+		dict.printDictForDebug()
 	})
 
 	It("test dict operation get", func() {
@@ -86,5 +91,4 @@ var _ = Describe("test dict base operations", func() {
 			Expect(dict.ContainsValue(i)).To(BeFalse())
 		}
 	})
-
 })

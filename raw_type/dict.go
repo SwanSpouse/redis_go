@@ -73,6 +73,7 @@ func (de *dictEntry) String() string {
 type segment struct {
 	table      []*dictEntry
 	count      int
+	sizeMask   int
 	modCount   int
 	threshold  int
 	loadFactor float64
@@ -82,6 +83,7 @@ type segment struct {
 func newSegment(capacity int, lf float64, threshold int) *segment {
 	return &segment{
 		table:      make([]*dictEntry, capacity),
+		sizeMask:   capacity - 1,
 		locker:     new(sync.RWMutex),
 		loadFactor: lf,
 		threshold:  threshold,
@@ -100,7 +102,7 @@ func (seg *segment) put(hashCode int, key, value interface{}) interface{} {
 	defer seg.locker.Unlock()
 
 	var oldValue interface{}
-	index := hashCode % len(seg.table)
+	index := hashCode & seg.sizeMask
 	e := seg.table[index]
 	for true {
 		if e != nil {
@@ -123,8 +125,7 @@ func (seg *segment) put(hashCode int, key, value interface{}) interface{} {
 			}
 			seg.modCount += 1
 			seg.count += 1
-			oldValue = nil
-			break
+			return nil
 		}
 	}
 	return oldValue
@@ -137,7 +138,7 @@ func (seg *segment) put(hashCode int, key, value interface{}) interface{} {
 */
 func (seg *segment) rehash(node *dictEntry) {
 	oldTable := seg.table
-	oldCapacity := len(seg.table)
+	oldCapacity := len(oldTable)
 	newCapacity := oldCapacity << 1
 	threshold := int(float32(newCapacity) * LoadFactory)
 	log.Debug("segment start rehash enlarge size from %d to %d", oldCapacity, newCapacity)
@@ -153,20 +154,22 @@ func (seg *segment) rehash(node *dictEntry) {
 			continue
 		}
 		for cur := oldTable[i]; cur != nil; cur = cur.next {
-			newIdx := hash(cur.Key) % len(newTable.table)
+			newIdx := cur.hash & newTable.sizeMask
 			entry := newTable.table[newIdx]
-			newTable.table[newIdx] = NewDictEntry(hash(cur.Key), cur.Key, cur.Value, entry)
+			newTable.table[newIdx] = NewDictEntry(cur.hash, cur.Key, cur.Value, entry)
 		}
 	}
 	/**
-		oldTable中的节点迁移完成后，添加新节点(这里可以直接添加是因为进到这里的节点，肯定不会和table中的某个节点key相同)
+	    oldTable中的节点迁移完成后，添加新节点(这里可以直接添加是因为进到这里的节点，肯定不会和table中的某个节点key相同)
 	同时在添加结束后没有把table的count++, modCount++ 是因为这些操作都在put里面已经进行过了。
 	*/
-	idx := hash(node.Value) % len(newTable.table)
-	node.next = newTable.table[idx]
-	newTable.table[idx] = node
+	newIdx := node.hash & newTable.sizeMask
+	node.next = newTable.table[newIdx]
+	newTable.table[newIdx] = node
+
 	// 在rehash完成的时候切换成新的table
 	seg.table = newTable.table
+	seg.sizeMask = newCapacity - 1
 	seg.threshold = threshold
 	seg.loadFactor = LoadFactory
 }
@@ -181,7 +184,7 @@ func (seg *segment) remove(hashCode int, key, value interface{}) interface{} {
 	defer seg.locker.Unlock()
 	var oldValue interface{}
 
-	idx := hashCode % len(seg.table)
+	idx := hashCode & seg.sizeMask
 	if seg.table[idx] == nil {
 		return nil
 	}
@@ -215,7 +218,7 @@ func (seg *segment) replace(hashCode int, key, oldValue, newValue interface{}) b
 	seg.locker.Lock()
 	defer seg.locker.Unlock()
 
-	index := hashCode % len(seg.table)
+	index := hashCode & seg.sizeMask
 	for e := seg.table[index]; e != nil; e = e.next {
 		// 查找目标元素
 		if hashCode == e.hash && reflect.DeepEqual(key, e.Key) && reflect.DeepEqual(oldValue, e.Value) {
@@ -289,10 +292,10 @@ func NewDictWithCapacityAndConcurrencyLevel(capacity, concurrencyLevel int) *Dic
 	for actualSegmentCap < expectedSegmentCap {
 		actualSegmentCap <<= 1
 	}
-
+	log.Info("[SEGMENT] totalCapacity %+v, segment cap %+v, actualSegCap %+v", capacity, expectedSegmentCap, actualSegmentCap)
 	segments := make([]*segment, concurrencyLevel)
 	for i := 0; i < concurrencyLevel; i++ {
-		segments[i] = newSegment(expectedSegmentCap, LoadFactory, int(float32(expectedSegmentCap)*LoadFactory))
+		segments[i] = newSegment(actualSegmentCap, LoadFactory, int(float32(expectedSegmentCap)*LoadFactory))
 	}
 	return &Dict{
 		segments: segments,
@@ -362,9 +365,9 @@ func (dict *Dict) Size() int {
 */
 func (dict *Dict) Get(key interface{}) interface{} {
 	hashCode := hash(key)
-	segmentIdx := hashCode % len(dict.segments)
+	segmentIdx := hashCode & (len(dict.segments) - 1)
 	if dict.segments[segmentIdx] != nil {
-		idx := hashCode % len(dict.segments[segmentIdx].table)
+		idx := hashCode & dict.segments[segmentIdx].sizeMask
 		if dict.segments[segmentIdx].table[idx] != nil {
 			for e := dict.segments[segmentIdx].table[idx]; e != nil; e = e.next {
 				if e.hash == hashCode && reflect.DeepEqual(e.Key, key) {
@@ -417,7 +420,7 @@ func (dict *Dict) Put(key, value interface{}) {
 		panic("PUT key or value null pointer exception")
 	}
 	hashCode := hash(key)
-	segmentIdx := hashCode % len(dict.segments)
+	segmentIdx := hashCode & (len(dict.segments) - 1)
 	dict.segments[segmentIdx].put(hashCode, key, value)
 }
 
@@ -433,7 +436,7 @@ func (dict *Dict) Remove(key, value interface{}) interface{} {
 		panic("REMOVE key null pointer exception")
 	}
 	hashCode := hash(key)
-	segmentIdx := hashCode % len(dict.segments)
+	segmentIdx := hashCode & (len(dict.segments) - 1)
 	return dict.segments[segmentIdx].remove(hashCode, key, value)
 }
 
@@ -446,7 +449,7 @@ func (dict *Dict) Replace(key, oldValue, newValue interface{}) interface{} {
 		panic("REPLACE key null pointer exception")
 	}
 	hashCode := hash(key)
-	segmentIdx := hashCode % len(dict.segments)
+	segmentIdx := hashCode & (len(dict.segments) - 1)
 	return dict.segments[segmentIdx].replace(hashCode, key, oldValue, newValue)
 }
 
@@ -489,5 +492,5 @@ func (dict *Dict) printDictForDebug() {
 /************************************     common   **************************************/
 func hash(value interface{}) int {
 	hashCode, _ := hashstructure.Hash(value, nil)
-	return int(hashCode % uint64(math.MaxInt32))
+	return int(hashCode & uint64(math.MaxInt32))
 }
