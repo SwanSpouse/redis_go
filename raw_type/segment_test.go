@@ -57,7 +57,7 @@ var _ = Describe("test segment", func() {
 		seg := newSegment(20, 0.75, 300)
 		lastModCount := seg.modCount
 		for i := 1; i <= 30; i++ {
-			seg.put(generateHashCodeForTest(i, len(seg.table)), fmt.Sprintf("key%d", i), fmt.Sprintf("%d", i))
+			seg.put(hash(i), fmt.Sprintf("key%d", i), fmt.Sprintf("%d", i))
 		}
 		Expect(seg.count).To(Equal(30))
 		Expect(seg.modCount).NotTo(Equal(lastModCount))
@@ -71,20 +71,12 @@ var _ = Describe("test segment", func() {
 			go func(no int) {
 				defer wg.Done()
 				for i := 1; i <= 30; i++ {
-					seg.put(generateHashCodeForTest(i, len(seg.table)), fmt.Sprintf("%d-%d", no, i), "")
+					seg.put(hash(i), fmt.Sprintf("%d-%d", no, i), "")
 				}
 			}(threadCount)
 		}
 		wg.Wait()
-		//seg.printSegForDebug()
 		Expect(seg.count).To(Equal(150))
-		for i := 0; i < len(seg.table); i++ {
-			count := 0
-			for e := seg.table[i]; e != nil; e = e.next {
-				count += 1
-			}
-			Expect(count).To(Equal(150 / len(seg.table)))
-		}
 	})
 
 })
@@ -99,7 +91,7 @@ var _ = Describe("test for remove", func() {
 			go func(threadNo int) {
 				defer wg.Done()
 				for i := 0; i < 30; i++ {
-					seg.put(generateHashCodeForTest(i+1, len(seg.table)), fmt.Sprintf("%d-%d", threadNo, i+1), "")
+					seg.put(hash(i), fmt.Sprintf("%d-%d", threadNo, i+1), "")
 				}
 			}(no)
 		}
@@ -111,7 +103,7 @@ var _ = Describe("test for remove", func() {
 	It("test segment for remove", func() {
 		for no := 1; no <= 5; no++ {
 			for i := 0; i < 30; i++ {
-				seg.remove(generateHashCodeForTest(i+1, len(seg.table)), fmt.Sprintf("%d-%d", no, i+1), "")
+				seg.remove(hash(i), fmt.Sprintf("%d-%d", no, i+1), "")
 			}
 			//seg.printSegForDebug()
 			Expect(seg.count).To(Equal(150 - 30*no))
@@ -125,7 +117,7 @@ var _ = Describe("test for remove", func() {
 			go func(threadNo int) {
 				defer wg.Done()
 				for i := 0; i < 30; i++ {
-					seg.remove(generateHashCodeForTest(i+1, len(seg.table)), fmt.Sprintf("%d-%d", threadNo, i+1), "")
+					seg.remove(hash(i), fmt.Sprintf("%d-%d", threadNo, i+1), "")
 				}
 			}(no)
 		}
@@ -136,7 +128,7 @@ var _ = Describe("test for remove", func() {
 	It("test segment for replace", func() {
 		for no := 1; no <= 5; no++ {
 			for i := 0; i < 30; i++ {
-				seg.replace(generateHashCodeForTest(i+1, len(seg.table)), fmt.Sprintf("%d-%d", no, i+1), "", "HA")
+				seg.replace(hash(i), fmt.Sprintf("%d-%d", no, i+1), "", "HA")
 			}
 		}
 		Expect(seg.count).To(Equal(150))
@@ -157,7 +149,7 @@ var _ = Describe("test for remove", func() {
 			go func(threadNo int) {
 				defer wg.Done()
 				for i := 0; i < 30; i++ {
-					seg.replace(generateHashCodeForTest(i+1, len(seg.table)), fmt.Sprintf("%d-%d", threadNo, i+1), "", "HA")
+					seg.replace(hash(i), fmt.Sprintf("%d-%d", threadNo, i+1), "", "HA")
 				}
 			}(no)
 		}
@@ -196,8 +188,3 @@ var _ = Describe("test for remove", func() {
 		}
 	})
 })
-
-// 生成假的hashCode
-func generateHashCodeForTest(hashCode, cap int) int {
-	return hashCode % cap
-}
