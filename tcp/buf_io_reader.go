@@ -265,8 +265,8 @@ func (r *BufIoReader) Scan(vv ...interface{}) error {
 	return nil
 }
 
-func (r *BufIoReader) Reset(r io.Reader) {
-	r.reset(MkStdBuffer(), r)
+func (r *BufIoReader) Reset(ioReader io.Reader) {
+	r.reset(MkStdBuffer(), ioReader)
 }
 
 func (r *BufIoReader) skip(sz int) {
@@ -297,9 +297,9 @@ func (r *BufIoReader) skipN(sz int64) error {
 
 	// ... and discard the extra bytes
 	x := extra
-	r := io.LimitReader(r.rd, x)
+	reader := io.LimitReader(r.rd, x)
 	for {
-		n, err := r.Read(r.buf)
+		n, err := reader.Read(r.buf)
 		x -= int64(n)
 
 		if err == io.EOF {
