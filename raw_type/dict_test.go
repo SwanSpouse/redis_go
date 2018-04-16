@@ -27,7 +27,7 @@ var _ = Describe("test dict base operations", func() {
 			dict.Put(i, i)
 		}
 		Expect(dict.Size()).To(Equal(inputSize))
-		dict.printDictForDebug()
+		//dict.printDictForDebug()
 	})
 
 	It("test dict operation get", func() {

@@ -259,7 +259,9 @@ func (seg *segment) printSegForDebug() {
 /************************************     dict    ***************************************/
 
 type Dict struct {
-	segments []*segment
+	segments     []*segment
+	segmentMask  int
+	segmentShift uint
 }
 
 func NewDict() *Dict {
@@ -280,8 +282,10 @@ func NewDictWithCapacityAndConcurrencyLevel(capacity, concurrencyLevel int) *Dic
 	if capacity > MaximumCapacity {
 		capacity = MaximumCapacity
 	}
+	shift := 0
 	actualConcurrentLevel := 1
 	for actualConcurrentLevel < concurrencyLevel {
+		shift += 1
 		actualConcurrentLevel = actualConcurrentLevel << 1
 	}
 	expectedSegmentCap := capacity / actualConcurrentLevel
@@ -298,7 +302,9 @@ func NewDictWithCapacityAndConcurrencyLevel(capacity, concurrencyLevel int) *Dic
 		segments[i] = newSegment(actualSegmentCap, LoadFactory, int(float32(expectedSegmentCap)*LoadFactory))
 	}
 	return &Dict{
-		segments: segments,
+		segments:     segments,
+		segmentMask:  actualConcurrentLevel - 1,
+		segmentShift: uint(32 - shift),
 	}
 }
 
@@ -365,7 +371,7 @@ func (dict *Dict) Size() int {
 */
 func (dict *Dict) Get(key interface{}) interface{} {
 	hashCode := hash(key)
-	segmentIdx := hashCode & (len(dict.segments) - 1)
+	segmentIdx := (hashCode >> dict.segmentShift) & dict.segmentMask
 	if dict.segments[segmentIdx] != nil {
 		idx := hashCode & dict.segments[segmentIdx].sizeMask
 		if dict.segments[segmentIdx].table[idx] != nil {
@@ -420,7 +426,7 @@ func (dict *Dict) Put(key, value interface{}) {
 		panic("PUT key or value null pointer exception")
 	}
 	hashCode := hash(key)
-	segmentIdx := hashCode & (len(dict.segments) - 1)
+	segmentIdx := (hashCode >> dict.segmentShift) & dict.segmentMask
 	dict.segments[segmentIdx].put(hashCode, key, value)
 }
 
@@ -436,7 +442,7 @@ func (dict *Dict) Remove(key, value interface{}) interface{} {
 		panic("REMOVE key null pointer exception")
 	}
 	hashCode := hash(key)
-	segmentIdx := hashCode & (len(dict.segments) - 1)
+	segmentIdx := (hashCode >> dict.segmentShift) & dict.segmentMask
 	return dict.segments[segmentIdx].remove(hashCode, key, value)
 }
 
@@ -449,7 +455,7 @@ func (dict *Dict) Replace(key, oldValue, newValue interface{}) interface{} {
 		panic("REPLACE key null pointer exception")
 	}
 	hashCode := hash(key)
-	segmentIdx := hashCode & (len(dict.segments) - 1)
+	segmentIdx := (hashCode >> dict.segmentShift) & dict.segmentMask
 	return dict.segments[segmentIdx].replace(hashCode, key, oldValue, newValue)
 }
 
