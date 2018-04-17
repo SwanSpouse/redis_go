@@ -3,6 +3,7 @@ package database
 import "time"
 
 type TString interface {
+	// common operation
 	GetObjectType() string
 	SetObjectType(string)
 	GetEncoding() string
@@ -14,6 +15,17 @@ type TString interface {
 	DecrRefCount() int
 	GetTTL() int
 	SetTTL(int)
+	GetValue() interface{}
+	SetValue(interface{})
+	IsExpired() bool
+
+	// string command operation
+	Append(string) int
+	Incr() int
+	Decr() int
+	IncrBy(int) int
+	DecrBy(int) int
+	Strlen() int
 }
 
 // 创建一个新的redis string object
@@ -23,8 +35,6 @@ func NewRedisStringObject(value string) (TBase, error) {
 
 /*
  *	创建一个新的带有ttl的redis string object
- *      //TODO lmj 这里需要根据变量的值来进行判断，看是创建什么样encoding的redis object，
- *      //TODO lmj 这里的value应该传进来一个interface? 还是看根据是否能够转换成数字来判断?
  */
 func NewRedisStringObjectWithTTL(value string, ttl int) (TBase, error) {
 	obj := &RedisObject{

@@ -1,4 +1,4 @@
-package database
+package raw_type
 
 import (
 	"time"

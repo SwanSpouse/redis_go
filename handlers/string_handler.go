@@ -82,14 +82,12 @@ func (handler *StringHandler) Get(client *client.Client) {
 	key := args[0]
 	// 获取key在数据库中对应的value(TBase:BaseType)
 	baseType := client.SelectedDatabase().SearchKeyInDB(key)
-	if !handler.isStringObjectAndEncodingValid(client, baseType) {
+	var sb database.TString
+	var ok bool
+	if sb, ok = handler.convertTBastToStringObject(client, baseType); !ok || sb == nil {
 		return
 	}
-	// 根据不同的encoding类型对数据进行处理
-	switch baseType.GetEncoding() {
-	case database.RedisEncodingInt, database.RedisEncodingEmbStr, database.RedisEncodingRaw:
-		client.Response(fmt.Sprintf("%s", baseType.GetValue()))
-	}
+	client.Response(fmt.Sprintf("%s", sb.GetValue()))
 }
 
 func (handler *StringHandler) Incr(client *client.Client) {
@@ -100,9 +98,9 @@ func (handler *StringHandler) Incr(client *client.Client) {
 	}
 	key := args[0]
 	baseType := client.SelectedDatabase().SearchKeyInDB(key)
-	if !handler.isStringObjectAndEncodingValid(client, baseType) {
-		return
-	}
+	//if !handler.convertTBastToStringObject(client, baseType) {
+	//	return
+	//}
 	switch baseType.GetEncoding() {
 	case database.RedisEncodingEmbStr, database.RedisEncodingRaw:
 		value := baseType.GetValue().(string)
@@ -127,9 +125,9 @@ func (handler *StringHandler) Decr(client *client.Client) {
 	}
 	key := args[0]
 	baseType := client.SelectedDatabase().SearchKeyInDB(key)
-	if !handler.isStringObjectAndEncodingValid(client, baseType) {
-		return
-	}
+	//if !handler.convertTBastToStringObject(client, baseType) {
+	//	return
+	//}
 	switch baseType.GetEncoding() {
 	case database.RedisEncodingEmbStr, database.RedisEncodingRaw:
 		value := baseType.GetValue().(string)
@@ -150,14 +148,18 @@ func (handler *StringHandler) Decr(client *client.Client) {
 	对baseType的类型是否为string进行校验。
 首先判断baseType是否为空，再判断baseType的Encoding是否为string的Encoding, baseType的Type是否为RedisTypeString
 */
-func (handler *StringHandler) isStringObjectAndEncodingValid(client *client.Client, baseType database.TBase) bool {
+func (handler *StringHandler) convertTBastToStringObject(client *client.Client, baseType database.TBase) (database.TString, bool) {
 	if baseType == nil {
 		client.Response(nil)
-		return false
+		return nil, false
 	}
 	if _, ok := stringEncodingTypeDict[baseType.GetEncoding()]; !ok || baseType.GetObjectType() != database.RedisTypeString {
 		client.ResponseError("error object type or encoding. type:%s, encoding:%s", baseType.GetObjectType(), baseType.GetEncoding())
-		return false
+		return nil, false
 	}
-	return true
+	if stringObject, ok := baseType.(database.TString); !ok {
+		client.ResponseError("error object type or encoding. type:%s, encoding:%s", baseType.GetObjectType(), baseType.GetEncoding())
+		return stringObject, true
+	}
+	return nil, false
 }
