@@ -5,6 +5,7 @@ import (
 	"redis_go/client"
 	"redis_go/database"
 	re "redis_go/error"
+	"strconv"
 )
 
 // StringHandler可以处理的三种rawType
@@ -26,12 +27,14 @@ func (handler *StringHandler) Process(client *client.Client) {
 	case "BITCOUNT", "BITOP", "GETBIT", "SETBIT":
 		client.ResponseError(re.ErrFunctionNotImplement)
 	case "DECR":
+		handler.Decr(client)
 	case "DECRBY":
 	case "GET":
 		handler.Get(client)
 	case "GETRANGE":
 	case "GETSET":
 	case "INCR":
+		handler.Incr(client)
 	case "INCRBY":
 	case "INCRBYFLOAT":
 	case "MGET":
@@ -77,20 +80,9 @@ func (handler *StringHandler) Get(client *client.Client) {
 	}
 	// 获取args中的Key
 	key := args[0]
-
-	/* 获取key在数据库中对应的value(TBase:BaseType)
-	 *      1. 处理没有找到的情况
-	 *      2. 验证BaseType的类型和编码方式
-	 */
+	// 获取key在数据库中对应的value(TBase:BaseType)
 	baseType := client.SelectedDatabase().SearchKeyInDB(key)
-	// 数据库中没有这个Key
-	if baseType == nil {
-		client.Response(nil)
-		return
-	}
-	// 首先验证type类型是否合法
-	if _, ok := stringEncodingTypeDict[baseType.GetEncoding()]; !ok || baseType.GetObjectType() != database.RedisTypeString {
-		client.ResponseError("error object type or encoding. type:%s, encoding:%s", baseType.GetObjectType(), baseType.GetEncoding())
+	if !handler.isStringObjectAndEncodingValid(client, baseType) {
 		return
 	}
 	// 根据不同的encoding类型对数据进行处理
@@ -106,4 +98,66 @@ func (handler *StringHandler) Incr(client *client.Client) {
 		client.ResponseError(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
 		return
 	}
+	key := args[0]
+	baseType := client.SelectedDatabase().SearchKeyInDB(key)
+	if !handler.isStringObjectAndEncodingValid(client, baseType) {
+		return
+	}
+	switch baseType.GetEncoding() {
+	case database.RedisEncodingEmbStr, database.RedisEncodingRaw:
+		value := baseType.GetValue().(string)
+		if valueInt, err := strconv.ParseInt(value, 10, 64); err != nil {
+			client.ResponseError(re.ErrNotIntegerOrOutOfRange)
+			return
+		} else {
+			baseType.SetValue(strconv.FormatInt(valueInt+1, 10))
+		}
+	case database.RedisEncodingInt:
+		value := baseType.GetValue().(int64)
+		baseType.SetValue(value + 1)
+	}
+	client.ResponseOK()
+}
+
+func (handler *StringHandler) Decr(client *client.Client) {
+	args := client.Cmd.GetArgs()
+	if len(args) != 1 {
+		client.ResponseError(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
+		return
+	}
+	key := args[0]
+	baseType := client.SelectedDatabase().SearchKeyInDB(key)
+	if !handler.isStringObjectAndEncodingValid(client, baseType) {
+		return
+	}
+	switch baseType.GetEncoding() {
+	case database.RedisEncodingEmbStr, database.RedisEncodingRaw:
+		value := baseType.GetValue().(string)
+		if valueInt, err := strconv.ParseInt(value, 10, 64); err != nil {
+			client.ResponseError(re.ErrNotIntegerOrOutOfRange)
+			return
+		} else {
+			baseType.SetValue(strconv.FormatInt(valueInt-1, 10))
+		}
+	case database.RedisEncodingInt:
+		value := baseType.GetValue().(int64)
+		baseType.SetValue(value - 1)
+	}
+	client.ResponseOK()
+}
+
+/**
+	对baseType的类型是否为string进行校验。
+首先判断baseType是否为空，再判断baseType的Encoding是否为string的Encoding, baseType的Type是否为RedisTypeString
+*/
+func (handler *StringHandler) isStringObjectAndEncodingValid(client *client.Client, baseType database.TBase) bool {
+	if baseType == nil {
+		client.Response(nil)
+		return false
+	}
+	if _, ok := stringEncodingTypeDict[baseType.GetEncoding()]; !ok || baseType.GetObjectType() != database.RedisTypeString {
+		client.ResponseError("error object type or encoding. type:%s, encoding:%s", baseType.GetObjectType(), baseType.GetEncoding())
+		return false
+	}
+	return true
 }

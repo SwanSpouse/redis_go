@@ -135,8 +135,14 @@ func (srv *Server) getDefaultDB() *database.Database {
 func (srv *Server) populateCommandTable() {
 	connectionHandler := new(handlers.ConnectionHandler)
 	stringHandler := new(handlers.StringHandler)
+
+	// connection command
 	srv.commands["PING"] = connectionHandler
 	srv.commands["TEST"] = connectionHandler
+
+	// string command
 	srv.commands["SET"] = stringHandler
 	srv.commands["GET"] = stringHandler
+	srv.commands["INCR"] = stringHandler
+	srv.commands["DECR"] = stringHandler
 }

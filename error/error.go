@@ -28,6 +28,7 @@ const (
 )
 
 const (
-	ErrWrongNumberOfArgs    = "wrong number of arguments for '%s' command"
-	ErrFunctionNotImplement = "This command has not been implement."
+	ErrWrongNumberOfArgs      = "wrong number of arguments for '%s' command"
+	ErrFunctionNotImplement   = "This command has not been implement."
+	ErrNotIntegerOrOutOfRange = "value is not an integer or out of range"
 )
