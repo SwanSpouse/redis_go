@@ -25,10 +25,12 @@ const (
 	ErrNotANilMessage         = protoError("Protocol error: expected a nil")
 	ErrBadResponseType        = protoError("Protocol error: bad response type")
 	ErrUnknown                = protoError("Protocol error: unknown")
+
+	ErrNotIntegerOrOutOfRange = protoError("value is not an integer or out of range")
 )
 
 const (
-	ErrWrongNumberOfArgs      = "wrong number of arguments for '%s' command"
-	ErrFunctionNotImplement   = "This command has not been implement."
-	ErrNotIntegerOrOutOfRange = "value is not an integer or out of range"
+	ErrWrongNumberOfArgs    = "wrong number of arguments for '%s' command"
+	ErrFunctionNotImplement = "This command has not been implement."
+	ErrWrongType            = "WRONGTYPE Operation against a key holding the wrong kind of value"
 )

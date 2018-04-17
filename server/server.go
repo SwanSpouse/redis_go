@@ -141,6 +141,7 @@ func (srv *Server) populateCommandTable() {
 	srv.commands["TEST"] = connectionHandler
 
 	// string command
+	srv.commands["APPEND"] = stringHandler
 	srv.commands["SET"] = stringHandler
 	srv.commands["GET"] = stringHandler
 	srv.commands["INCR"] = stringHandler

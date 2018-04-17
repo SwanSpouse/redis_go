@@ -4,15 +4,15 @@ import (
 	"fmt"
 	"redis_go/client"
 	"redis_go/database"
+	"redis_go/encodings"
 	re "redis_go/error"
-	"strconv"
 )
 
 // StringHandler可以处理的三种rawType
 var stringEncodingTypeDict = map[string]bool{
-	database.RedisEncodingInt:    true,
-	database.RedisEncodingRaw:    true,
-	database.RedisEncodingEmbStr: true,
+	encodings.RedisEncodingInt:    true,
+	encodings.RedisEncodingRaw:    true,
+	encodings.RedisEncodingEmbStr: true,
 }
 
 type StringHandler struct{}
@@ -24,6 +24,7 @@ func (handler *StringHandler) Process(client *client.Client) {
 	}
 	switch client.Cmd.GetName() {
 	case "APPEND":
+		handler.Append(client)
 	case "BITCOUNT", "BITOP", "GETBIT", "SETBIT":
 		client.ResponseError(re.ErrFunctionNotImplement)
 	case "DECR":
@@ -55,20 +56,33 @@ func (handler *StringHandler) Process(client *client.Client) {
 	client.Flush()
 }
 
+func (handler *StringHandler) Append(client *client.Client) {
+	args := client.Cmd.GetArgs()
+	if len(args) < 2 {
+		client.ResponseError(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
+		return
+	}
+	// 获取args中的Key
+	key := args[0]
+	// 获取key在数据库中对应的value(TBase:BaseType)
+	baseType := client.SelectedDatabase().SearchKeyInDB(key)
+	var sb database.TString
+	var ok bool
+	if sb, ok = handler.convertTBastToStringObject(client, baseType); !ok || sb == nil {
+		client.ResponseError(re.ErrWrongType)
+		return
+	}
+	client.Response(sb.Append(args[1]))
+}
+
 func (handler *StringHandler) Set(client *client.Client) {
 	args := client.Cmd.GetArgs()
 	if len(args) < 2 {
 		client.ResponseError(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
 		return
 	}
-	key := args[0]
-	// TODO lmj 根据变量的值来判断创建什么样Encoding的StringObject
-	if value, err := database.NewRedisStringObject(args[1]); err != nil || value == nil {
-		client.ResponseError(re.ErrUnknown.Error())
-	} else {
-		client.SelectedDatabase().SetKeyInDB(key, value)
-		client.ResponseOK()
-	}
+	client.SelectedDatabase().SetKeyInDB(args[0], database.NewRedisStringObject(args[1]))
+	client.ResponseOK()
 }
 
 func (handler *StringHandler) Get(client *client.Client) {
@@ -85,6 +99,7 @@ func (handler *StringHandler) Get(client *client.Client) {
 	var sb database.TString
 	var ok bool
 	if sb, ok = handler.convertTBastToStringObject(client, baseType); !ok || sb == nil {
+		client.ResponseError(re.ErrWrongType)
 		return
 	}
 	client.Response(fmt.Sprintf("%s", sb.GetValue()))
@@ -98,23 +113,17 @@ func (handler *StringHandler) Incr(client *client.Client) {
 	}
 	key := args[0]
 	baseType := client.SelectedDatabase().SearchKeyInDB(key)
-	//if !handler.convertTBastToStringObject(client, baseType) {
-	//	return
-	//}
-	switch baseType.GetEncoding() {
-	case database.RedisEncodingEmbStr, database.RedisEncodingRaw:
-		value := baseType.GetValue().(string)
-		if valueInt, err := strconv.ParseInt(value, 10, 64); err != nil {
-			client.ResponseError(re.ErrNotIntegerOrOutOfRange)
-			return
-		} else {
-			baseType.SetValue(strconv.FormatInt(valueInt+1, 10))
-		}
-	case database.RedisEncodingInt:
-		value := baseType.GetValue().(int64)
-		baseType.SetValue(value + 1)
+	var sb database.TString
+	var ok bool
+	if sb, ok = handler.convertTBastToStringObject(client, baseType); !ok || sb == nil {
+		client.ResponseError(re.ErrWrongType)
+		return
 	}
-	client.ResponseOK()
+	if ret, err := sb.Incr(); err != nil {
+		client.ResponseError(err.Error())
+	} else {
+		client.Response(ret)
+	}
 }
 
 func (handler *StringHandler) Decr(client *client.Client) {
@@ -125,23 +134,17 @@ func (handler *StringHandler) Decr(client *client.Client) {
 	}
 	key := args[0]
 	baseType := client.SelectedDatabase().SearchKeyInDB(key)
-	//if !handler.convertTBastToStringObject(client, baseType) {
-	//	return
-	//}
-	switch baseType.GetEncoding() {
-	case database.RedisEncodingEmbStr, database.RedisEncodingRaw:
-		value := baseType.GetValue().(string)
-		if valueInt, err := strconv.ParseInt(value, 10, 64); err != nil {
-			client.ResponseError(re.ErrNotIntegerOrOutOfRange)
-			return
-		} else {
-			baseType.SetValue(strconv.FormatInt(valueInt-1, 10))
-		}
-	case database.RedisEncodingInt:
-		value := baseType.GetValue().(int64)
-		baseType.SetValue(value - 1)
+	var sb database.TString
+	var ok bool
+	if sb, ok = handler.convertTBastToStringObject(client, baseType); !ok || sb == nil {
+		client.ResponseError(re.ErrWrongType)
+		return
 	}
-	client.ResponseOK()
+	if ret, err := sb.Decr(); err != nil {
+		client.ResponseError(err.Error())
+	} else {
+		client.Response(ret)
+	}
 }
 
 /**
@@ -153,7 +156,7 @@ func (handler *StringHandler) convertTBastToStringObject(client *client.Client, 
 		client.Response(nil)
 		return nil, false
 	}
-	if _, ok := stringEncodingTypeDict[baseType.GetEncoding()]; !ok || baseType.GetObjectType() != database.RedisTypeString {
+	if _, ok := stringEncodingTypeDict[baseType.GetEncoding()]; !ok || baseType.GetObjectType() != encodings.RedisTypeString {
 		client.ResponseError("error object type or encoding. type:%s, encoding:%s", baseType.GetObjectType(), baseType.GetEncoding())
 		return nil, false
 	}

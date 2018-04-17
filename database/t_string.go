@@ -1,6 +1,12 @@
 package database
 
-import "time"
+import "redis_go/encodings"
+
+var (
+	_ TString = (*encodings.StringRaw)(nil)
+	_ TString = (*encodings.StringInt)(nil)
+	_ TString = (*encodings.StringEmb)(nil)
+)
 
 type TString interface {
 	// common operation
@@ -21,30 +27,21 @@ type TString interface {
 
 	// string command operation
 	Append(string) int
-	Incr() int
-	Decr() int
-	IncrBy(int) int
-	DecrBy(int) int
+	Incr() (int, error)
+	Decr() (int, error)
+	IncrBy(int) (int, error)
+	DecrBy(int) (int, error)
 	Strlen() int
 }
 
 // 创建一个新的redis string object
-func NewRedisStringObject(value string) (TBase, error) {
+func NewRedisStringObject(value string) TBase {
 	return NewRedisStringObjectWithTTL(value, -1)
 }
 
 /*
  *	创建一个新的带有ttl的redis string object
  */
-func NewRedisStringObjectWithTTL(value string, ttl int) (TBase, error) {
-	obj := &RedisObject{
-		objectType: RedisTypeString,
-		encoding:   RedisEncodingRaw, // 暂时都默认为raw吧。
-		ttl:        ttl,
-		value:      value,
-	}
-	if ttl > 0 {
-		obj.expireTime = time.Now().Add(time.Duration(ttl) * time.Second)
-	}
-	return obj, nil
+func NewRedisStringObjectWithTTL(value string, ttl int) TBase {
+	return encodings.NewRedisStringWithEncodingRawString(value, ttl)
 }
