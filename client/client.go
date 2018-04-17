@@ -182,7 +182,7 @@ func (c *Client) ResponseError(msg string, args ...interface{}) {
 	if len(args) == 0 {
 		c.writer.AppendError(msg)
 	} else {
-		c.writer.AppendErrorf(msg, args)
+		c.writer.AppendErrorf(msg, args...)
 	}
 }
 

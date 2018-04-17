@@ -8,6 +8,31 @@ import (
 	re "redis_go/error"
 )
 
+const (
+	RedisStringCommandAppend      = "APPEND"
+	RedisStringCommandBitCount    = "BITCOUNT"
+	RedisStringCommandBitop       = "BITOP"
+	RedisStringCommandGetBit      = "GETBIT"
+	RedisStringCommandSetBit      = "SETBIT"
+	RedisStringCommandDecr        = "DECR"
+	RedisStringCommandDecrBy      = "DECRBY"
+	RedisStringCommandGet         = "GET"
+	RedisStringCommandGetRange    = "GETRANGE"
+	RedisStringCommandGetSet      = "GETSET"
+	RedisStringCommandIncr        = "INCR"
+	RedisStringCommandIncrBy      = "INCRBY"
+	RedisStringCommandIncrByFloat = "INCRBYFLOAT"
+	RedisStringCommandMGet        = "MGET"
+	RedisStringCommandMSet        = "MSET"
+	RedisStringCommandMSetNx      = "MSETNX"
+	RedisStringCommandPSetEx      = "PSETEX"
+	RedisStringCommandSet         = "SET"
+	RedisStringCommandSetNX       = "SETNX"
+	RedisStringCommandSetEX       = "SETEX"
+	RedisStringCommandSetRange    = "SETRANGE"
+	RedisStringCommandStrLen      = "STRLEN"
+)
+
 // StringHandler可以处理的三种rawType
 var stringEncodingTypeDict = map[string]bool{
 	encodings.RedisEncodingInt:    true,
@@ -18,129 +43,115 @@ var stringEncodingTypeDict = map[string]bool{
 type StringHandler struct{}
 
 func (handler *StringHandler) Process(client *client.Client) {
-	if client.Cmd == nil {
-		client.ResponseError("ERR nil command")
-		return
-	}
-	switch client.Cmd.GetName() {
-	case "APPEND":
-		handler.Append(client)
-	case "BITCOUNT", "BITOP", "GETBIT", "SETBIT":
-		client.ResponseError(re.ErrFunctionNotImplement)
-	case "DECR":
-		handler.Decr(client)
-	case "DECRBY":
-	case "GET":
-		handler.Get(client)
-	case "GETRANGE":
-	case "GETSET":
-	case "INCR":
-		handler.Incr(client)
-	case "INCRBY":
-	case "INCRBYFLOAT":
-	case "MGET":
-	case "MSET":
-	case "MSETNX":
-	case "PSETEX":
-	case "SET":
-		handler.Set(client)
-	case "SETEX":
-	case "SETNX":
-	case "SETRANGE":
-	case "STRLEN":
-
-	default:
-		client.ResponseError("ERR unknown command %s", client.Cmd.GetOriginName())
+	if key, ts, err := handler.getValidKeyAndTypeOrError(client); err == nil {
+		switch client.Cmd.GetName() {
+		case RedisStringCommandAppend:
+			handler.Append(client, ts)
+		case RedisStringCommandBitCount, RedisStringCommandBitop, RedisStringCommandGetBit, RedisStringCommandSetBit:
+			client.ResponseError(string(re.ErrFunctionNotImplement))
+		case RedisStringCommandDecr:
+			handler.Decr(client, ts)
+		case RedisStringCommandDecrBy:
+		case RedisStringCommandGet:
+			handler.Get(client, ts)
+		case RedisStringCommandGetRange:
+		case RedisStringCommandGetSet:
+		case RedisStringCommandIncr:
+			handler.Incr(client, ts)
+		case RedisStringCommandIncrBy:
+		case RedisStringCommandIncrByFloat:
+		case RedisStringCommandMGet:
+		case RedisStringCommandMSet:
+		case RedisStringCommandMSetNx:
+		case RedisStringCommandPSetEx:
+		case RedisStringCommandSet:
+			handler.Set(client, key)
+		case RedisStringCommandSetNX:
+		case RedisStringCommandSetEX:
+		case RedisStringCommandSetRange:
+		case RedisStringCommandStrLen:
+		default:
+			client.ResponseError(string(re.ErrUnknownCommand), client.Cmd.GetOriginName())
+		}
+	} else {
+		client.ResponseError(err.Error())
 	}
 	// 最后统一发送数据
 	client.Flush()
 }
 
-func (handler *StringHandler) Append(client *client.Client) {
-	args := client.Cmd.GetArgs()
-	if len(args) < 2 {
-		client.ResponseError(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
-		return
+func (handler *StringHandler) getValidKeyAndTypeOrError(client *client.Client) (string, database.TString, error) {
+	if client.Cmd == nil {
+		return "", nil, re.ErrNilCommand
 	}
-	// 获取args中的Key
+	args := client.Cmd.GetArgs()
+	// 参数个数的错误都交给每个命令自己来进行处理
+	if len(args) == 0 {
+		return "", nil, nil
+	}
 	key := args[0]
+	if client.Cmd.GetName() == RedisStringCommandSet {
+		return key, nil, nil
+	}
 	// 获取key在数据库中对应的value(TBase:BaseType)
 	baseType := client.SelectedDatabase().SearchKeyInDB(key)
-	var sb database.TString
+	var ts database.TString
 	var ok bool
-	if sb, ok = handler.convertTBastToStringObject(client, baseType); !ok || sb == nil {
-		client.ResponseError(re.ErrWrongType)
-		return
+	if ts, ok = handler.convertTBaseToTString(client, baseType); !ok || ts == nil {
+		return "", nil, re.ErrWrongType
 	}
-	client.Response(sb.Append(args[1]))
+	return key, ts, nil
 }
 
-func (handler *StringHandler) Set(client *client.Client) {
+func (handler *StringHandler) Append(client *client.Client, ts database.TString) {
 	args := client.Cmd.GetArgs()
 	if len(args) < 2 {
-		client.ResponseError(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
+		client.ResponseError(string(re.ErrWrongNumberOfArgs), client.Cmd.GetOriginName())
 		return
 	}
-	client.SelectedDatabase().SetKeyInDB(args[0], database.NewRedisStringObject(args[1]))
+	client.Response(ts.Append(args[1]))
+}
+
+func (handler *StringHandler) Set(client *client.Client, key string) {
+	args := client.Cmd.GetArgs()
+	if len(args) < 2 {
+		client.ResponseError(string(re.ErrWrongNumberOfArgs), client.Cmd.GetOriginName())
+		return
+	}
+	client.SelectedDatabase().SetKeyInDB(key, database.NewRedisStringObject(args[1]))
 	client.ResponseOK()
 }
 
-func (handler *StringHandler) Get(client *client.Client) {
+func (handler *StringHandler) Get(client *client.Client, ts database.TString) {
 	args := client.Cmd.GetArgs()
 	// 判断参数个数是否合理
 	if len(args) != 1 {
-		client.ResponseError(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
+		client.ResponseError(string(re.ErrWrongNumberOfArgs), client.Cmd.GetOriginName())
 		return
 	}
-	// 获取args中的Key
-	key := args[0]
-	// 获取key在数据库中对应的value(TBase:BaseType)
-	baseType := client.SelectedDatabase().SearchKeyInDB(key)
-	var sb database.TString
-	var ok bool
-	if sb, ok = handler.convertTBastToStringObject(client, baseType); !ok || sb == nil {
-		client.ResponseError(re.ErrWrongType)
-		return
-	}
-	client.Response(fmt.Sprintf("%s", sb.GetValue()))
+	client.Response(fmt.Sprintf("%s", ts.GetValue()))
 }
 
-func (handler *StringHandler) Incr(client *client.Client) {
+func (handler *StringHandler) Incr(client *client.Client, ts database.TString) {
 	args := client.Cmd.GetArgs()
 	if len(args) != 1 {
-		client.ResponseError(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
+		client.ResponseError(string(re.ErrWrongNumberOfArgs), client.Cmd.GetOriginName())
 		return
 	}
-	key := args[0]
-	baseType := client.SelectedDatabase().SearchKeyInDB(key)
-	var sb database.TString
-	var ok bool
-	if sb, ok = handler.convertTBastToStringObject(client, baseType); !ok || sb == nil {
-		client.ResponseError(re.ErrWrongType)
-		return
-	}
-	if ret, err := sb.Incr(); err != nil {
+	if ret, err := ts.Incr(); err != nil {
 		client.ResponseError(err.Error())
 	} else {
 		client.Response(ret)
 	}
 }
 
-func (handler *StringHandler) Decr(client *client.Client) {
+func (handler *StringHandler) Decr(client *client.Client, ts database.TString) {
 	args := client.Cmd.GetArgs()
 	if len(args) != 1 {
-		client.ResponseError(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
+		client.ResponseError(string(re.ErrWrongNumberOfArgs), client.Cmd.GetOriginName())
 		return
 	}
-	key := args[0]
-	baseType := client.SelectedDatabase().SearchKeyInDB(key)
-	var sb database.TString
-	var ok bool
-	if sb, ok = handler.convertTBastToStringObject(client, baseType); !ok || sb == nil {
-		client.ResponseError(re.ErrWrongType)
-		return
-	}
-	if ret, err := sb.Decr(); err != nil {
+	if ret, err := ts.Decr(); err != nil {
 		client.ResponseError(err.Error())
 	} else {
 		client.Response(ret)
@@ -151,18 +162,19 @@ func (handler *StringHandler) Decr(client *client.Client) {
 	对baseType的类型是否为string进行校验。
 首先判断baseType是否为空，再判断baseType的Encoding是否为string的Encoding, baseType的Type是否为RedisTypeString
 */
-func (handler *StringHandler) convertTBastToStringObject(client *client.Client, baseType database.TBase) (database.TString, bool) {
+// TODO 这里面会把ERROR发送两次。要解决一下这个问题。
+func (handler *StringHandler) convertTBaseToTString(client *client.Client, baseType database.TBase) (database.TString, bool) {
 	if baseType == nil {
 		client.Response(nil)
 		return nil, false
 	}
 	if _, ok := stringEncodingTypeDict[baseType.GetEncoding()]; !ok || baseType.GetObjectType() != encodings.RedisTypeString {
-		client.ResponseError("error object type or encoding. type:%s, encoding:%s", baseType.GetObjectType(), baseType.GetEncoding())
+		client.ResponseError(string(re.ErrWrongTypeOrEncoding), baseType.GetObjectType(), baseType.GetEncoding())
 		return nil, false
 	}
-	if stringObject, ok := baseType.(database.TString); !ok {
-		client.ResponseError("error object type or encoding. type:%s, encoding:%s", baseType.GetObjectType(), baseType.GetEncoding())
-		return stringObject, true
+	if ts, ok := baseType.(database.TString); ok {
+		return ts, true
 	}
+	client.ResponseError(string(re.ErrConvertToTargetType))
 	return nil, false
 }

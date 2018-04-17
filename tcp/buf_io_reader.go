@@ -57,7 +57,7 @@ func (r *BufIoReader) compact() {
 
 // returns the number of buffered bytes unread
 func (r *BufIoReader) Buffered() int {
-	log.Debug("[BUFFERED DATA]:%s", string(r.buf[r.r:r.w]))
+	//log.Debug("[BUFFERED DATA]:%s", string(r.buf[r.r:r.w]))
 	return r.w - r.r
 }
 

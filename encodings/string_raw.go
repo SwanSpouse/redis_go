@@ -10,17 +10,21 @@ type StringRaw struct {
 	RedisObject
 }
 
-func NewRedisStringWithEncodingRawString(value string, ttl int) *RedisObject {
-	obj := &RedisObject{
-		objectType: RedisTypeString,
-		encoding:   RedisEncodingRaw,
-		ttl:        ttl,
-		value:      value,
-	}
+func NewRedisStringWithEncodingRawString(value string, ttl int) *StringRaw {
+	var expireTime time.Time
 	if ttl > 0 {
-		obj.expireTime = time.Now().Add(time.Duration(ttl) * time.Second)
+		expireTime = time.Now().Add(time.Duration(ttl) * time.Second)
 	}
-	return obj
+	sr := &StringRaw{
+		RedisObject: RedisObject{
+			objectType: RedisTypeString,
+			encoding:   RedisEncodingRaw,
+			ttl:        ttl,
+			value:      value,
+			expireTime: expireTime,
+		},
+	}
+	return sr
 }
 
 func (sr *StringRaw) Append(val string) int {
@@ -30,7 +34,8 @@ func (sr *StringRaw) Append(val string) int {
 }
 
 func (sr *StringRaw) Incr() (int, error) {
-	if valueInt, ok := sr.GetValue().(int); !ok {
+	value := sr.GetValue().(string)
+	if valueInt, err := strconv.Atoi(value); err != nil {
 		return 0, re.ErrNotIntegerOrOutOfRange
 	} else {
 		sr.SetValue(strconv.Itoa(valueInt + 1))
@@ -39,7 +44,8 @@ func (sr *StringRaw) Incr() (int, error) {
 }
 
 func (sr *StringRaw) Decr() (int, error) {
-	if valueInt, ok := sr.GetValue().(int); !ok {
+	value := sr.GetValue().(string)
+	if valueInt, err := strconv.Atoi(value); err != nil {
 		return 0, re.ErrNotIntegerOrOutOfRange
 	} else {
 		sr.SetValue(strconv.Itoa(valueInt - 1))
