@@ -1,6 +1,8 @@
 package error
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type protoError string
 
@@ -25,9 +27,14 @@ const (
 	ErrNotANilMessage         = protoError("Protocol error: expected a nil")
 	ErrBadResponseType        = protoError("Protocol error: bad response type")
 	ErrUnknown                = protoError("Protocol error: unknown")
-)
 
-const (
-	ErrWrongNumberOfArgs    = "wrong number of arguments for '%s' command"
-	ErrFunctionNotImplement = "This command has not been implement."
+	ErrNotIntegerOrOutOfRange = protoError("value is not an integer or out of range")
+	ErrWrongNumberOfArgs      = protoError("wrong number of arguments for '%s' command")
+	ErrUnknownCommand         = protoError("ERR unknown command %s")
+	ErrNilCommand             = protoError("ERR nil command")
+	ErrFunctionNotImplement   = protoError("This command has not been implement.")
+	ErrWrongType              = protoError("WRONGTYPE Operation against a key holding the wrong kind of value")
+	ErrWrongTypeOrEncoding    = protoError("error object type or encoding. type:%s, encoding:%s")
+	ErrConvertToTargetType    = protoError("ERR cannot convert tbase to target type")
+	ErrConvertEncoding        = protoError("Err convert encoding")
 )

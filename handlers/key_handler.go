@@ -45,7 +45,7 @@ func (handler *KeyHandler) Process(client *client.Client) {
 func (handler *KeyHandler) Del(client *client.Client) {
 	args := client.Cmd.GetArgs()
 	if len(args) < 2 {
-		client.ResponseError(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
+		client.ResponseError(string(re.ErrWrongNumberOfArgs), client.Cmd.GetOriginName())
 		return
 	}
 	successCount := client.SelectedDatabase().RemoveKeyInDB(args[1:])
@@ -55,7 +55,7 @@ func (handler *KeyHandler) Del(client *client.Client) {
 func (handler *KeyHandler) Exists(client *client.Client) {
 	args := client.Cmd.GetArgs()
 	if len(args) < 2 {
-		client.ResponseError(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
+		client.ResponseError(string(re.ErrWrongNumberOfArgs), client.Cmd.GetOriginName())
 		return
 	}
 	successCount, _ := client.SelectedDatabase().SearchKeysInDB(args[1:])

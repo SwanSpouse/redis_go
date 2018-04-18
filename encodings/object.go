@@ -1,7 +1,40 @@
-package database
+package encodings
 
 import (
 	"time"
+)
+
+const (
+	/**
+	RedisTypeString  ->  RedisEncodingInt	 	: 使用整数值实现的字符串对象
+	RedisTypeString  ->  RedisEncodingEmbStr        : 使用embstr编码的简单动态字符串实现的字符串对象
+	RedisTypeString  ->  RedisEncodingRaw		: 使用简单动态字符串实现的字符串对象
+	RedisTypeList    ->  RedisEncodingZipList	: 使用压缩列表实现的列表对象
+	RedisTypeList    ->  RedisEncodingLinkedList	: 使用双端链表实现的列表对象
+	RedisTypeHash    ->  RedisEncodingZipList	: 使用压缩链表实现的列表对象
+	RedisTypeHash    ->  RedisEncodingHT		: 使用字典实现的哈希对象
+	RedisTypeSet     ->  RedisEncodingIntSet	: 使用整数集合实现的集合对象
+	RedisTypeSet     ->  RedisEncodingHT		: 使用字典实现的集合对象
+	RedisTypeZSet    ->  RedisEncodingZipList	: 使用压缩链表实现的有序集合对象
+	RedisTypeZSet    ->  RedisEncodingSkipList	: 使用跳跃表和字典实现的有序集合对象
+	*/
+
+	/* object type */
+	RedisTypeString = "string"
+	RedisTypeList   = "list"
+	RedisTypeHash   = "hash"
+	RedisTypeSet    = "set"
+	RedisTypeZSet   = "zset"
+
+	/* redis encoding type */
+	RedisEncodingInt        = "int"
+	RedisEncodingEmbStr     = "embstr"
+	RedisEncodingRaw        = "raw"
+	RedisEncodingHT         = "hashtable"
+	RedisEncodingLinkedList = "linkedlist"
+	RedisEncodingZipList    = "ziplist"
+	RedisEncodingIntSet     = "intset"
+	RedisEncodingSkipList   = "skiplist"
 )
 
 type RedisObject struct {
@@ -12,36 +45,6 @@ type RedisObject struct {
 	ttl        int         // ttl
 	expireTime time.Time   // 过期时间
 	value      interface{} // 指向的对象
-}
-
-// @deprecated
-func NewRedisObject(value interface{}) TBase {
-	return &RedisObject{
-		value: value,
-	}
-}
-
-// 创建一个新的redis string object
-func NewRedisStringObject(value string) (TBase, error) {
-	return NewRedisStringObjectWithTTL(value, -1)
-}
-
-/*
- *	创建一个新的带有ttl的redis string object
- *      //TODO lmj 这里需要根据变量的值来进行判断，看是创建什么样encoding的redis object，
- *      //TODO lmj 这里的value应该传进来一个interface? 还是看根据是否能够转换成数字来判断?
- */
-func NewRedisStringObjectWithTTL(value string, ttl int) (TBase, error) {
-	obj := &RedisObject{
-		objectType: RedisTypeString,
-		encoding:   RedisEncodingRaw, // 暂时都默认为raw吧。
-		ttl:        ttl,
-		value:      value,
-	}
-	if ttl > 0 {
-		obj.expireTime = time.Now().Add(time.Duration(ttl) * time.Second)
-	}
-	return obj, nil
 }
 
 func (obj *RedisObject) GetObjectType() string {

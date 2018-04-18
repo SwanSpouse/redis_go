@@ -75,7 +75,7 @@ func (srv *Server) serveClient(c *client.Client) {
 				如果不在command table中,则返回command not found
 				如果在command table中，则获取到相应的command handler来进行处理。
 			*/
-			log.Debug("get command from client %+v", cmd)
+			log.Debug("get command from client %s", cmd)
 			if handler, ok := srv.commands[cmd.GetName()]; ok {
 				/* 在这里对client端发送过来的命令进行处理 */
 				handler.Process(c)
@@ -135,8 +135,16 @@ func (srv *Server) getDefaultDB() *database.Database {
 func (srv *Server) populateCommandTable() {
 	connectionHandler := new(handlers.ConnectionHandler)
 	stringHandler := new(handlers.StringHandler)
+
+	// connection command
 	srv.commands["PING"] = connectionHandler
 	srv.commands["TEST"] = connectionHandler
-	srv.commands["SET"] = stringHandler
+
+	// string command
+	srv.commands[handlers.RedisStringCommandAppend] = stringHandler
+	srv.commands[handlers.RedisStringCommandSet] = stringHandler
 	srv.commands["GET"] = stringHandler
+	srv.commands["INCR"] = stringHandler
+	srv.commands["DECR"] = stringHandler
+	srv.commands["STRLEN"] = stringHandler
 }

@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"fmt"
 	"redis_go/tcp"
 	"strings"
 )
@@ -56,4 +57,12 @@ func (c *Command) GetMicrosecond() int64 {
 
 func (c *Command) GetCalls() int64 {
 	return c.calls
+}
+
+func (c *Command) String() string {
+	ret := fmt.Sprintf("current command args info: command name: %s ", c.name)
+	for _, item := range c.args {
+		ret += fmt.Sprintf("%s ", string(item))
+	}
+	return ret
 }
