@@ -71,6 +71,7 @@ func (handler *StringHandler) Process(client *client.Client) {
 		case RedisStringCommandSetEX:
 		case RedisStringCommandSetRange:
 		case RedisStringCommandStrLen:
+			handler.Strlen(client, ts)
 		default:
 			client.ResponseError(string(re.ErrUnknownCommand), client.Cmd.GetOriginName())
 		}
@@ -102,6 +103,26 @@ func (handler *StringHandler) getValidKeyAndTypeOrError(client *client.Client) (
 		return "", nil, err
 	}
 	return key, ts, nil
+}
+
+/**
+	对baseType的类型是否为string进行校验。
+首先判断baseType是否为空，再判断baseType的Encoding是否为string的Encoding, baseType的Type是否为RedisTypeString
+*/
+func (handler *StringHandler) convertTBaseToTString(baseType database.TBase) (database.TString, error) {
+	if baseType == nil {
+		log.Errorf("base type is nil")
+		return nil, re.ErrUnknown
+	}
+	if _, ok := stringEncodingTypeDict[baseType.GetEncoding()]; !ok || baseType.GetObjectType() != encodings.RedisTypeString {
+		log.Errorf(string(re.ErrWrongTypeOrEncoding), baseType.GetObjectType(), baseType.GetEncoding())
+		return nil, re.ErrConvertToTargetType
+	}
+	if ts, ok := baseType.(database.TString); ok {
+		return ts, nil
+	}
+	log.Errorf("base type can not convert to TString")
+	return nil, re.ErrConvertToTargetType
 }
 
 func (handler *StringHandler) Append(client *client.Client, ts database.TString) {
@@ -159,22 +180,11 @@ func (handler *StringHandler) Decr(client *client.Client, ts database.TString) {
 	}
 }
 
-/**
-	对baseType的类型是否为string进行校验。
-首先判断baseType是否为空，再判断baseType的Encoding是否为string的Encoding, baseType的Type是否为RedisTypeString
-*/
-func (handler *StringHandler) convertTBaseToTString(baseType database.TBase) (database.TString, error) {
-	if baseType == nil {
-		log.Errorf("base type is nil")
-		return nil, re.ErrUnknown
+func (handler *StringHandler) Strlen(client *client.Client, ts database.TString) {
+	args := client.Cmd.GetArgs()
+	if len(args) != 1 {
+		client.ResponseError(string(re.ErrWrongNumberOfArgs), client.Cmd.GetOriginName())
+		return
 	}
-	if _, ok := stringEncodingTypeDict[baseType.GetEncoding()]; !ok || baseType.GetObjectType() != encodings.RedisTypeString {
-		log.Errorf(string(re.ErrWrongTypeOrEncoding), baseType.GetObjectType(), baseType.GetEncoding())
-		return nil, re.ErrConvertToTargetType
-	}
-	if ts, ok := baseType.(database.TString); ok {
-		return ts, nil
-	}
-	log.Errorf("base type can not convert to TString")
-	return nil, re.ErrConvertToTargetType
+	client.Response(ts.Strlen())
 }
