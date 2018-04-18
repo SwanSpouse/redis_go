@@ -6,6 +6,7 @@ import (
 	"redis_go/database"
 	"redis_go/encodings"
 	re "redis_go/error"
+	"redis_go/log"
 )
 
 const (
@@ -96,9 +97,9 @@ func (handler *StringHandler) getValidKeyAndTypeOrError(client *client.Client) (
 	// 获取key在数据库中对应的value(TBase:BaseType)
 	baseType := client.SelectedDatabase().SearchKeyInDB(key)
 	var ts database.TString
-	var ok bool
-	if ts, ok = handler.convertTBaseToTString(client, baseType); !ok || ts == nil {
-		return "", nil, re.ErrWrongType
+	var err error
+	if ts, err = handler.convertTBaseToTString(baseType); err != nil || ts == nil {
+		return "", nil, err
 	}
 	return key, ts, nil
 }
@@ -162,19 +163,18 @@ func (handler *StringHandler) Decr(client *client.Client, ts database.TString) {
 	对baseType的类型是否为string进行校验。
 首先判断baseType是否为空，再判断baseType的Encoding是否为string的Encoding, baseType的Type是否为RedisTypeString
 */
-// TODO 这里面会把ERROR发送两次。要解决一下这个问题。
-func (handler *StringHandler) convertTBaseToTString(client *client.Client, baseType database.TBase) (database.TString, bool) {
+func (handler *StringHandler) convertTBaseToTString(baseType database.TBase) (database.TString, error) {
 	if baseType == nil {
-		client.Response(nil)
-		return nil, false
+		log.Errorf("base type is nil")
+		return nil, re.ErrUnknown
 	}
 	if _, ok := stringEncodingTypeDict[baseType.GetEncoding()]; !ok || baseType.GetObjectType() != encodings.RedisTypeString {
-		client.ResponseError(string(re.ErrWrongTypeOrEncoding), baseType.GetObjectType(), baseType.GetEncoding())
-		return nil, false
+		log.Errorf(string(re.ErrWrongTypeOrEncoding), baseType.GetObjectType(), baseType.GetEncoding())
+		return nil, re.ErrConvertToTargetType
 	}
 	if ts, ok := baseType.(database.TString); ok {
-		return ts, true
+		return ts, nil
 	}
-	client.ResponseError(string(re.ErrConvertToTargetType))
-	return nil, false
+	log.Errorf("base type can not convert to TString")
+	return nil, re.ErrConvertToTargetType
 }
