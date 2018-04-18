@@ -1,6 +1,9 @@
 package database
 
-import "redis_go/encodings"
+import (
+	"redis_go/encodings"
+	"strconv"
+)
 
 var (
 	_ TString = (*encodings.StringRaw)(nil)
@@ -39,9 +42,10 @@ func NewRedisStringObject(value string) TBase {
 	return NewRedisStringObjectWithTTL(value, -1)
 }
 
-/*
- *	创建一个新的带有ttl的redis string object
- */
+// 创建一个新的带有ttl的redis string object
 func NewRedisStringObjectWithTTL(value string, ttl int) TBase {
+	if valueInt, err := strconv.Atoi(value); err == nil {
+		return encodings.NewRedisStringWithEncodingRawInt(valueInt, ttl)
+	}
 	return encodings.NewRedisStringWithEncodingRawString(value, ttl)
 }

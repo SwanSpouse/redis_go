@@ -36,4 +36,5 @@ const (
 	ErrWrongType              = protoError("WRONGTYPE Operation against a key holding the wrong kind of value")
 	ErrWrongTypeOrEncoding    = protoError("error object type or encoding. type:%s, encoding:%s")
 	ErrConvertToTargetType    = protoError("ERR cannot convert tbase to target type")
+	ErrConvertEncoding        = protoError("Err convert encoding")
 )

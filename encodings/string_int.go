@@ -1,12 +1,17 @@
 package encodings
 
-import "time"
+import (
+	re "redis_go/error"
+	"redis_go/log"
+	"strconv"
+	"time"
+)
 
 type StringInt struct {
 	RedisObject
 }
 
-func NewRedisStringWithEncodingRawInt(value string, ttl int) *RedisObject {
+func NewRedisStringWithEncodingRawInt(value int, ttl int) *RedisObject {
 	obj := &RedisObject{
 		objectType: RedisTypeString,
 		encoding:   RedisEncodingInt,
@@ -19,16 +24,41 @@ func NewRedisStringWithEncodingRawInt(value string, ttl int) *RedisObject {
 	return obj
 }
 
+func (si *StringInt) convertStringIntToStringRaw() (*StringRaw, error) {
+	si.SetEncoding(RedisEncodingRaw)
+	if valueInt, ok := si.GetValue().(int); !ok {
+		return nil, re.ErrConvertEncoding
+	} else {
+		si.SetValue(strconv.Itoa(valueInt))
+		return (*StringRaw)(si), nil
+	}
+}
+
 func (si *StringInt) Append(val string) int {
-	return 0
+	if sr, err := si.convertStringIntToStringRaw(); err != nil {
+		log.Errorf("convert string int to string raw error")
+		return -1
+	} else {
+		return sr.Append(val)
+	}
 }
 
 func (si *StringInt) Incr() (int, error) {
-	return 0, nil
+	if valueInt, ok := si.GetValue().(int); !ok {
+		return 0, re.ErrNotIntegerOrOutOfRange
+	} else {
+		si.SetValue(valueInt + 1)
+		return valueInt + 1, nil
+	}
 }
 
 func (si *StringInt) Decr() (int, error) {
-	return 0, nil
+	if valueInt, ok := si.GetValue().(int); !ok {
+		return 0, re.ErrNotIntegerOrOutOfRange
+	} else {
+		si.SetValue(valueInt - 1)
+		return valueInt - 1, nil
+	}
 }
 
 func (si *StringInt) IncrBy(val int) (int, error) {
@@ -40,5 +70,9 @@ func (si *StringInt) DecrBy(val int) (int, error) {
 }
 
 func (si *StringInt) Strlen() int {
-	return 0
+	if valueInt, ok := si.GetValue().(int); !ok {
+		return -1
+	} else {
+		return len(strconv.Itoa(valueInt))
+	}
 }
