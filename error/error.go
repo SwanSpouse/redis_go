@@ -30,7 +30,7 @@ const (
 
 	ErrNotIntegerOrOutOfRange = protoError("value is not an integer or out of range")
 	ErrWrongNumberOfArgs      = protoError("wrong number of arguments for '%s' command")
-	ErrUnknownCommand         = protoError("ERR unknown command %s")
+	ErrUnknownCommand         = protoError("ERR unknown command '%s'")
 	ErrNilCommand             = protoError("ERR nil command")
 	ErrFunctionNotImplement   = protoError("This command has not been implement.")
 	ErrWrongType              = protoError("WRONGTYPE Operation against a key holding the wrong kind of value")

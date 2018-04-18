@@ -1,13 +1,14 @@
 package server
 
 import (
-	"fmt"
 	"net"
 	"redis_go/client"
 	"redis_go/conf"
 	"redis_go/database"
+	re "redis_go/error"
 	"redis_go/handlers"
 	"redis_go/log"
+	"redis_go/protocol"
 	"redis_go/tcp"
 	"sync"
 )
@@ -65,9 +66,11 @@ func (srv *Server) serveClient(c *client.Client) {
 		}
 
 		for more := true; more; more = c.Buffered() != 0 {
-			cmd, err := c.ReadCmd()
-			if err != nil {
-				c.ResponseError("read command error %+v", err)
+			var cmd *protocol.Command
+			var err error
+			if cmd, err = c.ReadCmd(); err != nil { // err == io.EOF
+				log.Errorf("read command error %+v", err)
+				c.ResponseError(err.Error())
 				continue
 			}
 			/**
@@ -80,12 +83,8 @@ func (srv *Server) serveClient(c *client.Client) {
 				/* 在这里对client端发送过来的命令进行处理 */
 				handler.Process(c)
 			} else {
-				log.Errorf("command not found %s", cmd.GetOriginName())
-				c.ResponseError(fmt.Sprintf("command not found %s", cmd.GetOriginName()))
-			}
-			if err := c.Flush(); err != nil {
-				log.Errorf("response writer flush data error %+v", err)
-				return
+				log.Errorf(string(re.ErrUnknownCommand), cmd.GetOriginName())
+				c.ResponseError(string(re.ErrUnknownCommand), cmd.GetOriginName())
 			}
 		}
 	}

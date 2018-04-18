@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"net"
+	re "redis_go/error"
 	"redis_go/log"
 	"redis_go/protocol"
 	"redis_go/server"
@@ -63,14 +64,26 @@ var _ = Describe("MockRedisClient", func() {
 		}
 	})
 
-	It("test known command", func() {
-		w.WriteRawString("$3\r\nlol\r\n")
+	It("test unknown command", func() {
+		w.WriteRawString("*1\r\n$3\r\nlol\r\n")
 		err := w.Flush()
 		Expect(err).To(BeNil())
 		Expect(r.PeekType()).To(Equal(tcp.TypeError))
 
 		ret, err := r.Read()
 		Expect(err).To(BeNil())
-		Expect(ret[0]).To(ContainSubstring("command not found lol"))
+		Expect(ret[0]).To(ContainSubstring("unknown command"))
+	})
+
+	It("test input $-1", func() {
+		w.WriteRawString("*3\r\n$3\r\nget\r\n$-1\r\n$3\r\nbar\r\n")
+		//w.WriteRawString("$-1\r\n")
+		err := w.Flush()
+		Expect(err).To(BeNil())
+		Expect(r.PeekType()).To(Equal(tcp.TypeError))
+
+		ret, err := r.Read()
+		Expect(err).To(BeNil())
+		Expect(ret[0]).To(ContainSubstring(re.ErrInvalidBulkLength.Error()))
 	})
 })

@@ -23,12 +23,13 @@ func (handler *ConnectionHandler) Process(client *client.Client) {
 		client.ResponseError("ERR unknown command %s", client.Cmd.GetOriginName())
 		return
 	}
+	client.Flush()
 }
 
 func (handler *ConnectionHandler) ping(client *client.Client) {
 	msg := "PONG"
 	log.Info("message we send to client %+v", msg)
-	client.Response("PONG")
+	client.Response(msg)
 }
 
 func (handler *ConnectionHandler) auth(client *client.Client) {

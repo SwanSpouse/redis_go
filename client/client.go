@@ -184,6 +184,7 @@ func (c *Client) ResponseError(msg string, args ...interface{}) {
 	} else {
 		c.writer.AppendErrorf(msg, args...)
 	}
+	c.Flush()
 }
 
 func (c *Client) Flush() error {

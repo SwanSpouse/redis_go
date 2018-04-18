@@ -1,6 +1,8 @@
 package tcp
 
-import re "redis_go/error"
+import (
+	re "redis_go/error"
+)
 
 type buffer []byte
 
@@ -82,7 +84,6 @@ func (buf buffer) ParseSize(prefix byte, fallback error) (int64, error) {
 	} else if len(data) < 2 {
 		return 0, fallback
 	}
-
 	var n int64
 	for _, c := range data[1:] {
 		if c >= '0' && c <= '9' {
