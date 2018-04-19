@@ -84,7 +84,7 @@ func (srv *Server) serveClient(c *client.Client) {
 				handler.Process(c)
 			} else {
 				log.Errorf(string(re.ErrUnknownCommand), cmd.GetOriginName())
-				c.ResponseError(string(re.ErrUnknownCommand), cmd.GetOriginName())
+				c.ResponseReError(re.ErrUnknownCommand, cmd.GetOriginName())
 			}
 		}
 	}

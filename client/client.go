@@ -187,6 +187,19 @@ func (c *Client) ResponseError(msg string, args ...interface{}) {
 	c.Flush()
 }
 
+func (c *Client) ResponseReError(err error, args ...interface{}) {
+	if re.IsProtocolError(err) {
+		switch err {
+		case re.ErrNilValue:
+			c.Response(nil)
+		default:
+			c.ResponseError(err.Error(), args...)
+		}
+	} else {
+		c.ResponseError(err.Error(), args...)
+	}
+}
+
 func (c *Client) Flush() error {
 	return c.writer.Flush()
 }

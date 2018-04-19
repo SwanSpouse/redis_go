@@ -60,7 +60,7 @@ func (c *Command) GetCalls() int64 {
 }
 
 func (c *Command) String() string {
-	ret := fmt.Sprintf("current command args info: command name: %s ", c.name)
+	ret := fmt.Sprintf("current command args info: command name: %s. args:", c.name)
 	for _, item := range c.args {
 		ret += fmt.Sprintf("%s ", string(item))
 	}

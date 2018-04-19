@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"redis_go/client"
+	re "redis_go/error"
 	"redis_go/log"
 	"strings"
 )
@@ -11,7 +12,7 @@ type ConnectionHandler struct {
 
 func (handler *ConnectionHandler) Process(client *client.Client) {
 	if client.Cmd == nil {
-		client.ResponseError("ERR nil command")
+		client.ResponseReError(re.ErrNilCommand)
 		return
 	}
 	switch strings.ToUpper(client.Cmd.GetName()) {
@@ -20,7 +21,7 @@ func (handler *ConnectionHandler) Process(client *client.Client) {
 	case "AUTH":
 		handler.auth(client)
 	default:
-		client.ResponseError("ERR unknown command %s", client.Cmd.GetOriginName())
+		client.ResponseReError(re.ErrUnknownCommand, client.Cmd.GetOriginName())
 		return
 	}
 	client.Flush()

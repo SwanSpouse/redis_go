@@ -49,7 +49,7 @@ func (handler *StringHandler) Process(client *client.Client) {
 		case RedisStringCommandAppend:
 			handler.Append(client, ts)
 		case RedisStringCommandBitCount, RedisStringCommandBitop, RedisStringCommandGetBit, RedisStringCommandSetBit:
-			client.ResponseError(string(re.ErrFunctionNotImplement))
+			client.ResponseReError(re.ErrFunctionNotImplement)
 		case RedisStringCommandDecr:
 			handler.Decr(client, ts)
 		case RedisStringCommandDecrBy:
@@ -73,10 +73,10 @@ func (handler *StringHandler) Process(client *client.Client) {
 		case RedisStringCommandStrLen:
 			handler.Strlen(client, ts)
 		default:
-			client.ResponseError(string(re.ErrUnknownCommand), client.Cmd.GetOriginName())
+			client.ResponseReError(re.ErrUnknownCommand, client.Cmd.GetOriginName())
 		}
 	} else {
-		client.ResponseError(err.Error())
+		client.ResponseReError(err)
 	}
 	// 最后统一发送数据
 	client.Flush()
@@ -97,38 +97,28 @@ func (handler *StringHandler) getValidKeyAndTypeOrError(client *client.Client) (
 	}
 	// 获取key在数据库中对应的value(TBase:BaseType)
 	baseType := client.SelectedDatabase().SearchKeyInDB(key)
-	var ts database.TString
-	var err error
-	if ts, err = handler.convertTBaseToTString(baseType); err != nil || ts == nil {
-		return "", nil, err
-	}
-	return key, ts, nil
-}
-
-/**
-	对baseType的类型是否为string进行校验。
-首先判断baseType是否为空，再判断baseType的Encoding是否为string的Encoding, baseType的Type是否为RedisTypeString
-*/
-func (handler *StringHandler) convertTBaseToTString(baseType database.TBase) (database.TString, error) {
 	if baseType == nil {
-		log.Errorf("base type is nil")
-		return nil, re.ErrUnknown
+		return "", nil, re.ErrNilValue
 	}
+	/**
+	对baseType的类型是否为string进行校验。
+	判断baseType的Encoding是否为string的Encoding,baseType的Type是否为RedisTypeString
+	*/
 	if _, ok := stringEncodingTypeDict[baseType.GetEncoding()]; !ok || baseType.GetObjectType() != encodings.RedisTypeString {
 		log.Errorf(string(re.ErrWrongTypeOrEncoding), baseType.GetObjectType(), baseType.GetEncoding())
-		return nil, re.ErrConvertToTargetType
+		return "", nil, re.ErrConvertToTargetType
 	}
 	if ts, ok := baseType.(database.TString); ok {
-		return ts, nil
+		return "", ts, nil
 	}
 	log.Errorf("base type can not convert to TString")
-	return nil, re.ErrConvertToTargetType
+	return "", nil, re.ErrConvertToTargetType
 }
 
 func (handler *StringHandler) Append(client *client.Client, ts database.TString) {
 	args := client.Cmd.GetArgs()
 	if len(args) < 2 {
-		client.ResponseError(string(re.ErrWrongNumberOfArgs), client.Cmd.GetOriginName())
+		client.ResponseReError(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
 		return
 	}
 	client.Response(ts.Append(args[1]))
@@ -137,7 +127,7 @@ func (handler *StringHandler) Append(client *client.Client, ts database.TString)
 func (handler *StringHandler) Set(client *client.Client, key string) {
 	args := client.Cmd.GetArgs()
 	if len(args) < 2 {
-		client.ResponseError(string(re.ErrWrongNumberOfArgs), client.Cmd.GetOriginName())
+		client.ResponseReError(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
 		return
 	}
 	client.SelectedDatabase().SetKeyInDB(key, database.NewRedisStringObject(args[1]))
@@ -148,7 +138,7 @@ func (handler *StringHandler) Get(client *client.Client, ts database.TString) {
 	args := client.Cmd.GetArgs()
 	// 判断参数个数是否合理
 	if len(args) != 1 {
-		client.ResponseError(string(re.ErrWrongNumberOfArgs), client.Cmd.GetOriginName())
+		client.ResponseReError(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
 		return
 	}
 	client.Response(fmt.Sprintf("%s", ts.GetValue()))
@@ -157,11 +147,11 @@ func (handler *StringHandler) Get(client *client.Client, ts database.TString) {
 func (handler *StringHandler) Incr(client *client.Client, ts database.TString) {
 	args := client.Cmd.GetArgs()
 	if len(args) != 1 {
-		client.ResponseError(string(re.ErrWrongNumberOfArgs), client.Cmd.GetOriginName())
+		client.ResponseReError(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
 		return
 	}
 	if ret, err := ts.Incr(); err != nil {
-		client.ResponseError(err.Error())
+		client.ResponseReError(err)
 	} else {
 		client.Response(ret)
 	}
@@ -170,11 +160,11 @@ func (handler *StringHandler) Incr(client *client.Client, ts database.TString) {
 func (handler *StringHandler) Decr(client *client.Client, ts database.TString) {
 	args := client.Cmd.GetArgs()
 	if len(args) != 1 {
-		client.ResponseError(string(re.ErrWrongNumberOfArgs), client.Cmd.GetOriginName())
+		client.ResponseReError(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
 		return
 	}
 	if ret, err := ts.Decr(); err != nil {
-		client.ResponseError(err.Error())
+		client.ResponseReError(err)
 	} else {
 		client.Response(ret)
 	}
@@ -183,7 +173,7 @@ func (handler *StringHandler) Decr(client *client.Client, ts database.TString) {
 func (handler *StringHandler) Strlen(client *client.Client, ts database.TString) {
 	args := client.Cmd.GetArgs()
 	if len(args) != 1 {
-		client.ResponseError(string(re.ErrWrongNumberOfArgs), client.Cmd.GetOriginName())
+		client.ResponseReError(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
 		return
 	}
 	client.Response(ts.Strlen())
