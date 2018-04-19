@@ -27,6 +27,10 @@ func NewRedisStringWithEncodingRawString(value string, ttl int) *StringRaw {
 	return sr
 }
 
+func (sr *StringRaw) String() string {
+	return sr.value.(string)
+}
+
 func (sr *StringRaw) Append(val string) int {
 	newValue := sr.GetValue().(string) + val
 	sr.SetValue(newValue)

@@ -11,17 +11,21 @@ type StringInt struct {
 	RedisObject
 }
 
-func NewRedisStringWithEncodingRawInt(value int, ttl int) *RedisObject {
-	obj := &RedisObject{
-		objectType: RedisTypeString,
-		encoding:   RedisEncodingInt,
-		ttl:        ttl,
-		value:      value,
-	}
+func NewRedisStringWithEncodingRawInt(value int, ttl int) *StringInt {
+	var expireTime time.Time
 	if ttl > 0 {
-		obj.expireTime = time.Now().Add(time.Duration(ttl) * time.Second)
+		expireTime = time.Now().Add(time.Duration(ttl) * time.Second)
 	}
-	return obj
+	si := &StringInt{
+		RedisObject: RedisObject{
+			objectType: RedisTypeString,
+			encoding:   RedisEncodingInt,
+			ttl:        ttl,
+			value:      value,
+			expireTime: expireTime,
+		},
+	}
+	return si
 }
 
 func (si *StringInt) convertStringIntToStringRaw() (*StringRaw, error) {
@@ -32,6 +36,10 @@ func (si *StringInt) convertStringIntToStringRaw() (*StringRaw, error) {
 		si.SetValue(strconv.Itoa(valueInt))
 		return (*StringRaw)(si), nil
 	}
+}
+
+func (si *StringInt) String() string {
+	return strconv.Itoa(si.value.(int))
 }
 
 func (si *StringInt) Append(val string) int {

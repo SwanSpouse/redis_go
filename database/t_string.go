@@ -35,6 +35,7 @@ type TString interface {
 	IncrBy(int) (int, error)
 	DecrBy(int) (int, error)
 	Strlen() int
+	String() string
 }
 
 // 创建一个新的redis string object

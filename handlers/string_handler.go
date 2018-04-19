@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"redis_go/client"
 	"redis_go/database"
 	"redis_go/encodings"
@@ -121,6 +120,7 @@ func (handler *StringHandler) Append(client *client.Client, ts database.TString)
 		client.ResponseReError(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
 		return
 	}
+	// TODO lmj 应该在这里把类型判断的拦截做了
 	client.Response(ts.Append(args[1]))
 }
 
@@ -141,7 +141,7 @@ func (handler *StringHandler) Get(client *client.Client, ts database.TString) {
 		client.ResponseReError(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
 		return
 	}
-	client.Response(fmt.Sprintf("%s", ts.GetValue()))
+	client.Response(ts.String())
 }
 
 func (handler *StringHandler) Incr(client *client.Client, ts database.TString) {

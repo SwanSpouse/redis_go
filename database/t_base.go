@@ -23,4 +23,5 @@ type TBase interface {
 	GetValue() interface{}
 	SetValue(interface{})
 	IsExpired() bool
+	String() string
 }
