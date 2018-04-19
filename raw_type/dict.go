@@ -372,13 +372,14 @@ func (dict *Dict) Size() int {
 func (dict *Dict) Get(key interface{}) interface{} {
 	hashCode := hash(key)
 	segmentIdx := (hashCode >> dict.segmentShift) & dict.segmentMask
-	if dict.segments[segmentIdx] != nil {
-		idx := hashCode & dict.segments[segmentIdx].sizeMask
-		if dict.segments[segmentIdx].table[idx] != nil {
-			for e := dict.segments[segmentIdx].table[idx]; e != nil; e = e.next {
-				if e.hash == hashCode && reflect.DeepEqual(e.Key, key) {
-					return e.Value
-				}
+	dict.segments[segmentIdx].locker.RLock()
+	defer dict.segments[segmentIdx].locker.RUnlock()
+
+	idx := hashCode & dict.segments[segmentIdx].sizeMask
+	if dict.segments[segmentIdx].table[idx] != nil {
+		for e := dict.segments[segmentIdx].table[idx]; e != nil; e = e.next {
+			if e.hash == hashCode && reflect.DeepEqual(e.Key, key) {
+				return e.Value
 			}
 		}
 	}
