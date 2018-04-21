@@ -7,12 +7,19 @@ import (
 	"redis_go/log"
 	"redis_go/protocol"
 	"redis_go/tcp"
+	"sync"
 	"sync/atomic"
 	"time"
 )
 
+const (
+	RedisClientStatusIdle      = uint32(0)
+	RedisClientStatusInProcess = uint32(1)
+)
+
 var (
-	clientInc = uint64(0)
+	clientInc  = uint64(0)
+	clientPool sync.Pool
 )
 
 type Client struct {
@@ -25,30 +32,40 @@ type Client struct {
 	args        uint64            // args number of command
 	Cmd         *protocol.Command // current command
 	lastCmd     *protocol.Command // last command
-	timeoutTime time.Time         // timeout time
+	execTimeout time.Time
+	idleTimeout time.Time // timeout
+	Status      uint32
+	Locker      sync.Mutex
 }
 
-func (c *Client) reset(cn net.Conn) {
+func (c *Client) reset(cn net.Conn, defaultDB *database.Database) {
 	*c = Client{
 		id: atomic.AddUint64(&clientInc, 1),
 		cn: cn,
+		db: defaultDB,
 	}
 	c.reader = tcp.NewBufIoReader(cn)
 	c.writer = tcp.NewBufIoWriter(cn)
 }
 
-func (c *Client) Release() {
-	_ = c.cn.Close()
+func (c *Client) release() {
 	c.reader.ReturnBufIoReader()
 	c.writer.ReturnBufIoWriter()
-	c.reader = nil
-	c.writer = nil
+	clientPool.Put(c)
+
+	c.cn.Close()
 }
 
 func NewClient(cn net.Conn, defaultDB *database.Database) *Client {
-	c := new(Client)
-	c.reset(cn)
-	c.db = defaultDB
+	var c *Client
+	if obj := clientPool.Get(); obj != nil {
+		log.Debug("Get Client from ClientPool")
+		c = obj.(*Client)
+	} else {
+		log.Debug("Can not get Client from ClientPool, return a new Client")
+		c = new(Client)
+	}
+	c.reset(cn, defaultDB)
 	return c
 }
 
@@ -70,17 +87,37 @@ func (c *Client) Buffered() int {
 
 func (c *Client) Close() {
 	c.Closed = true
+	c.release()
 }
 
-func (c *Client) SetTimeout(duration time.Duration) {
-	c.timeoutTime = time.Now().Add(duration)
+func (c *Client) SetIdleTimeout(duration time.Duration) {
+	c.idleTimeout = time.Now().Add(duration)
 }
 
-func (c *Client) IsTimeout() bool {
-	if c.timeoutTime.IsZero() {
+func (c *Client) IsIdleTimeout() bool {
+	if c.idleTimeout.IsZero() {
 		return false
 	}
-	return c.timeoutTime.Before(time.Now())
+	return c.idleTimeout.Before(time.Now())
+}
+
+func (c *Client) GetIdleTimeoutAt() time.Time {
+	return c.idleTimeout
+}
+
+func (c *Client) SetExecTimeout(duration time.Duration) {
+	c.execTimeout = time.Now().Add(duration)
+}
+
+func (c *Client) IsExecTimeout() bool {
+	if c.execTimeout.IsZero() {
+		return false
+	}
+	return c.execTimeout.Before(time.Now())
+}
+
+func (c *Client) GetExecTimeoutAt() time.Time {
+	return c.execTimeout
 }
 
 /**
