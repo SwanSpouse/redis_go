@@ -5,10 +5,8 @@ import (
 	"redis_go/client"
 	"redis_go/conf"
 	"redis_go/database"
-	re "redis_go/error"
 	"redis_go/handlers"
 	"redis_go/log"
-	"redis_go/protocol"
 	"redis_go/tcp"
 	"sync"
 )
@@ -17,7 +15,8 @@ import (
 type Server struct {
 	Config    *conf.ServerConfig
 	Databases []*database.Database /* database*/
-	password  string               /* Pass for AUTH command, or NULL */
+	clients   []*client.Client
+	password  string /* Pass for AUTH command, or NULL */
 	commands  map[string]handlers.BaseHandler
 	mu        sync.RWMutex
 }
@@ -39,66 +38,40 @@ func NewServer(config *conf.ServerConfig) *Server {
 	server.initDB()
 	// init commands table
 	server.populateCommandTable()
+	// init time events
+	go server.initTimeEvents()
 	log.Info("redis server: %+v", server)
 	return server
 }
 
-func (srv *Server) serveClient(c *client.Client) {
-	defer c.Release()
-	// TODO lmj 增加Timeout的判断
-	// TODO lmj 除了Timeout的方式，还有什么好的办法能够判断client端是否已经断开连接
-	// loop to handle redis command
-
-	for !c.Closed {
-		/**
-		这个timeout是单次请求超时时间:
-		如果client端一直没有数据。那么for函数不会执行。每次到这里都没有timeout，然后deadline就会被重新设置。
-		*/
-		if c.IsTimeout() {
-			c.Close()
-			return
-		} else {
-			// set deadline
-			if d := srv.Config.Timeout; d > 0 {
-				log.Debug("[SET DEADLINE FOR CLIENT]")
-				c.SetTimeout(d)
-			}
-		}
-
-		for more := true; more; more = c.Buffered() != 0 {
-			var cmd *protocol.Command
-			var err error
-			if cmd, err = c.ReadCmd(); err != nil { // err == io.EOF
-				log.Errorf("read command error %+v", err)
-				c.ResponseError(err.Error())
-				continue
-			}
-			/**
-			首先判断是否在command table中,
-				如果不在command table中,则返回command not found
-				如果在command table中，则获取到相应的command handler来进行处理。
-			*/
-			log.Debug("get command from client %s", cmd)
-			if handler, ok := srv.commands[cmd.GetName()]; ok {
-				/* 在这里对client端发送过来的命令进行处理 */
-				handler.Process(c)
-			} else {
-				log.Errorf(string(re.ErrUnknownCommand), cmd.GetOriginName())
-				c.ResponseReError(re.ErrUnknownCommand, cmd.GetOriginName())
-			}
-		}
-	}
-}
-
 func (srv *Server) Serve(lis net.Listener) error {
+	// start to scan clients
+	go srv.scanClients()
+	// loop for accept tcp client
 	for {
 		cn, err := lis.Accept()
 		if err != nil {
 			return err
 		}
-		go srv.serveClient(client.NewClient(cn, srv.getDefaultDB()))
-		log.Info("new client come in ! from %+v", cn.RemoteAddr().String())
+		c := client.NewClient(cn, srv.getDefaultDB())
+		srv.addClientToServer(c)
+		log.Info("new client %d come in ! from %+v and has been added in server's client list.", c.ID(), cn.RemoteAddr().String())
 	}
+}
+
+func (srv *Server) addClientToServer(c *client.Client) {
+	srv.mu.Lock()
+	defer srv.mu.Unlock()
+
+	// add client to server's clients list
+	for i := 0; i < len(srv.clients); i++ {
+		if srv.clients[i] == nil || srv.clients[i].Closed {
+			srv.clients[i] = c
+			return
+		}
+	}
+	// TODO lmj srv.clients 有个数限制
+	srv.clients = append(srv.clients, c)
 }
 
 func (srv *Server) initServer() {
@@ -106,8 +79,8 @@ func (srv *Server) initServer() {
 }
 
 func (srv *Server) initDB() {
-	srv.Databases = make([]*database.Database, srv.Config.DBNum)
 	// add default database
+	srv.Databases = make([]*database.Database, srv.Config.DBNum)
 	for i := 0; i < srv.Config.DBNum; i++ {
 		srv.Databases[i] = database.NewDatabase()
 	}
@@ -121,6 +94,16 @@ func (srv *Server) initIOPool() {
 		tcp.WriterPool.Put(tcp.NewBufIoWriterWithoutConn())
 	}
 	log.Debug("Successful init reader and writer pool. ReaderPoolSize:%d, WriterPoolSize:%d", srv.Config.ReaderPoolNum, srv.Config.WriterPoolNum)
+}
+
+func (srv *Server) initTimeEvents() {
+	//ticker := time.NewTicker(time.Second)
+	//for _ = range ticker.C {
+	//	log.Info("TICKER INFO client list length %d", len(srv.clients))
+	//	for i, item := range srv.clients {
+	//		log.Info("TICKER current client list index %d, info:%+v", i, item)
+	//	}
+	//}
 }
 
 func (srv *Server) getDefaultDB() *database.Database {
@@ -142,8 +125,8 @@ func (srv *Server) populateCommandTable() {
 	// string command
 	srv.commands[handlers.RedisStringCommandAppend] = stringHandler
 	srv.commands[handlers.RedisStringCommandSet] = stringHandler
-	srv.commands["GET"] = stringHandler
-	srv.commands["INCR"] = stringHandler
-	srv.commands["DECR"] = stringHandler
-	srv.commands["STRLEN"] = stringHandler
+	srv.commands[handlers.RedisStringCommandGet] = stringHandler
+	srv.commands[handlers.RedisStringCommandIncr] = stringHandler
+	srv.commands[handlers.RedisStringCommandDecr] = stringHandler
+	srv.commands[handlers.RedisStringCommandStrLen] = stringHandler
 }

@@ -90,7 +90,7 @@ func (r *BufIoReader) fill() error {
 	if r.w < len(r.buf) {
 		n, err := r.rd.Read(r.buf[r.w:])
 		r.w += n
-		log.Info("current io reader buffer %s", string(r.buf[r.r:r.w]))
+		//log.Info("current io reader buffer %s", string(r.buf[r.r:r.w]))
 		return err
 	}
 	return nil

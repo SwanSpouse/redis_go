@@ -87,7 +87,7 @@ func NewBufIoWriter(cn net.Conn) *BufIoWriter {
 }
 
 func (b *BufIoWriter) ReturnBufIoWriter() {
-	ReaderPool.Put(b)
+	WriterPool.Put(b)
 }
 
 func NewBufIoWriterWithoutConn() *BufIoWriter {
