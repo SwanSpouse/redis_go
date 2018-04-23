@@ -3,27 +3,42 @@ package handlers
 import (
 	"redis_go/client"
 	re "redis_go/error"
+	"strings"
+)
+
+const (
+	RedisKeyCommandDel    = "DEL"
+	RedisKeyCommandExists = "EXISTS"
+	RedisKeyCommandType   = "TYPE"
+	RedisKeyCommandObject = "OBJECT"
+)
+
+const (
+	CommandObjectSubTypeRefCount  = "REFCOUNT"
+	CommandObjectSubTypeEncodings = "ENCODING"
+	CommandObjectSubTypeIdleTime  = "IDLETIME"
 )
 
 type KeyHandler struct{}
 
-func (handler *KeyHandler) Process(client *client.Client) {
-	if client.Cmd == nil {
-		client.ResponseReError(re.ErrNilCommand)
+func (handler *KeyHandler) Process(cli *client.Client) {
+	if cli.Cmd == nil {
+		cli.ResponseReError(re.ErrNilCommand)
 		return
 	}
-	switch client.Cmd.GetName() {
-	case "DEL":
-		handler.Del(client)
+	switch cli.Cmd.GetName() {
+	case RedisKeyCommandDel:
+		handler.Del(cli)
 	case "DUMP":
-	case "EXISTS":
-		handler.Exists(client)
+	case RedisKeyCommandExists:
+		handler.Exists(cli)
 	case "EXPIRE":
 	case "EXPIREAT":
 	case "KEYS":
 	case "MIGRATE":
 	case "MOVE":
-	case "OBJECT":
+	case RedisKeyCommandObject:
+		handler.Object(cli)
 	case "PERSIST":
 	case "PEXPIRE":
 	case "PEXPIREAT":
@@ -34,30 +49,68 @@ func (handler *KeyHandler) Process(client *client.Client) {
 	case "RESTORE":
 	case "SORT":
 	case "TTL":
-	case "TYPE":
+	case RedisKeyCommandType:
+		handler.Type(cli)
 	case "SCAN":
 	default:
-		client.ResponseReError(re.ErrUnknownCommand, client.Cmd.GetOriginName())
+		cli.ResponseReError(re.ErrUnknownCommand, cli.Cmd.GetOriginName())
 	}
-	client.Flush()
+	cli.Flush()
 }
 
-func (handler *KeyHandler) Del(client *client.Client) {
-	args := client.Cmd.GetArgs()
-	if len(args) < 2 {
-		client.ResponseReError(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
+func (handler *KeyHandler) Del(cli *client.Client) {
+	args := cli.Cmd.GetArgs()
+	if len(args) < 1 {
+		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
 		return
 	}
-	successCount := client.SelectedDatabase().RemoveKeyInDB(args[1:])
-	client.Response(successCount)
+	successCount := cli.SelectedDatabase().RemoveKeyInDB(args)
+	cli.Response(successCount)
 }
 
-func (handler *KeyHandler) Exists(client *client.Client) {
-	args := client.Cmd.GetArgs()
+func (handler *KeyHandler) Exists(cli *client.Client) {
+	args := cli.Cmd.GetArgs()
 	if len(args) < 2 {
-		client.ResponseReError(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
+		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
 		return
 	}
-	successCount, _ := client.SelectedDatabase().SearchKeysInDB(args[1:])
-	client.Response(int64(len(successCount)))
+	successCount, _ := cli.SelectedDatabase().SearchKeysInDB(args[1:])
+	cli.Response(int64(len(successCount)))
+}
+
+func (handler *KeyHandler) Type(cli *client.Client) {
+	args := cli.Cmd.GetArgs()
+	if len(args) < 1 {
+		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
+		return
+	}
+	if tb := cli.SelectedDatabase().SearchKeyInDB(args[0]); tb == nil {
+		cli.Response(nil)
+	} else {
+		cli.Response(tb.GetObjectType())
+	}
+}
+
+func (handler *KeyHandler) Object(cli *client.Client) {
+	args := cli.Cmd.GetArgs()
+	if len(args) < 2 {
+		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
+		return
+	}
+	encodings := args[0]
+	key := args[1]
+	switch strings.ToUpper(encodings) {
+	case CommandObjectSubTypeEncodings:
+		if tb := cli.SelectedDatabase().SearchKeyInDB(key); tb == nil {
+			cli.Response(nil)
+		} else {
+			cli.Response(tb.GetEncoding())
+		}
+	case CommandObjectSubTypeRefCount:
+		cli.ResponseReError(re.ErrFunctionNotImplement)
+	case CommandObjectSubTypeIdleTime:
+		cli.ResponseReError(re.ErrFunctionNotImplement)
+	default:
+		cli.ResponseReError(re.ErrFunctionNotImplement)
+	}
 }

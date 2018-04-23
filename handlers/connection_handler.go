@@ -7,6 +7,11 @@ import (
 	"strings"
 )
 
+const (
+	RedisConnectionCommandPing = "PING"
+	RedisConnectionCommandAuth = "AUTH"
+)
+
 type ConnectionHandler struct {
 }
 
@@ -16,9 +21,9 @@ func (handler *ConnectionHandler) Process(client *client.Client) {
 		return
 	}
 	switch strings.ToUpper(client.Cmd.GetName()) {
-	case "PING":
+	case RedisConnectionCommandPing:
 		handler.ping(client)
-	case "AUTH":
+	case RedisConnectionCommandAuth:
 		handler.auth(client)
 	default:
 		client.ResponseReError(re.ErrUnknownCommand, client.Cmd.GetOriginName())

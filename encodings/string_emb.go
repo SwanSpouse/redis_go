@@ -6,21 +6,20 @@ type StringEmb struct {
 	RedisObject
 }
 
-func NewRedisStringWithEncodingEmbStr(value string, ttl int) *StringEmb {
+func NewStringEmb(ttl int, value interface{}) *StringEmb {
 	var expireTime time.Time
 	if ttl > 0 {
 		expireTime = time.Now().Add(time.Duration(ttl) * time.Second)
 	}
-	se := &StringEmb{
+	return &StringEmb{
 		RedisObject: RedisObject{
 			objectType: RedisTypeString,
-			encoding:   RedisEncodingRaw,
+			encoding:   RedisEncodingEmbStr,
 			ttl:        ttl,
 			value:      value,
 			expireTime: expireTime,
 		},
 	}
-	return se
 }
 
 func (se *StringEmb) String() string {

@@ -10,12 +10,12 @@ type StringRaw struct {
 	RedisObject
 }
 
-func NewRedisStringWithEncodingRawString(value string, ttl int) *StringRaw {
+func NewStringRaw(ttl int, value interface{}) *StringRaw {
 	var expireTime time.Time
 	if ttl > 0 {
 		expireTime = time.Now().Add(time.Duration(ttl) * time.Second)
 	}
-	sr := &StringRaw{
+	return &StringRaw{
 		RedisObject: RedisObject{
 			objectType: RedisTypeString,
 			encoding:   RedisEncodingRaw,
@@ -24,7 +24,6 @@ func NewRedisStringWithEncodingRawString(value string, ttl int) *StringRaw {
 			expireTime: expireTime,
 		},
 	}
-	return sr
 }
 
 func (sr *StringRaw) String() string {

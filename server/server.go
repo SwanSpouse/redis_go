@@ -117,10 +117,17 @@ func (srv *Server) getDefaultDB() *database.Database {
 func (srv *Server) populateCommandTable() {
 	connectionHandler := new(handlers.ConnectionHandler)
 	stringHandler := new(handlers.StringHandler)
+	keyHandler := new(handlers.KeyHandler)
+
+	// key command
+	srv.commands[handlers.RedisKeyCommandDel] = keyHandler
+	srv.commands[handlers.RedisKeyCommandObject] = keyHandler
+	srv.commands[handlers.RedisKeyCommandType] = keyHandler
+	srv.commands[handlers.RedisKeyCommandExists] = keyHandler
 
 	// connection command
-	srv.commands["PING"] = connectionHandler
-	srv.commands["TEST"] = connectionHandler
+	srv.commands[handlers.RedisConnectionCommandPing] = connectionHandler
+	srv.commands[handlers.RedisConnectionCommandAuth] = connectionHandler
 
 	// string command
 	srv.commands[handlers.RedisStringCommandAppend] = stringHandler

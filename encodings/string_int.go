@@ -2,7 +2,6 @@ package encodings
 
 import (
 	re "redis_go/error"
-	"redis_go/loggers"
 	"strconv"
 	"time"
 )
@@ -11,12 +10,12 @@ type StringInt struct {
 	RedisObject
 }
 
-func NewRedisStringWithEncodingRawInt(value int, ttl int) *StringInt {
+func NewStringInt(ttl int, value interface{}) *StringInt {
 	var expireTime time.Time
 	if ttl > 0 {
 		expireTime = time.Now().Add(time.Duration(ttl) * time.Second)
 	}
-	si := &StringInt{
+	return &StringInt{
 		RedisObject: RedisObject{
 			objectType: RedisTypeString,
 			encoding:   RedisEncodingInt,
@@ -25,17 +24,6 @@ func NewRedisStringWithEncodingRawInt(value int, ttl int) *StringInt {
 			expireTime: expireTime,
 		},
 	}
-	return si
-}
-
-func (si *StringInt) convertStringIntToStringRaw() (*StringRaw, error) {
-	si.SetEncoding(RedisEncodingRaw)
-	if valueInt, ok := si.GetValue().(int); !ok {
-		return nil, re.ErrConvertEncoding
-	} else {
-		si.SetValue(strconv.Itoa(valueInt))
-		return (*StringRaw)(si), nil
-	}
 }
 
 func (si *StringInt) String() string {
@@ -43,12 +31,7 @@ func (si *StringInt) String() string {
 }
 
 func (si *StringInt) Append(val string) int {
-	if sr, err := si.convertStringIntToStringRaw(); err != nil {
-		loggers.Errorf("convert string int to string raw error")
-		return -1
-	} else {
-		return sr.Append(val)
-	}
+	return 0
 }
 
 func (si *StringInt) Incr() (int, error) {

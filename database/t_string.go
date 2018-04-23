@@ -38,6 +38,18 @@ type TString interface {
 	String() string
 }
 
+func NewRedisStringWithEncodingRawString(value string, ttl int) TString {
+	return encodings.NewStringRaw(ttl, value)
+}
+
+func NewRedisStringWithEncodingStringInt(value int, ttl int) TString {
+	return encodings.NewStringInt(ttl, value)
+}
+
+func NewRedisStringWithEncodingStringEmb(value int, ttl int) TString {
+	return encodings.NewStringEmb(ttl, value)
+}
+
 // 创建一个新的redis string object
 func NewRedisStringObject(value string) TBase {
 	return NewRedisStringObjectWithTTL(value, -1)
@@ -46,7 +58,7 @@ func NewRedisStringObject(value string) TBase {
 // 创建一个新的带有ttl的redis string object
 func NewRedisStringObjectWithTTL(value string, ttl int) TBase {
 	if valueInt, err := strconv.Atoi(value); err == nil {
-		return encodings.NewRedisStringWithEncodingRawInt(valueInt, ttl)
+		return NewRedisStringWithEncodingStringInt(valueInt, ttl)
 	}
-	return encodings.NewRedisStringWithEncodingRawString(value, ttl)
+	return NewRedisStringWithEncodingRawString(value, ttl)
 }
