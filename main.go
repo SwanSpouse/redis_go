@@ -7,6 +7,7 @@ import (
 	"redis_go/conf"
 	"redis_go/loggers"
 	"redis_go/server"
+	"runtime"
 )
 
 var flags struct {
@@ -33,6 +34,7 @@ func run() error {
 
 func main() {
 	flag.Parse()
+	runtime.GOMAXPROCS(6)
 	if err := run(); err != nil {
 		loggers.Fatal(fmt.Sprintf("start server error %+v", err))
 	}
