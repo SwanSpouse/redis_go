@@ -3,7 +3,7 @@ package handlers
 import (
 	"redis_go/client"
 	re "redis_go/error"
-	"redis_go/log"
+	"redis_go/loggers"
 	"strings"
 )
 
@@ -29,7 +29,7 @@ func (handler *ConnectionHandler) Process(client *client.Client) {
 
 func (handler *ConnectionHandler) ping(client *client.Client) {
 	msg := "PONG"
-	log.Info("message we send to client %+v", msg)
+	loggers.Info("message we send to client %+v", msg)
 	client.Response(msg)
 }
 

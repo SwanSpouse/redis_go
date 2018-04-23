@@ -4,7 +4,7 @@ import (
 	"net"
 	"redis_go/database"
 	re "redis_go/error"
-	"redis_go/log"
+	"redis_go/loggers"
 	"redis_go/protocol"
 	"redis_go/tcp"
 	"sync"
@@ -59,10 +59,10 @@ func (c *Client) release() {
 func NewClient(cn net.Conn, defaultDB *database.Database) *Client {
 	var c *Client
 	if obj := clientPool.Get(); obj != nil {
-		log.Debug("Get Client from ClientPool")
+		loggers.Debug("Get Client from ClientPool")
 		c = obj.(*Client)
 	} else {
-		log.Debug("Can not get Client from ClientPool, return a new Client")
+		loggers.Debug("Can not get Client from ClientPool, return a new Client")
 		c = new(Client)
 	}
 	c.reset(cn, defaultDB)
@@ -166,7 +166,7 @@ func (c *Client) ReadCmd() (*protocol.Command, error) {
 	// 更新client端记录的本次命令和上次命令
 	c.lastCmd = c.Cmd
 	c.Cmd = cmd
-	log.Info("current command we received is %+v", cmd)
+	loggers.Info("current command we received is %+v", cmd)
 	return cmd, nil
 }
 

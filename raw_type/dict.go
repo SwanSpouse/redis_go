@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/mitchellh/hashstructure"
 	"math"
-	"redis_go/log"
+	"redis_go/loggers"
 	"reflect"
 	"sync"
 )
@@ -141,7 +141,7 @@ func (seg *segment) rehash(node *dictEntry) {
 	oldCapacity := len(oldTable)
 	newCapacity := oldCapacity << 1
 	threshold := int(float32(newCapacity) * LoadFactory)
-	log.Debug("segment start rehash enlarge size from %d to %d", oldCapacity, newCapacity)
+	loggers.Debug("segment start rehash enlarge size from %d to %d", oldCapacity, newCapacity)
 	newTable := newSegment(newCapacity, LoadFactory, threshold)
 	// 将老table中的数据迁移到新table中去
 	for i := 0; i < oldCapacity; i++ {
@@ -296,7 +296,7 @@ func NewDictWithCapacityAndConcurrencyLevel(capacity, concurrencyLevel int) *Dic
 	for actualSegmentCap < expectedSegmentCap {
 		actualSegmentCap <<= 1
 	}
-	log.Info("[SEGMENT] totalCapacity %+v, segment cap %+v, actualSegCap %+v", capacity, expectedSegmentCap, actualSegmentCap)
+	loggers.Info("[SEGMENT] totalCapacity %+v, segment cap %+v, actualSegCap %+v", capacity, expectedSegmentCap, actualSegmentCap)
 	segments := make([]*segment, concurrencyLevel)
 	for i := 0; i < concurrencyLevel; i++ {
 		segments[i] = newSegment(actualSegmentCap, LoadFactory, int(float32(expectedSegmentCap)*LoadFactory))

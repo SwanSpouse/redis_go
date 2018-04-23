@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/gomega"
 	"net"
 	re "redis_go/error"
-	"redis_go/log"
+	"redis_go/loggers"
 	"redis_go/protocol"
 	"redis_go/server"
 	"redis_go/tcp"
@@ -30,7 +30,7 @@ var _ = Describe("MockRedisClient", func() {
 	srv := server.NewServer(nil)
 	lis, err := net.Listen("tcp", "127.0.0.1:9736")
 	if err != nil {
-		log.Errorf("server start error %+v", err)
+		loggers.Errorf("server start error %+v", err)
 	}
 	go srv.Serve(lis)
 

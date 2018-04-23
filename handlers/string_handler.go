@@ -5,7 +5,7 @@ import (
 	"redis_go/database"
 	"redis_go/encodings"
 	re "redis_go/error"
-	"redis_go/log"
+	"redis_go/loggers"
 )
 
 const (
@@ -104,13 +104,13 @@ func (handler *StringHandler) getValidKeyAndTypeOrError(client *client.Client) (
 	判断baseType的Encoding是否为string的Encoding,baseType的Type是否为RedisTypeString
 	*/
 	if _, ok := stringEncodingTypeDict[baseType.GetEncoding()]; !ok || baseType.GetObjectType() != encodings.RedisTypeString {
-		log.Errorf(string(re.ErrWrongTypeOrEncoding), baseType.GetObjectType(), baseType.GetEncoding())
+		loggers.Errorf(string(re.ErrWrongTypeOrEncoding), baseType.GetObjectType(), baseType.GetEncoding())
 		return "", nil, re.ErrConvertToTargetType
 	}
 	if ts, ok := baseType.(database.TString); ok {
 		return "", ts, nil
 	}
-	log.Errorf("base type can not convert to TString")
+	loggers.Errorf("base type can not convert to TString")
 	return "", nil, re.ErrConvertToTargetType
 }
 

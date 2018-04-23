@@ -1,13 +1,13 @@
-package log
+package loggers
 
 import (
 	"bytes"
 	"fmt"
 	"io"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
-	"strings"
 )
 
 type Logger struct {
@@ -18,14 +18,14 @@ type Logger struct {
 }
 
 func New(out io.Writer, prefix string) *Logger {
-	return &Logger{out: out, prefix: prefix}
+	return &Logger{out: out, prefix: prefix, showGoRoutineId: true}
 }
 
 func (l *Logger) header(tm time.Time, file string, line int, s string) string {
 	ms := tm.Nanosecond() / int(time.Millisecond)
 	goRoutineId := ""
 	if l.showGoRoutineId {
-		goRoutineId = "goRoutineId" + GetGID()
+		goRoutineId = "grID:" + GetGID()
 	}
 	return fmt.Sprintf("%s.%03d %s %s file %s line %d ", tm.Format("2006-01-02 15:04:05"), ms, l.prefix, goRoutineId, file, line)
 }

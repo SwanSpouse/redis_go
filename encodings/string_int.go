@@ -2,7 +2,7 @@ package encodings
 
 import (
 	re "redis_go/error"
-	"redis_go/log"
+	"redis_go/loggers"
 	"strconv"
 	"time"
 )
@@ -44,7 +44,7 @@ func (si *StringInt) String() string {
 
 func (si *StringInt) Append(val string) int {
 	if sr, err := si.convertStringIntToStringRaw(); err != nil {
-		log.Errorf("convert string int to string raw error")
+		loggers.Errorf("convert string int to string raw error")
 		return -1
 	} else {
 		return sr.Append(val)

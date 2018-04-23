@@ -47,8 +47,8 @@ redis 五种基本类型的具体某个encoding的实现
 * pub_sub_handler.go 处理发布、订阅相关的命令
 * transaction_handler.go 处理事务相关的命令
 
-### log
-log处理
+### loggers
+log相关
 
 ### mock
 用于进行mock测试

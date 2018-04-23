@@ -5,7 +5,7 @@ import (
 	"io"
 	"net"
 	re "redis_go/error"
-	"redis_go/log"
+	"redis_go/loggers"
 	"sync"
 )
 
@@ -23,10 +23,10 @@ var (
 func NewBufIoReader(cn net.Conn) *BufIoReader {
 	var r *BufIoReader
 	if v := ReaderPool.Get(); v != nil {
-		log.Debug("Get BufIoReader from ReaderPool")
+		loggers.Debug("Get BufIoReader from ReaderPool")
 		r = v.(*BufIoReader)
 	} else {
-		log.Debug("Can not get BufIoReader from ReaderPool, return a New BufIOReader")
+		loggers.Debug("Can not get BufIoReader from ReaderPool, return a New BufIOReader")
 		r = new(BufIoReader)
 	}
 	r.Reset(cn)

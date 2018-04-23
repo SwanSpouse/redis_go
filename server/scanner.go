@@ -4,7 +4,7 @@ import (
 	"io"
 	"redis_go/client"
 	re "redis_go/error"
-	"redis_go/log"
+	"redis_go/loggers"
 	"sync/atomic"
 )
 
@@ -60,7 +60,7 @@ func (srv *Server) handlerCommand(c *client.Client) {
 		/* 在这里对client端发送过来的命令进行处理 */
 		handler.Process(c)
 	} else {
-		log.Errorf(string(re.ErrUnknownCommand), c.Cmd.GetOriginName())
+		loggers.Errorf(string(re.ErrUnknownCommand), c.Cmd.GetOriginName())
 		c.ResponseReError(re.ErrUnknownCommand, c.Cmd.GetOriginName())
 	}
 }

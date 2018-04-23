@@ -3,7 +3,7 @@ package protocol
 import (
 	"fmt"
 	"io"
-	"redis_go/log"
+	"redis_go/loggers"
 	"redis_go/tcp"
 )
 
@@ -61,7 +61,7 @@ func (r *ResponseReader) Read() ([]string, error) {
 		return nil, err
 	}
 
-	log.Debug("RESPONSE TYPE %s", responseType.String())
+	loggers.Debug("RESPONSE TYPE %s", responseType.String())
 
 	switch responseType {
 	case tcp.TypeInt:
@@ -107,7 +107,7 @@ func (r *ResponseReader) Read() ([]string, error) {
 			ret = append(ret, tempRet...)
 		}
 	case tcp.TypeUnknown:
-		log.Errorf("unknown type %v", responseType)
+		loggers.Errorf("unknown type %v", responseType)
 	}
 	return ret, nil
 }

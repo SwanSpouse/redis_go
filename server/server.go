@@ -6,7 +6,7 @@ import (
 	"redis_go/conf"
 	"redis_go/database"
 	"redis_go/handlers"
-	"redis_go/log"
+	"redis_go/loggers"
 	"redis_go/tcp"
 	"sync"
 )
@@ -29,7 +29,7 @@ func NewServer(config *conf.ServerConfig) *Server {
 		Config:   config,
 		commands: make(map[string]handlers.BaseHandler),
 	}
-	log.Info("redis server config: %+v", config)
+	loggers.Info("redis server config: %+v", config)
 	// init general parameters
 	server.initServer()
 	// init Reader & Writer Sync Pool
@@ -40,7 +40,7 @@ func NewServer(config *conf.ServerConfig) *Server {
 	server.populateCommandTable()
 	// init time events
 	go server.initTimeEvents()
-	log.Info("redis server: %+v", server)
+	loggers.Info("redis server: %+v", server)
 	return server
 }
 
@@ -55,7 +55,7 @@ func (srv *Server) Serve(lis net.Listener) error {
 		}
 		c := client.NewClient(cn, srv.getDefaultDB())
 		srv.addClientToServer(c)
-		log.Info("new client %d come in ! from %+v and has been added in server's client list.", c.ID(), cn.RemoteAddr().String())
+		loggers.Info("new client %d come in ! from %+v and has been added in server's client list.", c.ID(), cn.RemoteAddr().String())
 	}
 }
 
@@ -75,7 +75,7 @@ func (srv *Server) addClientToServer(c *client.Client) {
 }
 
 func (srv *Server) initServer() {
-	log.Level = srv.Config.LogLevel
+	loggers.Level = srv.Config.LogLevel
 }
 
 func (srv *Server) initDB() {
@@ -93,7 +93,7 @@ func (srv *Server) initIOPool() {
 	for i := 0; i < srv.Config.WriterPoolNum; i++ {
 		tcp.WriterPool.Put(tcp.NewBufIoWriterWithoutConn())
 	}
-	log.Debug("Successful init reader and writer pool. ReaderPoolSize:%d, WriterPoolSize:%d", srv.Config.ReaderPoolNum, srv.Config.WriterPoolNum)
+	loggers.Debug("Successful init reader and writer pool. ReaderPoolSize:%d, WriterPoolSize:%d", srv.Config.ReaderPoolNum, srv.Config.WriterPoolNum)
 }
 
 func (srv *Server) initTimeEvents() {

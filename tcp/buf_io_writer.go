@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"redis_go/log"
+	"redis_go/loggers"
 	"reflect"
 	"strconv"
 	"strings"
@@ -76,10 +76,10 @@ type BufIoWriter struct {
 func NewBufIoWriter(cn net.Conn) *BufIoWriter {
 	var w *BufIoWriter
 	if v := WriterPool.Get(); v != nil {
-		log.Debug("Get BufIoWriter from WriterPool")
+		loggers.Debug("Get BufIoWriter from WriterPool")
 		w = v.(*BufIoWriter)
 	} else {
-		log.Debug("Can not get BufIoWriter from WriterPool, return a New BufIoWriter")
+		loggers.Debug("Can not get BufIoWriter from WriterPool, return a New BufIoWriter")
 		w = new(BufIoWriter)
 	}
 	w.Reset(cn)
@@ -298,6 +298,6 @@ func (w *BufIoWriter) Append(v interface{}) error {
 func (b *BufIoWriter) AppendRawString(rawInput []byte) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	log.Debug("raw string %s", string(rawInput))
+	loggers.Debug("raw string %s", string(rawInput))
 	b.buf = append(b.buf, rawInput...)
 }

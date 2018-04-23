@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net"
 	"redis_go/conf"
-	"redis_go/log"
+	"redis_go/loggers"
 	"redis_go/server"
 )
 
@@ -27,13 +27,13 @@ func run() error {
 		return err
 	}
 	defer lis.Close()
-	log.Info("waiting for connections on %s", lis.Addr().String())
+	loggers.Info("waiting for connections on %s", lis.Addr().String())
 	return server.Serve(lis)
 }
 
 func main() {
 	flag.Parse()
 	if err := run(); err != nil {
-		log.Fatal(fmt.Sprintf("start server error %+v", err))
+		loggers.Fatal(fmt.Sprintf("start server error %+v", err))
 	}
 }

@@ -1,7 +1,7 @@
 package conf
 
 import (
-	"redis_go/log"
+	"redis_go/loggers"
 	"time"
 )
 
@@ -14,7 +14,7 @@ const (
 	RedisIOReaderPoolThreadNum = 5
 	RedisIOWriterPoolThreadNum = 5
 
-	RedisLogLevel = log.DEBUG
+	RedisLogLevel = loggers.DEBUG
 )
 
 // redis server configuration
