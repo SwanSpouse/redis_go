@@ -5,6 +5,7 @@ import (
 	"redis_go/client"
 	re "redis_go/error"
 	"redis_go/loggers"
+	"runtime"
 	"sync/atomic"
 )
 
@@ -27,22 +28,24 @@ func (srv *Server) scanClients() {
 			//	continue
 			//}
 			// 如果Client有待处理命令，处理对应的Client
-			go srv.handlerCommand(srv.clients[i])
+			if srv.clients[i].Status == client.RedisClientStatusIdle {
+				atomic.StoreUint32(&srv.clients[i].Status, client.RedisClientStatusInProcess)
+				go srv.handlerCommand(srv.clients[i])
+			}
 		}
 		srv.mu.Unlock()
+		runtime.Gosched()
 	}
 }
 
 func (srv *Server) handlerCommand(c *client.Client) {
-	if c == nil || c.Closed || c.Status == client.RedisClientStatusInProcess {
+	if c == nil || c.Closed {
 		return
 	}
 	c.Locker.Lock()
 	defer c.Locker.Unlock()
 
-	atomic.StoreUint32(&c.Status, client.RedisClientStatusInProcess)
 	defer atomic.StoreUint32(&c.Status, client.RedisClientStatusIdle)
-
 	//c.SetIdleTimeout(5 * time.Hour)
 	//c.SetExecTimeout(5 * time.Second)
 	if cmd, err := c.ReadCmd(); err == io.EOF {
