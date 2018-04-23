@@ -36,9 +36,9 @@ if (aeCreateFileEvent(server.el,fd,AE_READABLE, readQueryFromClient, c) == AE_ER
 aeCreateFileEvent(server.el, c->fd, AE_WRITABLE, sendReplyToClient, c) == AE_ERR)
 ```
 
-执行命令将产生相应的命令回复，为了将这些命令回复传送回给客户端，服务器会将客户端套接字的AE_WRITABLE事件与命令回复处理器进行
-关联。当客户端尝试读取命令回复的时候，客户端套接字将产生AE_WRITABLE事件，触发命令回复处理器执行，当命令回复处理器将命令回复
-全部写入到套接字之后，服务器就会接触客户端套接字的AE_WRITABLE事件与命令回复处理器之间的关联。
+执行命令将产生相应的命令回复，为了将这些命令回复传送回给客户端，服务器会将客户端套接字的AE_WRITABLE事件与命令回复处理器进行关联。
+当客户端尝试读取命令回复的时候，客户端套接字将产生AE_WRITABLE事件，触发命令回复处理器执行，当命令回复处理器将命令回复
+全部写入到套接字之后，服务器就会接解除户端套接字的AE_WRITABLE事件与命令回复处理器之间的关联。
 
 
 #### 思考
