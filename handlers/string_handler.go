@@ -6,6 +6,7 @@ import (
 	"redis_go/encodings"
 	re "redis_go/error"
 	"redis_go/loggers"
+	"strconv"
 )
 
 const (
@@ -42,22 +43,22 @@ var stringEncodingTypeDict = map[string]bool{
 
 type StringHandler struct{}
 
-func (handler *StringHandler) Process(client *client.Client) {
-	if key, ts, err := handler.getValidKeyAndTypeOrError(client); err == nil {
-		switch client.Cmd.GetName() {
+func (handler *StringHandler) Process(cli *client.Client) {
+	if key, ts, err := handler.getValidKeyAndTypeOrError(cli); err == nil {
+		switch cli.Cmd.GetName() {
 		case RedisStringCommandAppend:
-			handler.Append(client, ts)
+			handler.Append(cli, ts)
 		case RedisStringCommandBitCount, RedisStringCommandBitop, RedisStringCommandGetBit, RedisStringCommandSetBit:
-			client.ResponseReError(re.ErrFunctionNotImplement)
+			cli.ResponseReError(re.ErrFunctionNotImplement)
 		case RedisStringCommandDecr:
-			handler.Decr(client, ts)
+			handler.Decr(cli, ts)
 		case RedisStringCommandDecrBy:
 		case RedisStringCommandGet:
-			handler.Get(client, ts)
+			handler.Get(cli, ts)
 		case RedisStringCommandGetRange:
 		case RedisStringCommandGetSet:
 		case RedisStringCommandIncr:
-			handler.Incr(client, ts)
+			handler.Incr(cli, ts)
 		case RedisStringCommandIncrBy:
 		case RedisStringCommandIncrByFloat:
 		case RedisStringCommandMGet:
@@ -65,37 +66,37 @@ func (handler *StringHandler) Process(client *client.Client) {
 		case RedisStringCommandMSetNx:
 		case RedisStringCommandPSetEx:
 		case RedisStringCommandSet:
-			handler.Set(client, key)
+			handler.Set(cli, key)
 		case RedisStringCommandSetNX:
 		case RedisStringCommandSetEX:
 		case RedisStringCommandSetRange:
 		case RedisStringCommandStrLen:
-			handler.Strlen(client, ts)
+			handler.Strlen(cli, ts)
 		default:
-			client.ResponseReError(re.ErrUnknownCommand, client.Cmd.GetOriginName())
+			cli.ResponseReError(re.ErrUnknownCommand, cli.Cmd.GetOriginName())
 		}
 	} else {
-		client.ResponseReError(err)
+		cli.ResponseReError(err)
 	}
 	// 最后统一发送数据
-	client.Flush()
+	cli.Flush()
 }
 
-func (handler *StringHandler) getValidKeyAndTypeOrError(client *client.Client) (string, database.TString, error) {
-	if client.Cmd == nil {
+func (handler *StringHandler) getValidKeyAndTypeOrError(cli *client.Client) (string, database.TString, error) {
+	if cli.Cmd == nil {
 		return "", nil, re.ErrNilCommand
 	}
-	args := client.Cmd.GetArgs()
+	args := cli.Cmd.GetArgs()
 	// 参数个数的错误都交给每个命令自己来进行处理
 	if len(args) == 0 {
 		return "", nil, nil
 	}
 	key := args[0]
-	if client.Cmd.GetName() == RedisStringCommandSet {
+	if cli.Cmd.GetName() == RedisStringCommandSet {
 		return key, nil, nil
 	}
 	// 获取key在数据库中对应的value(TBase:BaseType)
-	baseType := client.SelectedDatabase().SearchKeyInDB(key)
+	baseType := cli.SelectedDatabase().SearchKeyInDB(key)
 	if baseType == nil {
 		return "", nil, re.ErrNilValue
 	}
@@ -114,67 +115,78 @@ func (handler *StringHandler) getValidKeyAndTypeOrError(client *client.Client) (
 	return "", nil, re.ErrConvertToTargetType
 }
 
-func (handler *StringHandler) Append(client *client.Client, ts database.TString) {
-	args := client.Cmd.GetArgs()
+func (handler *StringHandler) Append(cli *client.Client, ts database.TString) {
+	args := cli.Cmd.GetArgs()
 	if len(args) < 2 {
-		client.ResponseReError(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
+		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
 		return
 	}
-	// TODO lmj 应该在这里把类型判断的拦截做了
-	client.Response(ts.Append(args[1]))
+	key := args[0]
+	// 如果TString的编码类型是int,转换成StringRaw再进行处理
+	if ts.GetEncoding() == encodings.RedisEncodingInt {
+		if valueInt, ok := ts.GetValue().(int); !ok {
+			cli.ResponseReError(re.ErrWrongTypeOrEncoding)
+			return
+		} else {
+			rs := database.NewRedisStringWithEncodingRawString(strconv.Itoa(valueInt), -1)
+			cli.SelectedDatabase().SetKeyInDB(key, rs)
+			ts = rs
+		}
+	}
+	cli.Response(ts.Append(args[1]))
 }
 
-func (handler *StringHandler) Set(client *client.Client, key string) {
-	args := client.Cmd.GetArgs()
+func (handler *StringHandler) Set(cli *client.Client, key string) {
+	args := cli.Cmd.GetArgs()
 	if len(args) < 2 {
-		client.ResponseReError(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
+		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
 		return
 	}
-	client.SelectedDatabase().SetKeyInDB(key, database.NewRedisStringObject(args[1]))
-	client.ResponseOK()
+	cli.SelectedDatabase().SetKeyInDB(key, database.NewRedisStringObject(args[1]))
+	cli.ResponseOK()
 }
 
-func (handler *StringHandler) Get(client *client.Client, ts database.TString) {
-	args := client.Cmd.GetArgs()
+func (handler *StringHandler) Get(cli *client.Client, ts database.TString) {
+	args := cli.Cmd.GetArgs()
 	// 判断参数个数是否合理
 	if len(args) != 1 {
-		client.ResponseReError(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
+		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
 		return
 	}
-	client.Response(ts.String())
+	cli.Response(ts.String())
 }
 
-func (handler *StringHandler) Incr(client *client.Client, ts database.TString) {
-	args := client.Cmd.GetArgs()
+func (handler *StringHandler) Incr(cli *client.Client, ts database.TString) {
+	args := cli.Cmd.GetArgs()
 	if len(args) != 1 {
-		client.ResponseReError(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
+		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
 		return
 	}
 	if ret, err := ts.Incr(); err != nil {
-		client.ResponseReError(err)
+		cli.ResponseReError(err)
 	} else {
-		client.Response(ret)
+		cli.Response(ret)
 	}
 }
 
-func (handler *StringHandler) Decr(client *client.Client, ts database.TString) {
-	args := client.Cmd.GetArgs()
+func (handler *StringHandler) Decr(cli *client.Client, ts database.TString) {
+	args := cli.Cmd.GetArgs()
 	if len(args) != 1 {
-		client.ResponseReError(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
+		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
 		return
 	}
 	if ret, err := ts.Decr(); err != nil {
-		client.ResponseReError(err)
+		cli.ResponseReError(err)
 	} else {
-		client.Response(ret)
+		cli.Response(ret)
 	}
 }
 
-func (handler *StringHandler) Strlen(client *client.Client, ts database.TString) {
-	args := client.Cmd.GetArgs()
+func (handler *StringHandler) Strlen(cli *client.Client, ts database.TString) {
+	args := cli.Cmd.GetArgs()
 	if len(args) != 1 {
-		client.ResponseReError(re.ErrWrongNumberOfArgs, client.Cmd.GetOriginName())
+		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
 		return
 	}
-	client.Response(ts.Strlen())
+	cli.Response(ts.Strlen())
 }
