@@ -40,6 +40,18 @@ aeCreateFileEvent(server.el, c->fd, AE_WRITABLE, sendReplyToClient, c) == AE_ERR
 当客户端尝试读取命令回复的时候，客户端套接字将产生AE_WRITABLE事件，触发命令回复处理器执行，当命令回复处理器将命令回复
 全部写入到套接字之后，服务器就会接解除户端套接字的AE_WRITABLE事件与命令回复处理器之间的关联。
 
+```c
+// networking.c 回复全部发送完毕，删除事件处理器
+if (c->bufpos == 0 && listLength(c->reply) == 0) {
+    c->sentlen = 0;
+    aeDeleteFileEvent(server.el,c->fd,AE_WRITABLE);
+
+    /* Close connection after entire reply has been sent. */
+    // 如果状态为“回复完毕之后关闭”，那么关闭客户端
+    if (c->flags & REDIS_CLOSE_AFTER_REPLY) freeClient(c);
+}
+```
+
 
 #### 思考
 
