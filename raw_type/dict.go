@@ -296,7 +296,7 @@ func NewDictWithCapacityAndConcurrencyLevel(capacity, concurrencyLevel int) *Dic
 	for actualSegmentCap < expectedSegmentCap {
 		actualSegmentCap <<= 1
 	}
-	loggers.Info("[SEGMENT] totalCapacity %+v, segment cap %+v, actualSegCap %+v", capacity, expectedSegmentCap, actualSegmentCap)
+	//loggers.Info("[SEGMENT] totalCapacity %+v, segment cap %+v, actualSegCap %+v", capacity, expectedSegmentCap, actualSegmentCap)
 	segments := make([]*segment, concurrencyLevel)
 	for i := 0; i < concurrencyLevel; i++ {
 		segments[i] = newSegment(actualSegmentCap, LoadFactory, int(float32(expectedSegmentCap)*LoadFactory))
