@@ -36,32 +36,34 @@ func (sr *StringRaw) Append(val string) int {
 	return len(newValue)
 }
 
-func (sr *StringRaw) Incr() (int, error) {
+func (sr *StringRaw) Incr() (int64, error) {
+	return sr.IncrBy("1")
+}
+
+func (sr *StringRaw) Decr() (int64, error) {
+	return sr.DecrBy("1")
+}
+
+func (sr *StringRaw) IncrBy(val string) (int64, error) {
+	incrValInt, err := strconv.ParseInt(val, 10, 64)
+	if err != nil {
+		return 0, re.ErrNotIntegerOrOutOfRange
+	}
 	value := sr.GetValue().(string)
-	if valueInt, err := strconv.Atoi(value); err != nil {
+	if valueInt, err := strconv.ParseInt(value, 10, 64); err != nil {
 		return 0, re.ErrNotIntegerOrOutOfRange
 	} else {
-		sr.SetValue(strconv.Itoa(valueInt + 1))
-		return valueInt + 1, nil
+		sr.SetValue(strconv.FormatInt(valueInt+incrValInt, 10))
+		return valueInt + incrValInt, nil
 	}
 }
 
-func (sr *StringRaw) Decr() (int, error) {
-	value := sr.GetValue().(string)
-	if valueInt, err := strconv.Atoi(value); err != nil {
+func (sr *StringRaw) DecrBy(val string) (int64, error) {
+	valueInt, err := strconv.ParseInt(val, 10, 64)
+	if err != nil {
 		return 0, re.ErrNotIntegerOrOutOfRange
-	} else {
-		sr.SetValue(strconv.Itoa(valueInt - 1))
-		return valueInt - 1, nil
 	}
-}
-
-func (sr *StringRaw) IncrBy(val int) (int, error) {
-	return 0, nil
-}
-
-func (sr *StringRaw) DecrBy(val int) (int, error) {
-	return 0, nil
+	return sr.IncrBy(strconv.FormatInt(-1*valueInt, 10))
 }
 
 func (sr *StringRaw) Strlen() int {

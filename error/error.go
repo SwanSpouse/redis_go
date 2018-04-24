@@ -38,4 +38,5 @@ const (
 	ErrConvertToTargetType    = protoError("ERR cannot convert tbase to target type")
 	ErrConvertEncoding        = protoError("Err convert encoding")
 	ErrNilValue               = protoError("Err nil")
+	ErrIncrOrDecrOverflow     = protoError("ERR increment or decrement would overflow")
 )

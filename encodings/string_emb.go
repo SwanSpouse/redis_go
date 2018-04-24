@@ -30,19 +30,19 @@ func (se *StringEmb) Append(val string) int {
 	return 0
 }
 
-func (se *StringEmb) Incr() (int, error) {
+func (se *StringEmb) Incr() (int64, error) {
 	return 0, nil
 }
 
-func (se *StringEmb) Decr() (int, error) {
+func (se *StringEmb) Decr() (int64, error) {
 	return 0, nil
 }
 
-func (se *StringEmb) IncrBy(val int) (int, error) {
+func (se *StringEmb) IncrBy(val string) (int64, error) {
 	return 0, nil
 }
 
-func (se *StringEmb) DecrBy(val int) (int, error) {
+func (se *StringEmb) DecrBy(val string) (int64, error) {
 	return 0, nil
 }
 

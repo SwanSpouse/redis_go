@@ -53,6 +53,7 @@ func (handler *StringHandler) Process(cli *client.Client) {
 		case RedisStringCommandDecr:
 			handler.Decr(cli, ts)
 		case RedisStringCommandDecrBy:
+			handler.DecrBy(cli, ts)
 		case RedisStringCommandGet:
 			handler.Get(cli, ts)
 		case RedisStringCommandGetRange:
@@ -60,6 +61,7 @@ func (handler *StringHandler) Process(cli *client.Client) {
 		case RedisStringCommandIncr:
 			handler.Incr(cli, ts)
 		case RedisStringCommandIncrBy:
+			handler.IncrBy(cli, ts)
 		case RedisStringCommandIncrByFloat:
 		case RedisStringCommandMGet:
 		case RedisStringCommandMSet:
@@ -169,6 +171,19 @@ func (handler *StringHandler) Incr(cli *client.Client, ts database.TString) {
 	}
 }
 
+func (handler *StringHandler) IncrBy(cli *client.Client, ts database.TString) {
+	args := cli.Cmd.GetArgs()
+	if len(args) != 2 {
+		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
+		return
+	}
+	if ret, err := ts.IncrBy(args[1]); err != nil {
+		cli.ResponseReError(err)
+	} else {
+		cli.Response(ret)
+	}
+}
+
 func (handler *StringHandler) Decr(cli *client.Client, ts database.TString) {
 	args := cli.Cmd.GetArgs()
 	if len(args) != 1 {
@@ -176,6 +191,19 @@ func (handler *StringHandler) Decr(cli *client.Client, ts database.TString) {
 		return
 	}
 	if ret, err := ts.Decr(); err != nil {
+		cli.ResponseReError(err)
+	} else {
+		cli.Response(ret)
+	}
+}
+
+func (handler *StringHandler) DecrBy(cli *client.Client, ts database.TString) {
+	args := cli.Cmd.GetArgs()
+	if len(args) != 2 {
+		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
+		return
+	}
+	if ret, err := ts.DecrBy(args[1]); err != nil {
 		cli.ResponseReError(err)
 	} else {
 		cli.Response(ret)

@@ -30,10 +30,10 @@ type TString interface {
 
 	// string command operation
 	Append(string) int
-	Incr() (int, error)
-	Decr() (int, error)
-	IncrBy(int) (int, error)
-	DecrBy(int) (int, error)
+	Incr() (int64, error)
+	Decr() (int64, error)
+	IncrBy(string) (int64, error)
+	DecrBy(string) (int64, error)
 	Strlen() int
 	String() string
 }
@@ -42,7 +42,7 @@ func NewRedisStringWithEncodingRawString(value string, ttl int) TString {
 	return encodings.NewStringRaw(ttl, value)
 }
 
-func NewRedisStringWithEncodingStringInt(value int, ttl int) TString {
+func NewRedisStringWithEncodingStringInt(value int64, ttl int) TString {
 	return encodings.NewStringInt(ttl, value)
 }
 
@@ -57,7 +57,7 @@ func NewRedisStringObject(value string) TBase {
 
 // 创建一个新的带有ttl的redis string object
 func NewRedisStringObjectWithTTL(value string, ttl int) TBase {
-	if valueInt, err := strconv.Atoi(value); err == nil {
+	if valueInt, err := strconv.ParseInt(value, 10, 64); err == nil {
 		return NewRedisStringWithEncodingStringInt(valueInt, ttl)
 	}
 	return NewRedisStringWithEncodingRawString(value, ttl)

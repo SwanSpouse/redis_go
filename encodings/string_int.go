@@ -1,6 +1,8 @@
 package encodings
 
 import (
+	"fmt"
+	"math"
 	re "redis_go/error"
 	"strconv"
 	"time"
@@ -27,37 +29,60 @@ func NewStringInt(ttl int, value interface{}) *StringInt {
 }
 
 func (si *StringInt) String() string {
-	return strconv.Itoa(si.value.(int))
+	return fmt.Sprintf("%d", si.GetValue().(int64))
 }
 
 func (si *StringInt) Append(val string) int {
 	return 0
 }
 
-func (si *StringInt) Incr() (int, error) {
-	if valueInt, ok := si.GetValue().(int); !ok {
+func (si *StringInt) Incr() (int64, error) {
+	if valueInt, ok := si.GetValue().(int64); !ok {
 		return 0, re.ErrNotIntegerOrOutOfRange
 	} else {
+		if valueInt == math.MaxInt64 {
+			return 0, re.ErrIncrOrDecrOverflow
+		}
 		si.SetValue(valueInt + 1)
 		return valueInt + 1, nil
 	}
 }
 
-func (si *StringInt) Decr() (int, error) {
-	if valueInt, ok := si.GetValue().(int); !ok {
+func (si *StringInt) Decr() (int64, error) {
+	if valueInt, ok := si.GetValue().(int64); !ok {
 		return 0, re.ErrNotIntegerOrOutOfRange
 	} else {
+		if valueInt == math.MinInt64 {
+			return 0, re.ErrIncrOrDecrOverflow
+		}
 		si.SetValue(valueInt - 1)
 		return valueInt - 1, nil
 	}
 }
 
-func (si *StringInt) IncrBy(val int) (int, error) {
-	return 0, nil
+func (si *StringInt) IncrBy(val string) (int64, error) {
+	incrValInt, err := strconv.ParseInt(val, 10, 64)
+	if err != nil {
+		return 0, re.ErrNotIntegerOrOutOfRange
+	}
+	if valueInt, ok := si.GetValue().(int64); !ok {
+		return 0, re.ErrNotIntegerOrOutOfRange
+	} else {
+		if (valueInt > 0 && incrValInt > 0 && incrValInt > math.MaxInt64-valueInt) ||
+			(valueInt < 0 && incrValInt < 0 && incrValInt < math.MinInt64-valueInt) {
+			return 0, re.ErrIncrOrDecrOverflow
+		}
+		si.SetValue(valueInt + incrValInt)
+		return valueInt + incrValInt, nil
+	}
 }
 
-func (si *StringInt) DecrBy(val int) (int, error) {
-	return 0, nil
+func (si *StringInt) DecrBy(val string) (int64, error) {
+	decrValInt, err := strconv.ParseInt(val, 10, 64)
+	if err != nil {
+		return 0, re.ErrNotIntegerOrOutOfRange
+	}
+	return si.IncrBy(strconv.FormatInt(-1*decrValInt, 10))
 }
 
 func (si *StringInt) Strlen() int {
