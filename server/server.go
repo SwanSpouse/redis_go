@@ -132,9 +132,15 @@ func (srv *Server) populateCommandTable() {
 	// string command
 	srv.commands[handlers.RedisStringCommandAppend] = stringHandler
 	srv.commands[handlers.RedisStringCommandSet] = stringHandler
+	srv.commands[handlers.RedisStringCommandMSet] = stringHandler
+	srv.commands[handlers.RedisStringCommandMSetNx] = stringHandler
+	srv.commands[handlers.RedisStringCommandSetNx] = stringHandler
 	srv.commands[handlers.RedisStringCommandGet] = stringHandler
+	srv.commands[handlers.RedisStringCommandMGet] = stringHandler
+	srv.commands[handlers.RedisStringCommandGetSet] = stringHandler
 	srv.commands[handlers.RedisStringCommandIncr] = stringHandler
 	srv.commands[handlers.RedisStringCommandIncrBy] = stringHandler
+	srv.commands[handlers.RedisStringCommandIncrByFloat] = stringHandler
 	srv.commands[handlers.RedisStringCommandDecr] = stringHandler
 	srv.commands[handlers.RedisStringCommandDecrBy] = stringHandler
 	srv.commands[handlers.RedisStringCommandStrLen] = stringHandler

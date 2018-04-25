@@ -46,6 +46,10 @@ func (se *StringEmb) DecrBy(val string) (int64, error) {
 	return 0, nil
 }
 
+func (se *StringEmb) IncrByFloat(val string) (string, error) {
+	return "", nil
+}
+
 func (se *StringEmb) Strlen() int {
 	return 0
 }

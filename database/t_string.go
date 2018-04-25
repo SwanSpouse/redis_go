@@ -34,6 +34,7 @@ type TString interface {
 	Decr() (int64, error)
 	IncrBy(string) (int64, error)
 	DecrBy(string) (int64, error)
+	IncrByFloat(string) (string, error)
 	Strlen() int
 	String() string
 }

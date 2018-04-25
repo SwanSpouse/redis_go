@@ -39,4 +39,5 @@ const (
 	ErrConvertEncoding        = protoError("Err convert encoding")
 	ErrNilValue               = protoError("Err nil")
 	ErrIncrOrDecrOverflow     = protoError("ERR increment or decrement would overflow")
+	ErrValueIsNotFloat        = protoError("ERR value is not a valid float")
 )

@@ -85,10 +85,14 @@ func (si *StringInt) DecrBy(val string) (int64, error) {
 	return si.IncrBy(strconv.FormatInt(-1*decrValInt, 10))
 }
 
+func (si *StringInt) IncrByFloat(val string) (string, error) {
+	return "", re.ErrWrongTypeOrEncoding
+}
+
 func (si *StringInt) Strlen() int {
-	if valueInt, ok := si.GetValue().(int); !ok {
+	if valueInt, ok := si.GetValue().(int64); !ok {
 		return -1
 	} else {
-		return len(strconv.Itoa(valueInt))
+		return len(fmt.Sprintf("%d", valueInt))
 	}
 }
