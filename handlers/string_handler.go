@@ -58,13 +58,16 @@ func (handler *StringHandler) Process(cli *client.Client) {
 			handler.Get(cli, ts)
 		case RedisStringCommandGetRange:
 		case RedisStringCommandGetSet:
+			handler.GetSet(cli, ts)
 		case RedisStringCommandIncr:
 			handler.Incr(cli, ts)
 		case RedisStringCommandIncrBy:
 			handler.IncrBy(cli, ts)
 		case RedisStringCommandIncrByFloat:
 		case RedisStringCommandMGet:
+			handler.MGet(cli, ts)
 		case RedisStringCommandMSet:
+			handler.MSet(cli, ts)
 		case RedisStringCommandMSetNx:
 		case RedisStringCommandPSetEx:
 		case RedisStringCommandSet:
@@ -94,7 +97,7 @@ func (handler *StringHandler) getValidKeyAndTypeOrError(cli *client.Client) (str
 		return "", nil, nil
 	}
 	key := args[0]
-	if cli.Cmd.GetName() == RedisStringCommandSet {
+	if cli.Cmd.GetName() == RedisStringCommandSet || cli.Cmd.GetName() == RedisStringCommandMSet {
 		return key, nil, nil
 	}
 	// 获取key在数据库中对应的value(TBase:BaseType)
@@ -156,6 +159,43 @@ func (handler *StringHandler) Get(cli *client.Client, ts database.TString) {
 		return
 	}
 	cli.Response(ts.String())
+}
+
+func (handler *StringHandler) GetSet(cli *client.Client, ts database.TString) {
+	args := cli.Cmd.GetArgs()
+	if len(args) < 2 {
+		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
+		return
+	}
+	key := args[0]
+	cli.Response(ts.String())
+	cli.SelectedDatabase().SetKeyInDB(key, database.NewRedisStringObject(args[1]))
+}
+
+func (handler *StringHandler) MGet(cli *client.Client, ts database.TString) {
+	args := cli.Cmd.GetArgs()
+	if len(args) < 1 {
+		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
+		return
+	}
+	ret := make([]string, 0)
+	for _, key := range args {
+		ret = append(ret, key)
+	}
+	cli.Response(ret)
+}
+
+func (handler *StringHandler) MSet(cli *client.Client, ts database.TString) {
+	args := cli.Cmd.GetArgs()
+	if len(args) < 1 {
+		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
+		return
+	}
+	ret := make([]string, 0)
+	for _, key := range args {
+		ret = append(ret, key)
+	}
+	cli.Response(ret)
 }
 
 func (handler *StringHandler) Incr(cli *client.Client, ts database.TString) {
