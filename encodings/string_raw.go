@@ -1,7 +1,9 @@
 package encodings
 
 import (
+	"fmt"
 	re "redis_go/error"
+	"redis_go/util"
 	"strconv"
 	"time"
 )
@@ -64,6 +66,24 @@ func (sr *StringRaw) DecrBy(val string) (int64, error) {
 		return 0, re.ErrNotIntegerOrOutOfRange
 	}
 	return sr.IncrBy(strconv.FormatInt(-1*valueInt, 10))
+}
+
+func (sr *StringRaw) IncrByFloat(val string) (string, error) {
+	valueFloat, err := strconv.ParseFloat(val, 64)
+	if err != nil {
+		return "", re.ErrValueIsNotFloat
+	}
+	value := sr.GetValue().(string)
+	if originValFloat, err := strconv.ParseFloat(value, 64); err != nil {
+		return "", re.ErrValueIsNotFloat
+	} else {
+		ret, err := util.FormatFloatString(fmt.Sprintf("%f", valueFloat+originValFloat))
+		if err != nil {
+			return "", err
+		}
+		sr.SetValue(ret)
+		return ret, nil
+	}
 }
 
 func (sr *StringRaw) Strlen() int {

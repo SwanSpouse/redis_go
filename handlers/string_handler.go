@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"redis_go/client"
 	"redis_go/database"
 	"redis_go/encodings"
@@ -28,7 +29,7 @@ const (
 	RedisStringCommandMSetNx      = "MSETNX"
 	RedisStringCommandPSetEx      = "PSETEX"
 	RedisStringCommandSet         = "SET"
-	RedisStringCommandSetNX       = "SETNX"
+	RedisStringCommandSetNx       = "SETNX"
 	RedisStringCommandSetEX       = "SETEX"
 	RedisStringCommandSetRange    = "SETRANGE"
 	RedisStringCommandStrLen      = "STRLEN"
@@ -44,93 +45,95 @@ var stringEncodingTypeDict = map[string]bool{
 type StringHandler struct{}
 
 func (handler *StringHandler) Process(cli *client.Client) {
-	if key, ts, err := handler.getValidKeyAndTypeOrError(cli); err == nil {
-		switch cli.Cmd.GetName() {
-		case RedisStringCommandAppend:
-			handler.Append(cli, ts)
-		case RedisStringCommandBitCount, RedisStringCommandBitop, RedisStringCommandGetBit, RedisStringCommandSetBit:
-			cli.ResponseReError(re.ErrFunctionNotImplement)
-		case RedisStringCommandDecr:
-			handler.Decr(cli, ts)
-		case RedisStringCommandDecrBy:
-			handler.DecrBy(cli, ts)
-		case RedisStringCommandGet:
-			handler.Get(cli, ts)
-		case RedisStringCommandGetRange:
-		case RedisStringCommandGetSet:
-		case RedisStringCommandIncr:
-			handler.Incr(cli, ts)
-		case RedisStringCommandIncrBy:
-			handler.IncrBy(cli, ts)
-		case RedisStringCommandIncrByFloat:
-		case RedisStringCommandMGet:
-		case RedisStringCommandMSet:
-		case RedisStringCommandMSetNx:
-		case RedisStringCommandPSetEx:
-		case RedisStringCommandSet:
-			handler.Set(cli, key)
-		case RedisStringCommandSetNX:
-		case RedisStringCommandSetEX:
-		case RedisStringCommandSetRange:
-		case RedisStringCommandStrLen:
-			handler.Strlen(cli, ts)
-		default:
-			cli.ResponseReError(re.ErrUnknownCommand, cli.Cmd.GetOriginName())
-		}
-	} else {
-		cli.ResponseReError(err)
+	switch cli.Cmd.GetName() {
+	case RedisStringCommandAppend:
+		handler.Append(cli)
+	case RedisStringCommandBitCount, RedisStringCommandBitop, RedisStringCommandGetBit, RedisStringCommandSetBit:
+		cli.ResponseReError(re.ErrFunctionNotImplement)
+	case RedisStringCommandDecr:
+		handler.Decr(cli)
+	case RedisStringCommandDecrBy:
+		handler.DecrBy(cli)
+	case RedisStringCommandGet:
+		handler.Get(cli)
+	case RedisStringCommandGetRange:
+		cli.ResponseReError(re.ErrFunctionNotImplement)
+	case RedisStringCommandGetSet:
+		handler.GetSet(cli)
+	case RedisStringCommandIncr:
+		handler.Incr(cli)
+	case RedisStringCommandIncrBy:
+		handler.IncrBy(cli)
+	case RedisStringCommandIncrByFloat:
+		handler.IncrByFloat(cli)
+	case RedisStringCommandMGet:
+		handler.MGet(cli)
+	case RedisStringCommandMSet:
+		handler.MSet(cli)
+	case RedisStringCommandMSetNx:
+		handler.MSetNx(cli)
+	case RedisStringCommandPSetEx:
+		cli.ResponseReError(re.ErrFunctionNotImplement)
+	case RedisStringCommandSet:
+		handler.Set(cli)
+	case RedisStringCommandSetNx:
+		handler.SetNx(cli)
+	case RedisStringCommandSetEX:
+		cli.ResponseReError(re.ErrFunctionNotImplement)
+	case RedisStringCommandSetRange:
+		cli.ResponseReError(re.ErrFunctionNotImplement)
+	case RedisStringCommandStrLen:
+		handler.Strlen(cli)
+	default:
+		cli.ResponseReError(re.ErrUnknownCommand, cli.Cmd.GetOriginName())
 	}
 	// 最后统一发送数据
 	cli.Flush()
 }
 
-func (handler *StringHandler) getValidKeyAndTypeOrError(cli *client.Client) (string, database.TString, error) {
+func getTStringValueByKey(cli *client.Client, key string) (database.TString, error) {
 	if cli.Cmd == nil {
-		return "", nil, re.ErrNilCommand
-	}
-	args := cli.Cmd.GetArgs()
-	// 参数个数的错误都交给每个命令自己来进行处理
-	if len(args) == 0 {
-		return "", nil, nil
-	}
-	key := args[0]
-	if cli.Cmd.GetName() == RedisStringCommandSet {
-		return key, nil, nil
+		return nil, re.ErrNilCommand
 	}
 	// 获取key在数据库中对应的value(TBase:BaseType)
 	baseType := cli.SelectedDatabase().SearchKeyInDB(key)
 	if baseType == nil {
-		return "", nil, re.ErrNilValue
+		return nil, re.ErrNilValue
 	}
 	/**
 	对baseType的类型是否为string进行校验。
 	判断baseType的Encoding是否为string的Encoding,baseType的Type是否为RedisTypeString
 	*/
 	if _, ok := stringEncodingTypeDict[baseType.GetEncoding()]; !ok || baseType.GetObjectType() != encodings.RedisTypeString {
-		loggers.Errorf(string(re.ErrWrongTypeOrEncoding), baseType.GetObjectType(), baseType.GetEncoding())
-		return "", nil, re.ErrConvertToTargetType
+		loggers.Errorf(string(re.ErrWrongType), baseType.GetObjectType(), baseType.GetEncoding())
+		return nil, re.ErrWrongType
 	}
 	if ts, ok := baseType.(database.TString); ok {
-		return "", ts, nil
+		return ts, nil
 	}
 	loggers.Errorf("base type can not convert to TString")
-	return "", nil, re.ErrConvertToTargetType
+	return nil, re.ErrWrongType
 }
 
-func (handler *StringHandler) Append(cli *client.Client, ts database.TString) {
+func (handler *StringHandler) Append(cli *client.Client) {
 	args := cli.Cmd.GetArgs()
 	if len(args) < 2 {
 		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
 		return
 	}
 	key := args[0]
+	ts, err := getTStringValueByKey(cli, key)
+	if err != nil {
+		cli.ResponseReError(err)
+		return
+	}
 	// 如果TString的编码类型是int,转换成StringRaw再进行处理
 	if ts.GetEncoding() == encodings.RedisEncodingInt {
-		if valueInt, ok := ts.GetValue().(int); !ok {
+		if valueInt, ok := ts.GetValue().(int64); !ok {
 			cli.ResponseReError(re.ErrWrongTypeOrEncoding)
 			return
 		} else {
-			rs := database.NewRedisStringWithEncodingRawString(strconv.Itoa(valueInt), -1)
+			rs := database.NewRedisStringWithEncodingRawString(fmt.Sprintf("%d", valueInt), -1)
 			cli.SelectedDatabase().SetKeyInDB(key, rs)
 			ts = rs
 		}
@@ -138,82 +141,264 @@ func (handler *StringHandler) Append(cli *client.Client, ts database.TString) {
 	cli.Response(ts.Append(args[1]))
 }
 
-func (handler *StringHandler) Set(cli *client.Client, key string) {
+func (handler *StringHandler) Set(cli *client.Client) {
 	args := cli.Cmd.GetArgs()
 	if len(args) < 2 {
 		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
 		return
 	}
+	key := args[0]
 	cli.SelectedDatabase().SetKeyInDB(key, database.NewRedisStringObject(args[1]))
 	cli.ResponseOK()
 }
 
-func (handler *StringHandler) Get(cli *client.Client, ts database.TString) {
+func (handler *StringHandler) SetNx(cli *client.Client) {
+	args := cli.Cmd.GetArgs()
+	if len(args) < 2 {
+		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
+		return
+	}
+	key := args[0]
+	if cli.SelectedDatabase().SearchKeyInDB(key) == nil {
+		cli.SelectedDatabase().SetKeyInDB(key, database.NewRedisStringObject(args[1]))
+		cli.Response(1)
+	} else {
+		cli.Response(0)
+	}
+}
+
+func (handler *StringHandler) MSetNx(cli *client.Client) {
+	args := cli.Cmd.GetArgs()
+	if len(args) < 2 || len(args)%2 == 1 {
+		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
+		return
+	}
+	var containsKey bool
+	for i := 0; i < len(args); i += 2 {
+		if cli.SelectedDatabase().SearchKeyInDB(args[i]) != nil {
+			containsKey = true
+			break
+		}
+	}
+	if containsKey {
+		cli.Response(0)
+	} else {
+		for i := 0; i < len(args); i += 2 {
+			cli.SelectedDatabase().SetKeyInDB(args[i], database.NewRedisStringObject(args[i+1]))
+		}
+		cli.Response(1)
+	}
+}
+
+func (handler *StringHandler) Get(cli *client.Client) {
 	args := cli.Cmd.GetArgs()
 	// 判断参数个数是否合理
 	if len(args) != 1 {
 		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
 		return
 	}
+	key := args[0]
+	ts, err := getTStringValueByKey(cli, key)
+	if err != nil {
+		cli.ResponseReError(err)
+		return
+	}
 	cli.Response(ts.String())
 }
 
-func (handler *StringHandler) Incr(cli *client.Client, ts database.TString) {
+func (handler *StringHandler) GetSet(cli *client.Client) {
+	args := cli.Cmd.GetArgs()
+	if len(args) < 2 {
+		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
+		return
+	}
+	key := args[0]
+	ts, err := getTStringValueByKey(cli, key)
+
+	if err != nil && err != re.ErrNilValue {
+		cli.ResponseReError(err)
+		return
+	}
+	cli.SelectedDatabase().SetKeyInDB(key, database.NewRedisStringObject(args[1]))
+
+	if ts == nil {
+		cli.ResponseReError(re.ErrNilValue)
+	} else {
+		cli.Response(ts.String())
+	}
+}
+
+func (handler *StringHandler) MGet(cli *client.Client) {
+	args := cli.Cmd.GetArgs()
+	if len(args) < 1 {
+		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
+		return
+	}
+	ret := make([]interface{}, 0)
+	for _, key := range args {
+		ts, err := getTStringValueByKey(cli, key)
+		if err != nil {
+			ret = append(ret, nil)
+		} else {
+			ret = append(ret, ts.String())
+		}
+	}
+	cli.Response(ret)
+}
+
+func (handler *StringHandler) MSet(cli *client.Client) {
+	args := cli.Cmd.GetArgs()
+	if len(args) < 2 || len(args)%2 == 1 {
+		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
+		return
+	}
+	for i := 0; i < len(args); i += 2 {
+		cli.SelectedDatabase().SetKeyInDB(args[i], database.NewRedisStringObject(args[i+1]))
+	}
+	cli.ResponseOK()
+}
+
+func (handler *StringHandler) Incr(cli *client.Client) {
 	args := cli.Cmd.GetArgs()
 	if len(args) != 1 {
 		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
 		return
 	}
-	if ret, err := ts.Incr(); err != nil {
+	key := args[0]
+	ts, err := getTStringValueByKey(cli, key)
+	if err != nil && err != re.ErrNilValue {
 		cli.ResponseReError(err)
+	} else if err == re.ErrNilValue {
+		cli.SelectedDatabase().SetKeyInDB(key, database.NewRedisStringObject("1"))
+		cli.Response(1)
 	} else {
-		cli.Response(ret)
+		if ret, err := ts.Incr(); err != nil {
+			cli.ResponseReError(err)
+		} else {
+			cli.Response(ret)
+		}
 	}
 }
 
-func (handler *StringHandler) IncrBy(cli *client.Client, ts database.TString) {
+func (handler *StringHandler) IncrBy(cli *client.Client) {
 	args := cli.Cmd.GetArgs()
 	if len(args) != 2 {
 		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
 		return
 	}
-	if ret, err := ts.IncrBy(args[1]); err != nil {
+	key := args[0]
+	ts, err := getTStringValueByKey(cli, key)
+	if err != nil && err != re.ErrNilValue {
+		cli.ResponseReError(err)
+	} else if err == re.ErrNilValue {
+		if _, err := strconv.ParseInt(args[1], 10, 64); err != nil {
+			cli.ResponseReError(re.ErrNotIntegerOrOutOfRange)
+		} else {
+			cli.SelectedDatabase().SetKeyInDB(key, database.NewRedisStringObject(args[1]))
+			cli.Response(args[1])
+		}
+	} else if ret, err := ts.IncrBy(args[1]); err != nil {
 		cli.ResponseReError(err)
 	} else {
 		cli.Response(ret)
 	}
 }
 
-func (handler *StringHandler) Decr(cli *client.Client, ts database.TString) {
-	args := cli.Cmd.GetArgs()
-	if len(args) != 1 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	if ret, err := ts.Decr(); err != nil {
-		cli.ResponseReError(err)
-	} else {
-		cli.Response(ret)
-	}
-}
-
-func (handler *StringHandler) DecrBy(cli *client.Client, ts database.TString) {
+func (handler *StringHandler) IncrByFloat(cli *client.Client) {
 	args := cli.Cmd.GetArgs()
 	if len(args) != 2 {
 		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
 		return
 	}
-	if ret, err := ts.DecrBy(args[1]); err != nil {
+	key := args[0]
+	ts, err := getTStringValueByKey(cli, key)
+	if err != nil && err != re.ErrNilValue {
 		cli.ResponseReError(err)
+	} else if err == re.ErrNilValue {
+		if _, err := strconv.ParseFloat(args[1], 64); err != nil {
+			cli.ResponseReError(re.ErrValueIsNotFloat)
+		} else {
+			cli.SelectedDatabase().SetKeyInDB(key, database.NewRedisStringObject(args[1]))
+			cli.Response(args[1])
+		}
 	} else {
-		cli.Response(ret)
+		// 如果TString的编码类型是int,转换成StringRaw再进行处理
+		if ts.GetEncoding() == encodings.RedisEncodingInt {
+			if valueInt, ok := ts.GetValue().(int64); !ok {
+				cli.ResponseReError(re.ErrWrongTypeOrEncoding)
+				return
+			} else {
+				rs := database.NewRedisStringWithEncodingRawString(fmt.Sprintf("%d", valueInt), -1)
+				cli.SelectedDatabase().SetKeyInDB(key, rs)
+				ts = rs
+			}
+		}
+		if ret, err := ts.IncrByFloat(args[1]); err != nil {
+			cli.ResponseReError(err)
+		} else {
+			cli.Response(ret)
+		}
 	}
 }
 
-func (handler *StringHandler) Strlen(cli *client.Client, ts database.TString) {
+func (handler *StringHandler) Decr(cli *client.Client) {
 	args := cli.Cmd.GetArgs()
 	if len(args) != 1 {
 		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
+		return
+	}
+	key := args[0]
+	ts, err := getTStringValueByKey(cli, key)
+	if err != nil && err != re.ErrNilValue {
+		cli.ResponseReError(err)
+	} else if err == re.ErrNilValue {
+		cli.SelectedDatabase().SetKeyInDB(key, database.NewRedisStringObject("-1"))
+		cli.Response("-1")
+	} else {
+		if ret, err := ts.Decr(); err != nil {
+			cli.ResponseReError(err)
+		} else {
+			cli.Response(ret)
+		}
+	}
+}
+
+func (handler *StringHandler) DecrBy(cli *client.Client) {
+	args := cli.Cmd.GetArgs()
+	if len(args) != 2 {
+		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
+		return
+	}
+	key := args[0]
+	ts, err := getTStringValueByKey(cli, key)
+	if err != nil && err != re.ErrNilValue {
+		cli.ResponseReError(err)
+	} else if err == re.ErrNilValue {
+		if _, err := strconv.ParseInt(args[1], 10, 64); err != nil {
+			cli.ResponseReError(re.ErrNotIntegerOrOutOfRange)
+		} else {
+			cli.SelectedDatabase().SetKeyInDB(key, database.NewRedisStringObject(args[1]))
+			cli.Response(args[1])
+		}
+	} else {
+		if ret, err := ts.DecrBy(args[1]); err != nil {
+			cli.ResponseReError(err)
+		} else {
+			cli.Response(ret)
+		}
+	}
+}
+
+func (handler *StringHandler) Strlen(cli *client.Client) {
+	args := cli.Cmd.GetArgs()
+	if len(args) != 1 {
+		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
+		return
+	}
+	key := args[0]
+	ts, err := getTStringValueByKey(cli, key)
+	if err != nil {
+		cli.ResponseReError(err)
 		return
 	}
 	cli.Response(ts.Strlen())
