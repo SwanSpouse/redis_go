@@ -14,7 +14,7 @@ import (
 
 func TestRedisListCommands(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Test Redis List Commands")
+	RunSpecs(t, "Test Redis String Commands")
 }
 
 var _ = Describe("TestRedisListCommand", func() {
@@ -211,5 +211,4 @@ var _ = Describe("TestRedisListCommand", func() {
 		Expect(err).To(BeNil())
 		Expect(ret[0]).To(Equal("5"))
 	})
-
 })
