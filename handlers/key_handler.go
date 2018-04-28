@@ -70,11 +70,11 @@ func (handler *KeyHandler) Del(cli *client.Client) {
 
 func (handler *KeyHandler) Exists(cli *client.Client) {
 	args := cli.Cmd.GetArgs()
-	if len(args) < 2 {
+	if len(args) < 1 {
 		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
 		return
 	}
-	successCount, _ := cli.SelectedDatabase().SearchKeysInDB(args[1:])
+	successCount, _ := cli.SelectedDatabase().SearchKeysInDB(args)
 	cli.Response(int64(len(successCount)))
 }
 

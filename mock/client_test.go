@@ -13,10 +13,6 @@ import (
 	"testing"
 )
 
-func TestWriteTest(t *testing.T) {
-	// 编写Test的时候在这里写，写好了再迁移到Describe里
-}
-
 func TestRedisClient(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Test Redis client")
@@ -31,11 +27,15 @@ var _ = Describe("MockRedisClient", func() {
 	lis, err := net.Listen("tcp", "127.0.0.1:9736")
 	if err != nil {
 		loggers.Errorf("server start error %+v", err)
+		return
 	}
+
 	go srv.Serve(lis)
 
 	BeforeEach(func() {
 		cn, err = net.Dial("tcp", "127.0.0.1:9736")
+		Expect(err).To(BeNil())
+
 		w = protocol.NewRequestWriter(cn)
 		r = protocol.NewResponseReader(cn)
 	})
@@ -75,15 +75,15 @@ var _ = Describe("MockRedisClient", func() {
 		Expect(ret[0]).To(ContainSubstring("unknown command"))
 	})
 
-	It("test input $-1", func() {
+	It("test input err invalid bulk length", func() {
 		w.WriteRawString("*3\r\n$3\r\nget\r\n$-1\r\n$3\r\nbar\r\n")
-		//w.WriteRawString("$-1\r\n")
 		err := w.Flush()
 		Expect(err).To(BeNil())
+
 		Expect(r.PeekType()).To(Equal(tcp.TypeError))
 
 		ret, err := r.Read()
 		Expect(err).To(BeNil())
-		Expect(ret[0]).To(ContainSubstring(re.ErrInvalidBulkLength.Error()))
+		Expect(ret[0]).To(Equal(re.ErrInvalidBulkLength.Error()))
 	})
 })

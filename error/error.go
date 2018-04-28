@@ -19,14 +19,14 @@ func IsProtocolError(err error) bool {
 }
 
 const (
-	ErrInvalidMultiBulkLength = protoError("Protocol error: invalid multibulk length")
-	ErrInvalidBulkLength      = protoError("Protocol error: invalid bulk length")
-	ErrBlankBulkLength        = protoError("Protocol error: expected '$', got ' '")
-	ErrInlineRequestTooLong   = protoError("Protocol error: too big inline request")
-	ErrNotANumber             = protoError("Protocol error: expected a number")
-	ErrNotANilMessage         = protoError("Protocol error: expected a nil")
-	ErrBadResponseType        = protoError("Protocol error: bad response type")
-	ErrUnknown                = protoError("Protocol error: unknown")
+	ErrInvalidMultiBulkLength = protoError("ERR Protocol error: invalid multibulk length")
+	ErrInvalidBulkLength      = protoError("ERR Protocol error: invalid bulk length")
+	ErrBlankBulkLength        = protoError("ERR Protocol error: expected '$', got ' '")
+	ErrInlineRequestTooLong   = protoError("ERR Protocol error: too big inline request")
+	ErrNotANumber             = protoError("ERR Protocol error: expected a number")
+	ErrNotANilMessage         = protoError("ERR Protocol error: expected a nil")
+	ErrBadResponseType        = protoError("ERR Protocol error: bad response type")
+	ErrUnknown                = protoError("ERR Protocol error: unknown")
 
 	ErrNotIntegerOrOutOfRange = protoError("value is not an integer or out of range")
 	ErrWrongNumberOfArgs      = protoError("wrong number of arguments for '%s' command")
