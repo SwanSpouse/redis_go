@@ -118,6 +118,7 @@ func (srv *Server) populateCommandTable() {
 	connectionHandler := new(handlers.ConnectionHandler)
 	stringHandler := new(handlers.StringHandler)
 	keyHandler := new(handlers.KeyHandler)
+	listHandler := new(handlers.ListHandler)
 
 	// key command
 	srv.commands[handlers.RedisKeyCommandDel] = keyHandler
@@ -144,4 +145,22 @@ func (srv *Server) populateCommandTable() {
 	srv.commands[handlers.RedisStringCommandDecr] = stringHandler
 	srv.commands[handlers.RedisStringCommandDecrBy] = stringHandler
 	srv.commands[handlers.RedisStringCommandStrLen] = stringHandler
+
+	// list command
+	srv.commands[handlers.RedisListCommandLIndex] = listHandler
+	srv.commands[handlers.RedisListCommandLInsert] = listHandler
+	srv.commands[handlers.RedisListCommandLLen] = listHandler
+	srv.commands[handlers.RedisListCommandLPop] = listHandler
+	srv.commands[handlers.RedisListCommandLPush] = listHandler
+	srv.commands[handlers.RedisListCommandLPushX] = listHandler
+	srv.commands[handlers.RedisListCommandLRange] = listHandler
+	srv.commands[handlers.RedisListCommandLRem] = listHandler
+	srv.commands[handlers.RedisListCommandLSet] = listHandler
+	srv.commands[handlers.RedisListCommandLTrim] = listHandler
+	srv.commands[handlers.RedisListCommandRPop] = listHandler
+	srv.commands[handlers.RedisListCommandRPopLPush] = listHandler
+	srv.commands[handlers.RedisListCommandRPush] = listHandler
+	srv.commands[handlers.RedisListCommandRpushX] = listHandler
+	srv.commands[handlers.RedisListCommandLDebug] = listHandler
+
 }

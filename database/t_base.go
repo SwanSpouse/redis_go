@@ -6,6 +6,8 @@ var (
 	_ TBase = (*encodings.StringRaw)(nil)
 	_ TBase = (*encodings.StringInt)(nil)
 	_ TBase = (*encodings.StringEmb)(nil)
+
+	_ TList = (*encodings.ListLinkedList)(nil)
 )
 
 type TBase interface {

@@ -11,7 +11,7 @@ const (
 	RedisTypeString  ->  RedisEncodingRaw		: 使用简单动态字符串实现的字符串对象
 	RedisTypeList    ->  RedisEncodingZipList	: 使用压缩列表实现的列表对象
 	RedisTypeList    ->  RedisEncodingLinkedList	: 使用双端链表实现的列表对象
-	RedisTypeHash    ->  RedisEncodingZipList	: 使用压缩链表实现的列表对象
+	RedisTypeHash    ->  RedisEncodingZipList	: 使用压缩链表实现的哈希对象
 	RedisTypeHash    ->  RedisEncodingHT		: 使用字典实现的哈希对象
 	RedisTypeSet     ->  RedisEncodingIntSet	: 使用整数集合实现的集合对象
 	RedisTypeSet     ->  RedisEncodingHT		: 使用字典实现的集合对象
