@@ -12,10 +12,10 @@ import (
 type ListNode struct {
 	pre   *ListNode
 	next  *ListNode
-	value interface{}
+	value string
 }
 
-func newListNode(value interface{}) *ListNode {
+func newListNode(value string) *ListNode {
 	return &ListNode{value: value}
 }
 
@@ -27,8 +27,12 @@ func (node *ListNode) NodeNext() *ListNode {
 	return node.next
 }
 
-func (node *ListNode) NodeValue() interface{} {
+func (node *ListNode) NodeValue() string {
 	return node.value
+}
+
+func (node *ListNode) SetNodeValue(val string) {
+	node.value = val
 }
 
 func (node *ListNode) String() string {
@@ -65,7 +69,7 @@ func (list *List) ListLast() *ListNode {
 	return list.tail
 }
 
-func (list *List) ListAddNodeHead(value interface{}) *List {
+func (list *List) ListAddNodeHead(value string) *List {
 	list.Locker.Lock()
 	defer list.Locker.Unlock()
 
@@ -86,7 +90,7 @@ func (list *List) ListAddNodeHead(value interface{}) *List {
 	return list
 }
 
-func (list *List) ListAddNodeTail(value interface{}) *List {
+func (list *List) ListAddNodeTail(value string) *List {
 	list.Locker.Lock()
 	defer list.Locker.Unlock()
 
@@ -107,7 +111,7 @@ func (list *List) ListAddNodeTail(value interface{}) *List {
 	return list
 }
 
-func (list *List) ListInsertNode(oldNode *ListNode, value interface{}, after bool) *List {
+func (list *List) ListInsertNode(oldNode *ListNode, value string, after bool) *List {
 	list.Locker.Lock()
 	defer list.Locker.Unlock()
 
@@ -141,7 +145,7 @@ func (list *List) ListInsertNode(oldNode *ListNode, value interface{}, after boo
 	return list
 }
 
-func (list *List) ListSearchKey(key interface{}) *ListNode {
+func (list *List) ListSearchKey(key string) *ListNode {
 	list.Locker.Lock()
 	defer list.Locker.Unlock()
 
@@ -171,6 +175,28 @@ func (list *List) ListIndex(index int) *ListNode {
 		}
 	}
 	return node
+}
+
+func (list *List) ListRemoveNode(oldNode *ListNode) *List {
+	list.Locker.Lock()
+	defer list.Locker.Unlock()
+
+	if oldNode == nil {
+		return list
+	}
+	if oldNode == list.head {
+		list.head = oldNode.next
+	} else {
+		oldNode.pre.next = oldNode.next
+	}
+
+	if oldNode == list.tail {
+		list.tail = oldNode.pre
+	} else {
+		oldNode.pre.next = oldNode.next
+	}
+	list.length -= 1
+	return list
 }
 
 func (list *List) ListRotate() *List {
