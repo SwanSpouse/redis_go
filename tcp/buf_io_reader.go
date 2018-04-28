@@ -80,6 +80,7 @@ func (r *BufIoReader) require(sz int) error {
 	// read data into buffer
 	n, err := io.ReadAtLeast(r.rd, r.buf[r.w:], extra)
 	r.w += n
+
 	return err
 }
 
@@ -140,7 +141,9 @@ func (r *BufIoReader) PeekLine(offset int) (buffer, error) {
 	多条批量回复(multi bulk reply)的第一个字节是   *
 */
 func (r *BufIoReader) PeekType() (t ResponseType, err error) {
+	loggers.Info("peek type start")
 	if err = r.require(1); err != nil {
+		loggers.Info("peek type err %+v", err)
 		return
 	}
 	switch r.buf[r.r] {

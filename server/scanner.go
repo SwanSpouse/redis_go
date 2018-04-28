@@ -1,6 +1,7 @@
 package server
 
 import (
+	"io"
 	"redis_go/client"
 	re "redis_go/error"
 	"redis_go/loggers"
@@ -47,8 +48,12 @@ func (srv *Server) handlerCommand(c *client.Client) {
 	defer atomic.StoreUint32(&c.Status, client.RedisClientStatusIdle)
 	//c.SetIdleTimeout(5 * time.Hour)
 	//c.SetExecTimeout(5 * time.Second)
-	if cmd, err := c.ReadCmd(); err != nil || cmd == nil {
+	if cmd, err := c.ReadCmd(); err != nil && err == io.EOF {
 		c.Close()
+		return
+	} else if err != nil || cmd == nil {
+		loggers.Errorf("server read command error %+v", err)
+		c.ResponseReError(err)
 		return
 	}
 	/**

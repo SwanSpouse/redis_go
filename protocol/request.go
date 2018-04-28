@@ -2,7 +2,6 @@ package protocol
 
 import (
 	"io"
-	re "redis_go/error"
 	"redis_go/tcp"
 )
 
@@ -47,14 +46,6 @@ func (w *RequestWriter) WriteCmdString(cmd string, args ...string) {
 	for _, arg := range args {
 		w.w.AppendBulkString(arg)
 	}
-}
-
-func (w *RequestWriter) WriteMultiBulkSize(n int) error {
-	if n < 0 {
-		return re.ErrInvalidMultiBulkLength
-	}
-	w.w.AppendArrayLen(n)
-	return nil
 }
 
 func (w *RequestWriter) WriteRawString(rawInput string) {
