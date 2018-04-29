@@ -49,7 +49,7 @@ func (srv *Server) handlerCommand(c *client.Client) {
 	//c.SetIdleTimeout(5 * time.Hour)
 	//c.SetExecTimeout(5 * time.Second)
 	// ReadCmd这里会阻塞知道有数据或者客户端断开连接
-	if cmd, err := c.ReadCmd(); err != nil || cmd == nil {
+	if cmd, err := c.ReadCmd(); err != nil && err == io.EOF {
 		c.Close()
 		return
 	} else if err != nil || cmd == nil {
