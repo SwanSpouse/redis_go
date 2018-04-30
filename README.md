@@ -31,7 +31,7 @@ Redis原始源码来自： https://github.com/antirez/redis
 * [Hash表实现](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/data_type/redis_go_dict.md)
 
 #### 参考源码
-* [java 1.7 CourrentHashMap源码](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/source_code/java_concurrent_hashmap.java)
+* [java 1.7 ConcurrentHashMap源码](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/source_code/java_concurrent_hashmap.java)
 
 Show myself the code
 
