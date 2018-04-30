@@ -163,7 +163,7 @@ func (list *List) ListIndex(index int) *ListNode {
 
 	var node *ListNode
 	if index < 0 {
-		index = -index
+		index = -index - 1
 		node = list.tail
 		for ; node != nil && index > 0; node = node.pre {
 			index -= 1
@@ -184,17 +184,20 @@ func (list *List) ListRemoveNode(oldNode *ListNode) *List {
 	if oldNode == nil {
 		return list
 	}
-	if oldNode == list.head {
-		list.head = oldNode.next
-	} else {
+
+	// 处理前驱节点
+	if oldNode.pre != nil {
 		oldNode.pre.next = oldNode.next
+	} else {
+		list.head = oldNode.next
+	}
+	// 处理后续节点
+	if oldNode.next != nil {
+		oldNode.next.pre = oldNode.pre
+	} else {
+		list.tail = oldNode.pre
 	}
 
-	if oldNode == list.tail {
-		list.tail = oldNode.pre
-	} else {
-		oldNode.pre.next = oldNode.next
-	}
 	list.length -= 1
 	return list
 }

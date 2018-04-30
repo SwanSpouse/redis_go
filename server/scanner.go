@@ -5,7 +5,6 @@ import (
 	"redis_go/client"
 	re "redis_go/error"
 	"redis_go/loggers"
-	"runtime"
 	"sync/atomic"
 )
 
@@ -34,7 +33,7 @@ func (srv *Server) scanClients() {
 			}
 		}
 		srv.mu.Unlock()
-		runtime.Gosched()
+		//runtime.Gosched() TODO lmj 加上这行代码会有bug
 	}
 }
 

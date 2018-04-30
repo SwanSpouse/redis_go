@@ -32,28 +32,38 @@ func NewListLinkedList(ttl int) *ListLinkedList {
 	}
 }
 
-func (ll *ListLinkedList) LPush(val string) int {
+func (ll *ListLinkedList) LPush(vals []string) int {
 	list := ll.GetValue().(*raw_type.List)
-	newList := list.ListAddNodeHead(val)
+	var newList *raw_type.List
+	for _, val := range vals {
+		newList = list.ListAddNodeHead(val)
+	}
 	ll.SetValue(newList)
 	return list.ListLength()
 }
 
-func (ll *ListLinkedList) RPush(val string) int {
+func (ll *ListLinkedList) RPush(vals []string) int {
 	list := ll.GetValue().(*raw_type.List)
-	newList := list.ListAddNodeTail(val)
+	var newList *raw_type.List
+	for _, val := range vals {
+		newList = list.ListAddNodeTail(val)
+	}
 	ll.SetValue(newList)
 	return list.ListLength()
 }
 
 func (ll *ListLinkedList) LPop() string {
 	list := ll.GetValue().(*raw_type.List)
-	return list.ListFirst().NodeValue()
+	value := list.ListFirst().NodeValue()
+	ll.SetValue(list.ListRemoveNode(list.ListFirst()))
+	return value
 }
 
 func (ll *ListLinkedList) RPop() string {
 	list := ll.GetValue().(*raw_type.List)
-	return list.ListLast().NodeValue()
+	value := list.ListLast().NodeValue()
+	ll.SetValue(list.ListRemoveNode(list.ListLast()))
+	return value
 }
 
 func (ll *ListLinkedList) LIndex(index int) (string, error) {
@@ -72,28 +82,46 @@ func (ll *ListLinkedList) LLen() int {
 
 func (ll *ListLinkedList) LInsert(insertFlag int, val string, values ...string) (int, error) {
 	list := ll.GetValue().(*raw_type.List)
-	if insertFlag != RedisTypeListInsertBefore && insertFlag != RedisTypeListInsertAfter {
-		return 0, re.ErrSyntaxError
-	}
 	if curNode := list.ListSearchKey(val); curNode == nil {
 		return -1, nil
 	} else {
-		newList := list.ListInsertNode(curNode, val, insertFlag == RedisTypeListInsertBefore)
+		var newList *raw_type.List
+		for _, newValue := range values {
+			newList = list.ListInsertNode(curNode, newValue, insertFlag == RedisTypeListInsertAfter)
+		}
 		ll.SetValue(newList)
 		return newList.ListLength(), nil
 	}
 }
 
+/**
+count > 0 : 从表头开始向表尾搜索，移除与 value 相等的元素，数量为 count 。
+count < 0 : 从表尾开始向表头搜索，移除与 value 相等的元素，数量为 count 的绝对值。
+count = 0 : 移除表中所有与 value 相等的值。
+*/
 func (ll *ListLinkedList) LRem(count int, key string) int {
 	list := ll.GetValue().(*raw_type.List)
 
 	succCount := 0
-	for i := 0; i < count; i++ {
-		if node := list.ListSearchKey(key); node == nil {
-			continue
-		} else {
-			list = list.ListRemoveNode(node)
-			succCount += 1
+	if count == 0 {
+		count = list.ListLength() + 1
+	}
+	if count > 0 {
+		for node := list.ListFirst(); node != nil && count > 0; node = node.NodeNext() {
+			if node.NodeValue() == key {
+				count -= 1
+				succCount += 1
+				list = list.ListRemoveNode(node)
+			}
+		}
+	} else {
+		count = -count
+		for node := list.ListLast(); node != nil && count > 0; node = node.NodePrev() {
+			if node.NodeValue() == key {
+				count -= 1
+				succCount += 1
+				list = list.ListRemoveNode(node)
+			}
 		}
 	}
 	if succCount > 0 {
@@ -102,6 +130,7 @@ func (ll *ListLinkedList) LRem(count int, key string) int {
 	return succCount
 }
 
+//TODO lmj
 func (ll *ListLinkedList) LTrim(start int, stop int) error {
 	//list := ll.GetValue().(*raw_type.List)
 	//
