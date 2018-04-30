@@ -7,6 +7,7 @@ import (
 	re "redis_go/error"
 	"redis_go/loggers"
 	"strconv"
+	"strings"
 )
 
 const (
@@ -127,7 +128,7 @@ func (handler *ListHandler) LIndex(cli *client.Client) {
 
 func (handler *ListHandler) LInsert(cli *client.Client) {
 	args := cli.Cmd.GetArgs()
-	if len(args) < 3 {
+	if len(args) < 4 {
 		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
 		return
 	}
@@ -136,12 +137,17 @@ func (handler *ListHandler) LInsert(cli *client.Client) {
 		cli.ResponseReError(err)
 		cli.Response(nil)
 	} else {
-		insertFalg, err := strconv.Atoi(args[1])
-		if err != nil {
-			cli.ResponseReError(re.ErrNotIntegerOrOutOfRange)
+		var insertFlag int
+		switch strings.ToUpper(args[1]) {
+		case "BEFORE":
+			insertFlag = encodings.RedisTypeListInsertBefore
+		case "AFTER":
+			insertFlag = encodings.RedisTypeListInsertAfter
+		default:
+			cli.ResponseReError(re.ErrSyntaxError)
 			return
 		}
-		if ret, err := ts.LInsert(insertFalg, args[2]); err != nil {
+		if ret, err := ts.LInsert(insertFlag, args[2], args[3:]...); err != nil {
 			cli.ResponseReError(err)
 		} else {
 			cli.Response(ret)
@@ -193,7 +199,7 @@ func (handler *ListHandler) LPush(cli *client.Client) {
 	if tl, err := getTListValueByKey(cli, key); err != nil {
 		cli.ResponseReError(err)
 	} else {
-		cli.Response(tl.LPush(args[1]))
+		cli.Response(tl.LPush(args[1:]))
 	}
 }
 
@@ -323,7 +329,7 @@ func (handler *ListHandler) RPush(cli *client.Client) {
 	if tl, err := getTListValueByKey(cli, key); err != nil {
 		cli.ResponseReError(err)
 	} else {
-		cli.Response(tl.RPush(args[1]))
+		cli.Response(tl.RPush(args[1:]))
 	}
 }
 

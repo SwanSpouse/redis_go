@@ -24,8 +24,8 @@ type TList interface {
 	IsExpired() bool
 
 	// list command operation
-	LPush(string) int
-	RPush(string) int
+	LPush([]string) int
+	RPush([]string) int
 	LPop() string
 	RPop() string
 	LRange(int, int) []string
