@@ -80,7 +80,7 @@ func getTHashValueByKey(cli *client.Client, key string) (database.THash, error) 
 	}
 	baseType := cli.SelectedDatabase().SearchKeyInDB(key)
 	if baseType == nil {
-		return nil, re.ErrNilValue
+		return nil, re.ErrNoSuchKey
 	}
 	if _, ok := hashEncodingTypeDict[baseType.GetEncoding()]; !ok || baseType.GetObjectType() != encodings.RedisTypeHash {
 		loggers.Errorf(string(re.ErrWrongType), baseType.GetObjectType(), baseType.GetEncoding())
@@ -269,6 +269,8 @@ func (handler *HashHandler) HSetNX(cli *client.Client) {
 	} else {
 		if val, _ := th.HGet(args[1]); val == "" {
 			cli.Response(th.HSet(args[1], args[2]))
+		} else {
+			cli.Response(0)
 		}
 	}
 }
