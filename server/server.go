@@ -119,6 +119,7 @@ func (srv *Server) populateCommandTable() {
 	stringHandler := new(handlers.StringHandler)
 	keyHandler := new(handlers.KeyHandler)
 	listHandler := new(handlers.ListHandler)
+	hashHandler := new(handlers.HashHandler)
 
 	// key command
 	srv.commands[handlers.RedisKeyCommandDel] = keyHandler
@@ -163,4 +164,21 @@ func (srv *Server) populateCommandTable() {
 	srv.commands[handlers.RedisListCommandRpushX] = listHandler
 	srv.commands[handlers.RedisListCommandLDebug] = listHandler
 
+	// hash command
+	srv.commands[handlers.RedisHashCommandHDel] = hashHandler
+	srv.commands[handlers.RedisHashCommandHExists] = hashHandler
+	srv.commands[handlers.RedisHashCommandHGet] = hashHandler
+	srv.commands[handlers.RedisHashCommandHGetAll] = hashHandler
+	srv.commands[handlers.RedisHashCommandHIncrBy] = hashHandler
+	srv.commands[handlers.RedisHashCommandHIncrByFloat] = hashHandler
+	srv.commands[handlers.RedisHashCommandHKeys] = hashHandler
+	srv.commands[handlers.RedisHashCommandHLen] = hashHandler
+	srv.commands[handlers.RedisHashCommandHMGet] = hashHandler
+	srv.commands[handlers.RedisHashCommandHMSet] = hashHandler
+	srv.commands[handlers.RedisHashCommandHSet] = hashHandler
+	srv.commands[handlers.RedisHashCommandHSetNX] = hashHandler
+	srv.commands[handlers.RedisHashCommandHVals] = hashHandler
+	srv.commands[handlers.RedisHashCommandHScan] = hashHandler
+	srv.commands[handlers.RedisHashCommandHStrLen] = hashHandler
+	srv.commands[handlers.RedisHashCommandHDebug] = hashHandler
 }

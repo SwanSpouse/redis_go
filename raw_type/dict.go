@@ -422,20 +422,25 @@ func (dict *Dict) Contains(value interface{}) bool {
 	return dict.ContainsValue(value)
 }
 
-func (dict *Dict) Put(key, value interface{}) {
+func (dict *Dict) Put(key, value interface{}) interface{} {
 	if key == nil || value == nil {
 		panic("PUT key or value null pointer exception")
 	}
 	hashCode := hash(key)
 	segmentIdx := (hashCode >> dict.segmentShift) & dict.segmentMask
-	dict.segments[segmentIdx].put(hashCode, key, value)
+	return dict.segments[segmentIdx].put(hashCode, key, value)
 }
 
-/*
-	TODO lmj
-*/
 func (dict *Dict) PutAll(otherDict *Dict) {
-
+	for index := 0; index < len(otherDict.segments); index++ {
+		otherDict.segments[index].locker.Lock()
+		for i := 0; i < len(otherDict.segments[index].table); i++ {
+			for node := otherDict.segments[index].table[i]; node != nil; node = node.next {
+				dict.Put(node.Key, node.Value)
+			}
+		}
+		otherDict.segments[index].locker.Unlock()
+	}
 }
 
 func (dict *Dict) Remove(key, value interface{}) interface{} {
@@ -471,18 +476,48 @@ func (dict *Dict) Clear() {
 	}
 }
 
-/*
-	TODO lmj
-*/
 func (dict *Dict) KeySet() map[interface{}]bool {
-	return nil
+	ret := make(map[interface{}]bool, 0)
+	for index := 0; index < len(dict.segments); index++ {
+		dict.segments[index].locker.Lock()
+		for i := 0; i < len(dict.segments[index].table); i++ {
+			if dict.segments[index].table[i] == nil {
+				continue
+			}
+			ret[dict.segments[index].table[i].Key] = true
+		}
+		dict.segments[index].locker.Unlock()
+	}
+	return ret
 }
 
-/*
-	TODO lmj
-*/
+func (dict *Dict) KeyValueSet() map[interface{}]interface{} {
+	ret := make(map[interface{}]interface{}, 0)
+	for index := 0; index < len(dict.segments); index++ {
+		dict.segments[index].locker.Lock()
+		for i := 0; i < len(dict.segments[index].table); i++ {
+			if dict.segments[index].table[i] == nil {
+				continue
+			}
+			ret[dict.segments[index].table[i].Key] = dict.segments[index].table[i].Value
+		}
+		dict.segments[index].locker.Unlock()
+	}
+	return ret
+}
+
 func (dict *Dict) Values() map[interface{}]bool {
-	return nil
+	ret := make(map[interface{}]bool, 0)
+	for index := 0; index < len(dict.segments); index++ {
+		dict.segments[index].locker.Lock()
+		for i := 0; i < len(dict.segments[index].table); i++ {
+			for node := dict.segments[index].table[i]; node != nil; node = node.next {
+				ret[node.Value] = true
+			}
+		}
+		dict.segments[index].locker.Unlock()
+	}
+	return ret
 }
 
 func (dict *Dict) printDictForDebug() {
