@@ -2,7 +2,8 @@
 ![framework](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/framework/framework.png?raw=true)
 
 ### client
-redis客户端，向服务器发送请求
+client.go: redis客户端，向服务器发送请求
+command: redis command，定义command结构，其中包括command名称、参数个数、处理当前command的方法等。
 
 ### conf
 配置，关于配置的一些常量。
