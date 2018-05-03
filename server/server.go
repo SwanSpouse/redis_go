@@ -175,7 +175,7 @@ func (srv *Server) populateCommandTable() {
 	srv.commandTable[handlers.RedisKeyCommandExists] = client.NewCommand(handlers.RedisKeyCommandExists, 2, "r", keyHandler)
 
 	// string command
-	srv.commandTable[handlers.RedisStringCommandAppend] = client.NewCommand(handlers.RedisStringCommandAppend, 1, "r", stringHandler)
+	srv.commandTable[handlers.RedisStringCommandAppend] = client.NewCommand(handlers.RedisStringCommandAppend, 3, "wm", stringHandler)
 	srv.commandTable[handlers.RedisStringCommandSet] = client.NewCommand(handlers.RedisStringCommandSet, 3, "wm", stringHandler)
 	srv.commandTable[handlers.RedisStringCommandMSet] = client.NewCommand(handlers.RedisStringCommandMSet, -3, "wm", stringHandler)
 	srv.commandTable[handlers.RedisStringCommandMSetNx] = client.NewCommand(handlers.RedisStringCommandMSetNx, -3, "wm", stringHandler)

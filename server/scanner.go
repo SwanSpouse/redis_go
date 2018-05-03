@@ -67,15 +67,21 @@ func (srv *Server) handlerCommand(c *client.Client) {
 	} else {
 		c.LastCmd = c.Cmd
 		c.Cmd = command
-		// 在这里对command的参数个数等进行检查
-		if (c.Cmd.Argc > 0 && c.Cmd.Argc != command.Argc) ||
-			(c.Cmd.Argc < -command.Argc) {
+		/**
+		在这里对command的参数个数等进行检查
+			1. 如果Arity > 0, 要求参数个数必须严格等于Arity
+			2. 如果Arity < 0, 要求参数个数至少为|Arity|
+		*/
+		if (command.Arity > 0 && c.Argc != command.Arity) ||
+			(c.Argc < -command.Arity) {
+			loggers.Errorf("wrong number of args %+v", command)
 			c.ResponseReError(re.ErrWrongNumberOfArgs, c.GetOriginCommandName())
 			return
 		}
 		// TODO 检查用户是否验证过身份
 		// TODO 集群模式等在这里进行一些操作
 		// TODO 判断是否是事务相关命令
+		// TODO 判断命令造成了多少个dirty, 执行时间等一些统计信息
 		// 在这里对client端发送过来的命令进行处理
 		command.Handler.Process(c)
 	}

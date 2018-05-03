@@ -109,7 +109,7 @@ var _ = Describe("TestRedisStringCommand", func() {
 		Expect(err).To(BeNil())
 		Expect(ret[0]).To(Equal(encodings.RedisEncodingInt))
 
-		w.WriteCmd(handlers.RedisStringCommandAppend, []byte(key), []byte("x"))
+		w.WriteCmd(handlers.RedisStringCommandAppend, []byte(key), []byte(" "))
 		w.Flush()
 		ret, err = r.Read()
 		Expect(err).To(BeNil())
