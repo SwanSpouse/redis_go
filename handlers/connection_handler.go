@@ -4,7 +4,10 @@ import (
 	"redis_go/client"
 	re "redis_go/error"
 	"redis_go/loggers"
-	"strings"
+)
+
+var (
+	_ client.BaseHandler = (*ConnectionHandler)(nil)
 )
 
 const (
@@ -15,21 +18,17 @@ const (
 type ConnectionHandler struct {
 }
 
-func (handler *ConnectionHandler) Process(client *client.Client) {
-	if client.Cmd == nil {
-		client.ResponseReError(re.ErrNilCommand)
-		return
-	}
-	switch strings.ToUpper(client.Cmd.GetName()) {
+func (handler *ConnectionHandler) Process(cli *client.Client) {
+	switch cli.GetCommandName() {
 	case RedisConnectionCommandPing:
-		handler.ping(client)
+		handler.ping(cli)
 	case RedisConnectionCommandAuth:
-		handler.auth(client)
+		handler.auth(cli)
 	default:
-		client.ResponseReError(re.ErrUnknownCommand, client.Cmd.GetOriginName())
+		cli.ResponseReError(re.ErrUnknownCommand, cli.GetOriginCommandName())
 		return
 	}
-	client.Flush()
+	cli.Flush()
 }
 
 func (handler *ConnectionHandler) ping(client *client.Client) {

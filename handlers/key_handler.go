@@ -6,6 +6,10 @@ import (
 	"strings"
 )
 
+var (
+	_ client.BaseHandler = (*KeyHandler)(nil)
+)
+
 const (
 	RedisKeyCommandDel    = "DEL"
 	RedisKeyCommandExists = "EXISTS"
@@ -26,7 +30,7 @@ func (handler *KeyHandler) Process(cli *client.Client) {
 		cli.ResponseReError(re.ErrNilCommand)
 		return
 	}
-	switch cli.Cmd.GetName() {
+	switch cli.GetCommandName() {
 	case RedisKeyCommandDel:
 		handler.Del(cli)
 	case "DUMP":
@@ -53,38 +57,23 @@ func (handler *KeyHandler) Process(cli *client.Client) {
 		handler.Type(cli)
 	case "SCAN":
 	default:
-		cli.ResponseReError(re.ErrUnknownCommand, cli.Cmd.GetOriginName())
+		cli.ResponseReError(re.ErrUnknownCommand, cli.GetOriginCommandName())
 	}
 	cli.Flush()
 }
 
 func (handler *KeyHandler) Del(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) < 1 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	successCount := cli.SelectedDatabase().RemoveKeyInDB(args)
+	successCount := cli.SelectedDatabase().RemoveKeyInDB(cli.Argv)
 	cli.Response(successCount)
 }
 
 func (handler *KeyHandler) Exists(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) < 1 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	successCount, _ := cli.SelectedDatabase().SearchKeysInDB(args)
+	successCount, _ := cli.SelectedDatabase().SearchKeysInDB(cli.Argv)
 	cli.Response(int64(len(successCount)))
 }
 
 func (handler *KeyHandler) Type(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) < 1 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	if tb := cli.SelectedDatabase().SearchKeyInDB(args[0]); tb == nil {
+	if tb := cli.SelectedDatabase().SearchKeyInDB(cli.Argv[1]); tb == nil {
 		cli.Response(nil)
 	} else {
 		cli.Response(tb.GetObjectType())
@@ -92,13 +81,8 @@ func (handler *KeyHandler) Type(cli *client.Client) {
 }
 
 func (handler *KeyHandler) Object(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) < 2 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	encodings := args[0]
-	key := args[1]
+	encodings := cli.Argv[1]
+	key := cli.Argv[2]
 	switch strings.ToUpper(encodings) {
 	case CommandObjectSubTypeEncodings:
 		if tb := cli.SelectedDatabase().SearchKeyInDB(key); tb == nil {

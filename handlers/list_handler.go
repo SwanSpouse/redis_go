@@ -10,6 +10,10 @@ import (
 	"strings"
 )
 
+var (
+	_ client.BaseHandler = (*ListHandler)(nil)
+)
+
 const (
 	RedisListCommandLIndex    = "LINDEX"
 	RedisListCommandLInsert   = "LINSERT"
@@ -38,7 +42,7 @@ type ListHandler struct {
 }
 
 func (handler *ListHandler) Process(cli *client.Client) {
-	switch cli.Cmd.GetName() {
+	switch cli.GetCommandName() {
 	case RedisListCommandLIndex:
 		handler.LIndex(cli)
 	case RedisListCommandLInsert:
@@ -70,7 +74,7 @@ func (handler *ListHandler) Process(cli *client.Client) {
 	case RedisListCommandLDebug:
 		handler.Debug(cli)
 	default:
-		cli.ResponseReError(re.ErrUnknownCommand, cli.Cmd.GetOriginName())
+		cli.ResponseReError(re.ErrUnknownCommand, cli.GetOriginCommandName())
 	}
 	cli.Flush()
 }
@@ -104,16 +108,11 @@ func createListIfNotExists(cli *client.Client, key string) error {
 }
 
 func (handler *ListHandler) LIndex(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) < 2 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	key := args[0]
+	key := cli.Argv[1]
 	if ts, err := getTListValueByKey(cli, key); err != nil {
 		cli.ResponseReError(err)
 	} else {
-		index, err := strconv.Atoi(args[1])
+		index, err := strconv.Atoi(cli.Argv[2])
 		if err != nil {
 			cli.ResponseReError(re.ErrNotIntegerOrOutOfRange)
 			return
@@ -127,18 +126,13 @@ func (handler *ListHandler) LIndex(cli *client.Client) {
 }
 
 func (handler *ListHandler) LInsert(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) < 4 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	key := args[0]
+	key := cli.Argv[1]
 	if ts, err := getTListValueByKey(cli, key); err != nil {
 		cli.ResponseReError(err)
 		cli.Response(nil)
 	} else {
 		var insertFlag int
-		switch strings.ToUpper(args[1]) {
+		switch strings.ToUpper(cli.Argv[2]) {
 		case "BEFORE":
 			insertFlag = encodings.RedisTypeListInsertBefore
 		case "AFTER":
@@ -147,7 +141,7 @@ func (handler *ListHandler) LInsert(cli *client.Client) {
 			cli.ResponseReError(re.ErrSyntaxError)
 			return
 		}
-		if ret, err := ts.LInsert(insertFlag, args[2], args[3:]...); err != nil {
+		if ret, err := ts.LInsert(insertFlag, cli.Argv[3], cli.Argv[4:]...); err != nil {
 			cli.ResponseReError(err)
 		} else {
 			cli.Response(ret)
@@ -156,12 +150,7 @@ func (handler *ListHandler) LInsert(cli *client.Client) {
 }
 
 func (handler *ListHandler) LLen(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) != 1 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	key := args[0]
+	key := cli.Argv[1]
 	if ts, err := getTListValueByKey(cli, key); err != nil && err != re.ErrNilValue {
 		cli.ResponseReError(err)
 	} else if err == re.ErrNilValue {
@@ -172,12 +161,7 @@ func (handler *ListHandler) LLen(cli *client.Client) {
 }
 
 func (handler *ListHandler) LPop(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) < 1 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	key := args[0]
+	key := cli.Argv[1]
 	if tl, err := getTListValueByKey(cli, key); err != nil {
 		cli.ResponseReError(err)
 	} else {
@@ -186,12 +170,7 @@ func (handler *ListHandler) LPop(cli *client.Client) {
 }
 
 func (handler *ListHandler) LPush(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) < 2 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	key := args[0]
+	key := cli.Argv[1]
 	if err := createListIfNotExists(cli, key); err != nil {
 		cli.ResponseReError(err)
 		return
@@ -199,7 +178,7 @@ func (handler *ListHandler) LPush(cli *client.Client) {
 	if tl, err := getTListValueByKey(cli, key); err != nil {
 		cli.ResponseReError(err)
 	} else {
-		cli.Response(tl.LPush(args[1:]))
+		cli.Response(tl.LPush(cli.Argv[2:]))
 	}
 }
 
@@ -208,19 +187,14 @@ func (handler *ListHandler) LPushX(cli *client.Client) {
 }
 
 func (handler *ListHandler) LRange(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) < 3 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	key := args[0]
+	key := cli.Argv[1]
 	if ts, err := getTListValueByKey(cli, key); err != nil && err != re.ErrNoSuchKey {
 		cli.ResponseReError(err)
 	} else if err == re.ErrNoSuchKey {
 		cli.ResponseReError(re.ErrEmptyListOrSet)
 	} else {
-		start, startErr := strconv.Atoi(args[1])
-		stop, stopErr := strconv.Atoi(args[2])
+		start, startErr := strconv.Atoi(cli.Argv[2])
+		stop, stopErr := strconv.Atoi(cli.Argv[3])
 		if startErr != nil || stopErr != nil {
 			cli.ResponseReError(re.ErrNotIntegerOrOutOfRange)
 			return
@@ -230,40 +204,30 @@ func (handler *ListHandler) LRange(cli *client.Client) {
 }
 
 func (handler *ListHandler) LRem(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) < 3 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	key := args[0]
+	key := cli.Argv[1]
 	if ts, err := getTListValueByKey(cli, key); err != nil && err != re.ErrNoSuchKey {
 		cli.ResponseReError(err)
 	} else {
-		index, err := strconv.Atoi(args[1])
+		index, err := strconv.Atoi(cli.Argv[2])
 		if err != nil {
 			cli.ResponseReError(re.ErrNotIntegerOrOutOfRange)
 			return
 		}
-		cli.Response(ts.LRem(index, args[2]))
+		cli.Response(ts.LRem(index, cli.Argv[3]))
 	}
 }
 
 func (handler *ListHandler) LSet(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) < 3 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	key := args[0]
+	key := cli.Argv[1]
 	if ts, err := getTListValueByKey(cli, key); err != nil && err != re.ErrNoSuchKey {
 		cli.ResponseReError(err)
 	} else {
-		index, err := strconv.Atoi(args[1])
+		index, err := strconv.Atoi(cli.Argv[2])
 		if err != nil {
 			cli.ResponseReError(re.ErrNotIntegerOrOutOfRange)
 			return
 		}
-		if err := ts.LSet(index, args[2]); err != nil {
+		if err := ts.LSet(index, cli.Argv[3]); err != nil {
 			cli.ResponseReError(err)
 		} else {
 			cli.ResponseOK()
@@ -272,19 +236,14 @@ func (handler *ListHandler) LSet(cli *client.Client) {
 }
 
 func (handler *ListHandler) LTrim(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) < 3 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	key := args[0]
+	key := cli.Argv[1]
 	if ts, err := getTListValueByKey(cli, key); err != nil && err != re.ErrNoSuchKey {
 		cli.ResponseReError(err)
 	} else if err == re.ErrNoSuchKey {
 		cli.ResponseOK()
 	} else {
-		startPos, startPosErr := strconv.Atoi(args[1])
-		endPos, endPosErr := strconv.Atoi(args[2])
+		startPos, startPosErr := strconv.Atoi(cli.Argv[2])
+		endPos, endPosErr := strconv.Atoi(cli.Argv[3])
 		if startPosErr != nil || endPosErr != nil {
 			cli.ResponseReError(re.ErrNotIntegerOrOutOfRange)
 			return
@@ -298,12 +257,7 @@ func (handler *ListHandler) LTrim(cli *client.Client) {
 }
 
 func (handler *ListHandler) RPop(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) < 1 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	key := args[0]
+	key := cli.Argv[1]
 	if tl, err := getTListValueByKey(cli, key); err != nil {
 		cli.ResponseReError(err)
 	} else {
@@ -316,12 +270,7 @@ func (handler *ListHandler) RPopLPush(cli *client.Client) {
 }
 
 func (handler *ListHandler) RPush(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) < 2 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	key := args[0]
+	key := cli.Argv[1]
 	if err := createListIfNotExists(cli, key); err != nil {
 		cli.ResponseReError(err)
 		return
@@ -329,7 +278,7 @@ func (handler *ListHandler) RPush(cli *client.Client) {
 	if tl, err := getTListValueByKey(cli, key); err != nil {
 		cli.ResponseReError(err)
 	} else {
-		cli.Response(tl.RPush(args[1:]))
+		cli.Response(tl.RPush(cli.Argv[2:]))
 	}
 }
 
@@ -338,12 +287,7 @@ func (handler *ListHandler) RPushX(cli *client.Client) {
 }
 
 func (handler *ListHandler) Debug(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) < 1 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	key := args[0]
+	key := cli.Argv[1]
 	if tl, err := getTListValueByKey(cli, key); err != nil {
 		cli.ResponseReError(err)
 	} else {

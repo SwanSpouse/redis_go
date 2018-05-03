@@ -10,6 +10,10 @@ import (
 	"strconv"
 )
 
+var (
+	_ client.BaseHandler = (*StringHandler)(nil)
+)
+
 const (
 	RedisStringCommandAppend      = "APPEND"
 	RedisStringCommandBitCount    = "BITCOUNT"
@@ -45,7 +49,7 @@ var stringEncodingTypeDict = map[string]bool{
 type StringHandler struct{}
 
 func (handler *StringHandler) Process(cli *client.Client) {
-	switch cli.Cmd.GetName() {
+	switch cli.GetCommandName() {
 	case RedisStringCommandAppend:
 		handler.Append(cli)
 	case RedisStringCommandBitCount, RedisStringCommandBitop, RedisStringCommandGetBit, RedisStringCommandSetBit:
@@ -85,16 +89,13 @@ func (handler *StringHandler) Process(cli *client.Client) {
 	case RedisStringCommandStrLen:
 		handler.Strlen(cli)
 	default:
-		cli.ResponseReError(re.ErrUnknownCommand, cli.Cmd.GetOriginName())
+		cli.ResponseReError(re.ErrUnknownCommand, cli.GetOriginCommandName())
 	}
 	// 最后统一发送数据
 	cli.Flush()
 }
 
 func getTStringValueByKey(cli *client.Client, key string) (database.TString, error) {
-	if cli.Cmd == nil {
-		return nil, re.ErrNilCommand
-	}
 	// 获取key在数据库中对应的value(TBase:BaseType)
 	baseType := cli.SelectedDatabase().SearchKeyInDB(key)
 	if baseType == nil {
@@ -116,12 +117,7 @@ func getTStringValueByKey(cli *client.Client, key string) (database.TString, err
 }
 
 func (handler *StringHandler) Append(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) < 2 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	key := args[0]
+	key := cli.Argv[1]
 	ts, err := getTStringValueByKey(cli, key)
 	if err != nil {
 		cli.ResponseReError(err)
@@ -138,29 +134,19 @@ func (handler *StringHandler) Append(cli *client.Client) {
 			ts = rs
 		}
 	}
-	cli.Response(ts.Append(args[1]))
+	cli.Response(ts.Append(cli.Argv[2]))
 }
 
 func (handler *StringHandler) Set(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) < 2 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	key := args[0]
-	cli.SelectedDatabase().SetKeyInDB(key, database.NewRedisStringObject(args[1]))
+	key := cli.Argv[1]
+	cli.SelectedDatabase().SetKeyInDB(key, database.NewRedisStringObject(cli.Argv[2]))
 	cli.ResponseOK()
 }
 
 func (handler *StringHandler) SetNx(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) < 2 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	key := args[0]
+	key := cli.Argv[1]
 	if cli.SelectedDatabase().SearchKeyInDB(key) == nil {
-		cli.SelectedDatabase().SetKeyInDB(key, database.NewRedisStringObject(args[1]))
+		cli.SelectedDatabase().SetKeyInDB(key, database.NewRedisStringObject(cli.Argv[2]))
 		cli.Response(1)
 	} else {
 		cli.Response(0)
@@ -168,14 +154,14 @@ func (handler *StringHandler) SetNx(cli *client.Client) {
 }
 
 func (handler *StringHandler) MSetNx(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) < 2 || len(args)%2 == 1 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
+	args := cli.Argv
+	if len(args)%2 == 0 {
+		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.GetOriginCommandName())
 		return
 	}
 	var containsKey bool
-	for i := 0; i < len(args); i += 2 {
-		if cli.SelectedDatabase().SearchKeyInDB(args[i]) != nil {
+	for i := 2; i < len(cli.Argv); i += 2 {
+		if cli.SelectedDatabase().SearchKeyInDB(cli.Argv[i]) != nil {
 			containsKey = true
 			break
 		}
@@ -183,21 +169,15 @@ func (handler *StringHandler) MSetNx(cli *client.Client) {
 	if containsKey {
 		cli.Response(0)
 	} else {
-		for i := 0; i < len(args); i += 2 {
-			cli.SelectedDatabase().SetKeyInDB(args[i], database.NewRedisStringObject(args[i+1]))
+		for i := 2; i < len(cli.Argv); i += 2 {
+			cli.SelectedDatabase().SetKeyInDB(cli.Argv[i], database.NewRedisStringObject(cli.Argv[i+1]))
 		}
 		cli.Response(1)
 	}
 }
 
 func (handler *StringHandler) Get(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	// 判断参数个数是否合理
-	if len(args) != 1 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	key := args[0]
+	key := cli.Argv[1]
 	ts, err := getTStringValueByKey(cli, key)
 	if err != nil {
 		cli.ResponseReError(err)
@@ -207,19 +187,14 @@ func (handler *StringHandler) Get(cli *client.Client) {
 }
 
 func (handler *StringHandler) GetSet(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) < 2 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	key := args[0]
+	key := cli.Argv[1]
 	ts, err := getTStringValueByKey(cli, key)
 
 	if err != nil && err != re.ErrNilValue {
 		cli.ResponseReError(err)
 		return
 	}
-	cli.SelectedDatabase().SetKeyInDB(key, database.NewRedisStringObject(args[1]))
+	cli.SelectedDatabase().SetKeyInDB(key, database.NewRedisStringObject(cli.Argv[2]))
 
 	if ts == nil {
 		cli.ResponseReError(re.ErrNilValue)
@@ -229,13 +204,8 @@ func (handler *StringHandler) GetSet(cli *client.Client) {
 }
 
 func (handler *StringHandler) MGet(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) < 1 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
 	ret := make([]interface{}, 0)
-	for _, key := range args {
+	for _, key := range cli.Argv[1:] {
 		ts, err := getTStringValueByKey(cli, key)
 		if err != nil {
 			ret = append(ret, nil)
@@ -247,24 +217,18 @@ func (handler *StringHandler) MGet(cli *client.Client) {
 }
 
 func (handler *StringHandler) MSet(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) < 2 || len(args)%2 == 1 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
+	if len(cli.Argv)%2 == 0 {
+		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.GetOriginCommandName())
 		return
 	}
-	for i := 0; i < len(args); i += 2 {
-		cli.SelectedDatabase().SetKeyInDB(args[i], database.NewRedisStringObject(args[i+1]))
+	for i := 1; i < len(cli.Argv); i += 2 {
+		cli.SelectedDatabase().SetKeyInDB(cli.Argv[i], database.NewRedisStringObject(cli.Argv[i+1]))
 	}
 	cli.ResponseOK()
 }
 
 func (handler *StringHandler) Incr(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) != 1 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	key := args[0]
+	key := cli.Argv[1]
 	ts, err := getTStringValueByKey(cli, key)
 	if err != nil && err != re.ErrNilValue {
 		cli.ResponseReError(err)
@@ -281,23 +245,18 @@ func (handler *StringHandler) Incr(cli *client.Client) {
 }
 
 func (handler *StringHandler) IncrBy(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) != 2 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	key := args[0]
+	key := cli.Argv[1]
 	ts, err := getTStringValueByKey(cli, key)
 	if err != nil && err != re.ErrNilValue {
 		cli.ResponseReError(err)
 	} else if err == re.ErrNilValue {
-		if _, err := strconv.ParseInt(args[1], 10, 64); err != nil {
+		if _, err := strconv.ParseInt(cli.Argv[1], 10, 64); err != nil {
 			cli.ResponseReError(re.ErrNotIntegerOrOutOfRange)
 		} else {
-			cli.SelectedDatabase().SetKeyInDB(key, database.NewRedisStringObject(args[1]))
-			cli.Response(args[1])
+			cli.SelectedDatabase().SetKeyInDB(key, database.NewRedisStringObject(cli.Argv[2]))
+			cli.Response(cli.Argv[1])
 		}
-	} else if ret, err := ts.IncrBy(args[1]); err != nil {
+	} else if ret, err := ts.IncrBy(cli.Argv[2]); err != nil {
 		cli.ResponseReError(err)
 	} else {
 		cli.Response(ret)
@@ -305,21 +264,16 @@ func (handler *StringHandler) IncrBy(cli *client.Client) {
 }
 
 func (handler *StringHandler) IncrByFloat(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) != 2 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	key := args[0]
+	key := cli.Argv[1]
 	ts, err := getTStringValueByKey(cli, key)
 	if err != nil && err != re.ErrNilValue {
 		cli.ResponseReError(err)
 	} else if err == re.ErrNilValue {
-		if _, err := strconv.ParseFloat(args[1], 64); err != nil {
+		if _, err := strconv.ParseFloat(cli.Argv[2], 64); err != nil {
 			cli.ResponseReError(re.ErrValueIsNotFloat)
 		} else {
-			cli.SelectedDatabase().SetKeyInDB(key, database.NewRedisStringObject(args[1]))
-			cli.Response(args[1])
+			cli.SelectedDatabase().SetKeyInDB(key, database.NewRedisStringObject(cli.Argv[2]))
+			cli.Response(cli.Argv[2])
 		}
 	} else {
 		// 如果TString的编码类型是int,转换成StringRaw再进行处理
@@ -333,7 +287,7 @@ func (handler *StringHandler) IncrByFloat(cli *client.Client) {
 				ts = rs
 			}
 		}
-		if ret, err := ts.IncrByFloat(args[1]); err != nil {
+		if ret, err := ts.IncrByFloat(cli.Argv[2]); err != nil {
 			cli.ResponseReError(err)
 		} else {
 			cli.Response(ret)
@@ -342,12 +296,7 @@ func (handler *StringHandler) IncrByFloat(cli *client.Client) {
 }
 
 func (handler *StringHandler) Decr(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) != 1 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	key := args[0]
+	key := cli.Argv[1]
 	ts, err := getTStringValueByKey(cli, key)
 	if err != nil && err != re.ErrNilValue {
 		cli.ResponseReError(err)
@@ -364,24 +313,19 @@ func (handler *StringHandler) Decr(cli *client.Client) {
 }
 
 func (handler *StringHandler) DecrBy(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) != 2 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	key := args[0]
+	key := cli.Argv[1]
 	ts, err := getTStringValueByKey(cli, key)
 	if err != nil && err != re.ErrNilValue {
 		cli.ResponseReError(err)
 	} else if err == re.ErrNilValue {
-		if _, err := strconv.ParseInt(args[1], 10, 64); err != nil {
+		if _, err := strconv.ParseInt(cli.Argv[2], 10, 64); err != nil {
 			cli.ResponseReError(re.ErrNotIntegerOrOutOfRange)
 		} else {
-			cli.SelectedDatabase().SetKeyInDB(key, database.NewRedisStringObject(args[1]))
-			cli.Response(args[1])
+			cli.SelectedDatabase().SetKeyInDB(key, database.NewRedisStringObject(cli.Argv[2]))
+			cli.Response(cli.Argv[2])
 		}
 	} else {
-		if ret, err := ts.DecrBy(args[1]); err != nil {
+		if ret, err := ts.DecrBy(cli.Argv[2]); err != nil {
 			cli.ResponseReError(err)
 		} else {
 			cli.Response(ret)
@@ -390,12 +334,7 @@ func (handler *StringHandler) DecrBy(cli *client.Client) {
 }
 
 func (handler *StringHandler) Strlen(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) != 1 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	key := args[0]
+	key := cli.Argv[1]
 	ts, err := getTStringValueByKey(cli, key)
 	if err != nil {
 		cli.ResponseReError(err)
