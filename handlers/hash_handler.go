@@ -8,6 +8,10 @@ import (
 	"redis_go/loggers"
 )
 
+var (
+	_ client.BaseHandler = (*HashHandler)(nil)
+)
+
 const (
 	RedisHashCommandHDel         = "HDEL"
 	RedisHashCommandHExists      = "HEXISTS"
@@ -36,7 +40,7 @@ type HashHandler struct {
 }
 
 func (handler *HashHandler) Process(cli *client.Client) {
-	switch cli.Cmd.GetName() {
+	switch cli.GetCommandName() {
 	case RedisHashCommandHDel:
 		handler.HDel(cli)
 	case RedisHashCommandHExists:
@@ -68,16 +72,13 @@ func (handler *HashHandler) Process(cli *client.Client) {
 	case RedisHashCommandHDebug:
 		handler.HDebug(cli)
 	default:
-		cli.ResponseReError(re.ErrUnknownCommand, cli.Cmd.GetOriginName())
+		cli.ResponseReError(re.ErrUnknownCommand, cli.GetOriginCommandName())
 	}
 	// 最后统一发送数据
 	cli.Flush()
 }
 
 func getTHashValueByKey(cli *client.Client, key string) (database.THash, error) {
-	if cli.Cmd == nil {
-		return nil, re.ErrNilCommand
-	}
 	baseType := cli.SelectedDatabase().SearchKeyInDB(key)
 	if baseType == nil {
 		return nil, re.ErrNoSuchKey
@@ -103,44 +104,29 @@ func createHashIfNotExists(cli *client.Client, key string) error {
 }
 
 func (handler *HashHandler) HDel(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) < 2 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	key := args[0]
+	key := cli.Argv[1]
 	if th, err := getTHashValueByKey(cli, key); err != nil {
 		cli.ResponseReError(err)
 	} else {
-		cli.Response(th.HDel(args[1:]))
+		cli.Response(th.HDel(cli.Argv[2:]))
 	}
 }
 
 func (handler *HashHandler) HExists(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) != 2 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	key := args[0]
+	key := cli.Argv[1]
 	if th, err := getTHashValueByKey(cli, key); err != nil {
 		cli.ResponseReError(err)
 	} else {
-		cli.Response(th.HExists(args[1]))
+		cli.Response(th.HExists(cli.Argv[2]))
 	}
 }
 
 func (handler *HashHandler) HGet(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) != 2 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	key := args[0]
+	key := cli.Argv[1]
 	if th, err := getTHashValueByKey(cli, key); err != nil {
 		cli.ResponseReError(err)
 	} else {
-		if ret, err := th.HGet(args[1]); err != nil {
+		if ret, err := th.HGet(cli.Argv[2]); err != nil {
 			cli.ResponseReError(err)
 		} else {
 			cli.Response(ret)
@@ -149,12 +135,7 @@ func (handler *HashHandler) HGet(cli *client.Client) {
 }
 
 func (handler *HashHandler) HGetAll(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) != 1 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	key := args[0]
+	key := cli.Argv[1]
 	if th, err := getTHashValueByKey(cli, key); err != nil {
 		cli.ResponseReError(err)
 	} else {
@@ -163,12 +144,7 @@ func (handler *HashHandler) HGetAll(cli *client.Client) {
 }
 
 func (handler *HashHandler) HKeys(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) != 1 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	key := args[0]
+	key := cli.Argv[1]
 	if th, err := getTHashValueByKey(cli, key); err != nil {
 		cli.ResponseReError(err)
 	} else {
@@ -182,12 +158,7 @@ func (handler *HashHandler) HKeys(cli *client.Client) {
 }
 
 func (handler *HashHandler) HLen(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) != 1 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	key := args[0]
+	key := cli.Argv[1]
 	if th, err := getTHashValueByKey(cli, key); err != nil {
 		cli.ResponseReError(err)
 	} else {
@@ -196,17 +167,12 @@ func (handler *HashHandler) HLen(cli *client.Client) {
 }
 
 func (handler *HashHandler) HMGet(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) < 2 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	key := args[0]
+	key := cli.Argv[1]
 	if th, err := getTHashValueByKey(cli, key); err != nil {
 		cli.ResponseReError(err)
 	} else {
 		ret := make([]string, 0)
-		for _, item := range args[1:] {
+		for _, item := range cli.Argv[2:] {
 			value, _ := th.HGet(item)
 			ret = append(ret, value)
 		}
@@ -215,12 +181,11 @@ func (handler *HashHandler) HMGet(cli *client.Client) {
 }
 
 func (handler *HashHandler) HMSet(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) < 2 || len(args)%2 == 0 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
+	key := cli.Argv[1]
+	if len(cli.Argv)%2 == 1 {
+		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.GetOriginCommandName())
 		return
 	}
-	key := args[0]
 	if err := createHashIfNotExists(cli, key); err != nil {
 		cli.ResponseReError(err)
 		return
@@ -228,20 +193,15 @@ func (handler *HashHandler) HMSet(cli *client.Client) {
 	if th, err := getTHashValueByKey(cli, key); err != nil {
 		cli.ResponseReError(err)
 	} else {
-		for i := 1; i < len(args); i += 2 {
-			th.HSet(args[i], args[i+1])
+		for i := 2; i < len(cli.Argv); i += 2 {
+			th.HSet(cli.Argv[i], cli.Argv[i+1])
 		}
 		cli.ResponseOK()
 	}
 }
 
 func (handler *HashHandler) HSet(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) < 3 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	key := args[0]
+	key := cli.Argv[1]
 	if err := createHashIfNotExists(cli, key); err != nil {
 		cli.ResponseReError(err)
 		return
@@ -249,17 +209,12 @@ func (handler *HashHandler) HSet(cli *client.Client) {
 	if th, err := getTHashValueByKey(cli, key); err != nil {
 		cli.ResponseReError(err)
 	} else {
-		cli.Response(th.HSet(args[1], args[2]))
+		cli.Response(th.HSet(cli.Argv[2], cli.Argv[3]))
 	}
 }
 
 func (handler *HashHandler) HSetNX(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) < 3 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	key := args[0]
+	key := cli.Argv[1]
 	if err := createHashIfNotExists(cli, key); err != nil {
 		cli.ResponseReError(err)
 		return
@@ -267,8 +222,8 @@ func (handler *HashHandler) HSetNX(cli *client.Client) {
 	if th, err := getTHashValueByKey(cli, key); err != nil {
 		cli.ResponseReError(err)
 	} else {
-		if val, _ := th.HGet(args[1]); val == "" {
-			cli.Response(th.HSet(args[1], args[2]))
+		if val, _ := th.HGet(cli.Argv[2]); val == "" {
+			cli.Response(th.HSet(cli.Argv[2], cli.Argv[3]))
 		} else {
 			cli.Response(0)
 		}
@@ -276,12 +231,7 @@ func (handler *HashHandler) HSetNX(cli *client.Client) {
 }
 
 func (handler *HashHandler) HVals(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) != 1 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	key := args[0]
+	key := cli.Argv[1]
 	if th, err := getTHashValueByKey(cli, key); err != nil {
 		cli.ResponseReError(err)
 	} else {
@@ -299,16 +249,11 @@ func (handler *HashHandler) HScan(cli *client.Client) {
 }
 
 func (handler *HashHandler) HStrLen(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) != 2 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	key := args[0]
+	key := cli.Argv[1]
 	if th, err := getTHashValueByKey(cli, key); err != nil {
 		cli.ResponseReError(err)
 	} else {
-		if ret, err := th.HGet(args[1]); err != nil {
+		if ret, err := th.HGet(cli.Argv[2]); err != nil {
 			cli.ResponseReError(err)
 		} else {
 			cli.Response(len(ret))
@@ -317,12 +262,7 @@ func (handler *HashHandler) HStrLen(cli *client.Client) {
 }
 
 func (handler *HashHandler) HDebug(cli *client.Client) {
-	args := cli.Cmd.GetArgs()
-	if len(args) != 1 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
-		return
-	}
-	key := args[0]
+	key := cli.Argv[1]
 	if th, err := getTHashValueByKey(cli, key); err != nil {
 		cli.ResponseReError(err)
 	} else {

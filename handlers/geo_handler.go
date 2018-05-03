@@ -4,6 +4,10 @@ import (
 	"redis_go/client"
 )
 
+var (
+	_ client.BaseHandler = (*GeoHandler)(nil)
+)
+
 type GeoHandler struct {
 }
 

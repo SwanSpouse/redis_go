@@ -48,10 +48,10 @@ func (srv *Server) handlerCommand(c *client.Client) {
 	//c.SetIdleTimeout(5 * time.Hour)
 	//c.SetExecTimeout(5 * time.Second)
 	// ReadCmd这里会阻塞知道有数据或者客户端断开连接
-	if cmd, err := c.ReadCmd(); err != nil && err == io.EOF {
+	if err := c.ProcessInputBuffer(); err != nil && err == io.EOF {
 		c.Close()
 		return
-	} else if err != nil || cmd == nil {
+	} else if err != nil {
 		loggers.Errorf("server read command error %+v", err)
 		c.ResponseReError(err)
 		return
@@ -61,11 +61,22 @@ func (srv *Server) handlerCommand(c *client.Client) {
 		如果不在command table中,则返回command not found
 		如果在command table中，则获取到相应的command handler来进行处理。
 	*/
-	if handler, ok := srv.commands[c.Cmd.GetName()]; ok {
-		/* 在这里对client端发送过来的命令进行处理 */
-		handler.Process(c)
+	if command, ok := srv.commandTable[c.GetCommandName()]; !ok || command == nil {
+		loggers.Errorf(string(re.ErrUnknownCommand), c.GetOriginCommandName())
+		c.ResponseReError(re.ErrUnknownCommand, c.GetOriginCommandName())
 	} else {
-		loggers.Errorf(string(re.ErrUnknownCommand), c.Cmd.GetOriginName())
-		c.ResponseReError(re.ErrUnknownCommand, c.Cmd.GetOriginName())
+		c.LastCmd = c.Cmd
+		c.Cmd = command
+		// 在这里对command的参数个数等进行检查
+		if (c.Cmd.Argc > 0 && c.Cmd.Argc != command.Argc) ||
+			(c.Cmd.Argc < -command.Argc) {
+			c.ResponseReError(re.ErrWrongNumberOfArgs, c.GetOriginCommandName())
+			return
+		}
+		// TODO 检查用户是否验证过身份
+		// TODO 集群模式等在这里进行一些操作
+		// TODO 判断是否是事务相关命令
+		// 在这里对client端发送过来的命令进行处理
+		command.Handler.Process(c)
 	}
 }

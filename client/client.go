@@ -5,8 +5,8 @@ import (
 	"redis_go/database"
 	re "redis_go/error"
 	"redis_go/loggers"
-	"redis_go/protocol"
 	"redis_go/tcp"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -27,11 +27,12 @@ type Client struct {
 	cn          net.Conn
 	db          *database.Database // chosen database
 	Closed      bool
-	reader      *tcp.BufIoReader  // request reader
-	writer      *tcp.BufIoWriter  // response writer
-	args        uint64            // args number of command
-	Cmd         *protocol.Command // current command
-	lastCmd     *protocol.Command // last command
+	reader      *tcp.BufIoReader // request reader
+	writer      *tcp.BufIoWriter // response writer
+	Argv        []string         // arguments vector
+	Argc        int              // arguments counter
+	Cmd         *Command         // current command
+	LastCmd     *Command         // last command
 	execTimeout time.Time
 	idleTimeout time.Time // timeout
 	Status      uint32
@@ -120,9 +121,15 @@ func (c *Client) GetExecTimeoutAt() time.Time {
 	return c.execTimeout
 }
 
-/**
-construct a command from bufIoReader
+func (c *Client) GetCommandName() string {
+	return strings.ToUpper(c.Argv[0])
+}
 
+func (c *Client) GetOriginCommandName() string {
+	return c.Argv[0]
+}
+
+/**
 command format:
 	1. status reply     : +OK\r\n
 	2. error reply      : -ERROR\r\n
@@ -130,44 +137,40 @@ command format:
 	4. bulk reply       : $4\r\nPING\r\n
 	5. multi bulk reply : *3\r\n$3\r\nSET\r\n$5\r\nMyKey\r\n$7\r\nMyValue\r\n
 */
-func (c *Client) ReadCmd() (*protocol.Command, error) {
+func (c *Client) ProcessInputBuffer() error {
 	// read one line from buffer
 	line, err := c.reader.PeekLine(0)
 	if err != nil || len(line) == 0 {
-		return nil, err
+		return err
 	}
-	cmd := protocol.NewCommand()
+	c.Argv = make([]string, 0)
+	c.Argc = 0
 	switch line[0] {
 	case '+', '-', ':':
-		cmd.SetName(line.FirstWord())
+		c.Argv = append(c.Argv, line.FirstWord())
+		c.Argc += 1
 	case '$':
 		cmdName, err := c.reader.ReadBulkString()
 		if err != nil || cmdName == "" {
-			return nil, err
+			return err
 		}
-		cmd.SetName(cmdName)
+		c.Argv = append(c.Argv, cmdName)
 	case '*':
 		arrayLen, err := c.reader.ReadArrayLen()
 		if err != nil || arrayLen == 0 {
-			return nil, err
+			return err
 		}
 		for i := 0; i < arrayLen; i++ {
 			arg, err := c.reader.ReadBulkString()
 			if err != nil || arg == "" {
-				return nil, err
+				return err
 			}
-			if i == 0 {
-				cmd.SetName(arg)
-			} else {
-				cmd.AddArgs(tcp.CommandArgument(arg))
-			}
+			c.Argv = append(c.Argv, arg)
 		}
 	}
-	// 更新client端记录的本次命令和上次命令
-	c.lastCmd = c.Cmd
-	c.Cmd = cmd
-	loggers.Info("current command we received is %+v", cmd)
-	return cmd, nil
+	c.Argc = len(c.Argv)
+	loggers.Info("ProcessInputBuffer we have %d args, argv: %+v", c.Argc, c.Argv)
+	return nil
 }
 
 func (c *Client) peekCmd(offset int) (string, error) {
