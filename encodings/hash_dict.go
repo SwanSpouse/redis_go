@@ -5,6 +5,8 @@ import (
 	re "redis_go/error"
 	"redis_go/loggers"
 	"redis_go/raw_type"
+	"redis_go/util"
+	"strconv"
 	"time"
 )
 
@@ -78,6 +80,49 @@ func (hd *HashDict) HGetAll() []string {
 		ret = append(ret, value.(string))
 	}
 	return ret
+}
+
+func (hd *HashDict) HIncrBy(key string, increment string) (string, error) {
+	dict := hd.GetValue().(*raw_type.Dict)
+	originVal := "0"
+	if dict.Get(key) != nil {
+		originVal = dict.Get(key).(string)
+	}
+	var incrementInt, originValInt int64
+	var err error
+	if incrementInt, err = strconv.ParseInt(increment, 10, 64); err != nil {
+		return "", re.ErrNotIntegerOrOutOfRange
+	}
+	if originValInt, err = strconv.ParseInt(originVal, 10, 64); err != nil {
+		return "", re.ErrNotIntegerOrOutOfRange
+	}
+	ret := incrementInt + originValInt
+	retStr := strconv.FormatInt(ret, 10)
+	dict.Put(key, retStr)
+	return retStr, nil
+}
+
+func (hd *HashDict) HIncrByFloat(key string, increment string) (string, error) {
+	dict := hd.GetValue().(*raw_type.Dict)
+	originVal := "0"
+	if dict.Get(key) != nil {
+		originVal = dict.Get(key).(string)
+	}
+	var incrementFloat, originValFloat float64
+	var err error
+	if incrementFloat, err = strconv.ParseFloat(increment, 10); err != nil {
+		return "", re.ErrValueIsNotFloat
+	}
+	if originValFloat, err = strconv.ParseFloat(originVal, 10); err != nil {
+		return "", re.ErrValueIsNotFloat
+	}
+	ret := incrementFloat + originValFloat
+	retStr, err := util.FormatFloatString(fmt.Sprintf("%f", ret))
+	if err != nil {
+		return "", err
+	}
+	dict.Put(key, retStr)
+	return retStr, nil
 }
 
 func (hd *HashDict) HDebug() {

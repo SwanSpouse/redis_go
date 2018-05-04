@@ -32,6 +32,8 @@ type THash interface {
 	HDel([]string) int
 	HLen() int
 	HGetAll() []string
+	HIncrBy(string, string) (string, error)
+	HIncrByFloat(string, string) (string, error)
 	HDebug()
 }
 
