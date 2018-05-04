@@ -50,7 +50,9 @@ func (handler *HashHandler) Process(cli *client.Client) {
 	case RedisHashCommandHGetAll:
 		handler.HGetAll(cli)
 	case RedisHashCommandHIncrBy:
+		handler.HIncrBy(cli)
 	case RedisHashCommandHIncrByFloat:
+		handler.HIncrByFloat(cli)
 	case RedisHashCommandHKeys:
 		handler.HKeys(cli)
 	case RedisHashCommandHLen:
@@ -66,7 +68,7 @@ func (handler *HashHandler) Process(cli *client.Client) {
 	case RedisHashCommandHVals:
 		handler.HVals(cli)
 	case RedisHashCommandHScan:
-		handler.HScan(cli)
+		//handler.HScan(cli)
 	case RedisHashCommandHStrLen:
 		handler.HStrLen(cli)
 	case RedisHashCommandHDebug:
@@ -244,10 +246,6 @@ func (handler *HashHandler) HVals(cli *client.Client) {
 	}
 }
 
-func (handler *HashHandler) HScan(cli *client.Client) {
-
-}
-
 func (handler *HashHandler) HStrLen(cli *client.Client) {
 	key := cli.Argv[1]
 	if th, err := getTHashValueByKey(cli, key); err != nil {
@@ -257,6 +255,40 @@ func (handler *HashHandler) HStrLen(cli *client.Client) {
 			cli.ResponseReError(err)
 		} else {
 			cli.Response(len(ret))
+		}
+	}
+}
+
+func (handler *HashHandler) HIncrBy(cli *client.Client) {
+	key := cli.Argv[1]
+	if err := createHashIfNotExists(cli, key); err != nil {
+		cli.ResponseReError(err)
+		return
+	}
+	if th, err := getTHashValueByKey(cli, key); err != nil {
+		cli.ResponseReError(err)
+	} else {
+		if ret, err := th.HIncrBy(cli.Argv[2], cli.Argv[3]); err != nil {
+			cli.ResponseReError(err)
+		} else {
+			cli.Response(ret)
+		}
+	}
+}
+
+func (handler *HashHandler) HIncrByFloat(cli *client.Client) {
+	key := cli.Argv[1]
+	if err := createHashIfNotExists(cli, key); err != nil {
+		cli.ResponseReError(err)
+		return
+	}
+	if th, err := getTHashValueByKey(cli, key); err != nil {
+		cli.ResponseReError(err)
+	} else {
+		if ret, err := th.HIncrByFloat(cli.Argv[2], cli.Argv[3]); err != nil {
+			cli.ResponseReError(err)
+		} else {
+			cli.Response(ret)
 		}
 	}
 }

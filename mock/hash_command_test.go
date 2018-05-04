@@ -170,4 +170,38 @@ var _ = Describe("TestRedisHashCommand", func() {
 			}
 		}
 	})
+
+	It("Test redis hash command HIncrBy, HIncrByFloat", func() {
+		key := "redis_hash_command_test_common_key_2"
+		w.WriteCmdString(handlers.RedisHashCommandHIncrBy, key, "one", "1")
+		w.Flush()
+		ret, err := r.Read()
+		Expect(err).To(BeNil())
+		Expect(ret[0]).To(Equal("1"))
+
+		w.WriteCmdString(handlers.RedisHashCommandHIncrBy, key, "one", "10")
+		w.Flush()
+		ret, err = r.Read()
+		Expect(err).To(BeNil())
+		Expect(ret[0]).To(Equal("11"))
+
+		w.WriteCmdString(handlers.RedisHashCommandHIncrBy, key, "one", "-10")
+		w.Flush()
+		ret, err = r.Read()
+		Expect(err).To(BeNil())
+		Expect(ret[0]).To(Equal("1"))
+
+		w.WriteCmdString(handlers.RedisHashCommandHIncrByFloat, key, "float", "-10")
+		w.Flush()
+		ret, err = r.Read()
+		Expect(err).To(BeNil())
+		Expect(ret[0]).To(Equal("-10.00"))
+
+		w.WriteCmdString(handlers.RedisHashCommandHIncrByFloat, key, "float", "10.999")
+		w.Flush()
+		ret, err = r.Read()
+		Expect(err).To(BeNil())
+		Expect(ret[0]).To(Equal("0.999"))
+	})
+
 })
