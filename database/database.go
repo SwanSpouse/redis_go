@@ -62,3 +62,12 @@ func (db *Database) RemoveKeyInDB(keys []string) int64 {
 	}
 	return successCount
 }
+
+// 获取数据库中所有的key
+func (db *Database) GetAllKeys() []string {
+	ret := make([]string, 0)
+	for key := range db.dict.KeySet() {
+		ret = append(ret, key.(string))
+	}
+	return ret
+}
