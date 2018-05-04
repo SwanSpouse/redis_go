@@ -68,6 +68,7 @@ func (handler *HashHandler) Process(cli *client.Client) {
 	case RedisHashCommandHVals:
 		handler.HVals(cli)
 	case RedisHashCommandHScan:
+		cli.ResponseReError(re.ErrFunctionNotImplement)
 		//handler.HScan(cli)
 	case RedisHashCommandHStrLen:
 		handler.HStrLen(cli)

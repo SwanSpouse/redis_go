@@ -53,30 +53,45 @@ func (handler *KeyHandler) Process(cli *client.Client) {
 	case RedisKeyCommandDel:
 		handler.Del(cli)
 	case RedisKeyCommandDump:
+		cli.ResponseReError(re.ErrFunctionNotImplement)
 	case RedisKeyCommandExists:
 		handler.Exists(cli)
 	case RedisKeyCommandExpire:
+		cli.ResponseReError(re.ErrFunctionNotImplement)
 	case RedisKeyCommandExpireAt:
+		cli.ResponseReError(re.ErrFunctionNotImplement)
 	case RedisKeyCommandKeys:
+		cli.ResponseReError(re.ErrFunctionNotImplement)
 	case RedisKeyCommandMigrate:
+		cli.ResponseReError(re.ErrFunctionNotImplement)
 	case RedisKeyCommandMove:
+		cli.ResponseReError(re.ErrFunctionNotImplement)
 	case RedisKeyCommandObject:
 		handler.Object(cli)
 	case RedisKeyCommandPersist:
+		cli.ResponseReError(re.ErrFunctionNotImplement)
 	case RedisKeyCommandPExpire:
+		cli.ResponseReError(re.ErrFunctionNotImplement)
 	case RedisKeyCommandPExpireAt:
+		cli.ResponseReError(re.ErrFunctionNotImplement)
 	case RedisKeyCommandPTTL:
+		cli.ResponseReError(re.ErrFunctionNotImplement)
 	case RedisKeyCommandRandomKey:
 		handler.RandomKey(cli)
 	case RedisKeyCommandRename:
 		handler.Rename(cli)
 	case RedisKeyCommandRenameNx:
+		cli.ResponseReError(re.ErrFunctionNotImplement)
 	case RedisKeyCommandRestore:
+		cli.ResponseReError(re.ErrFunctionNotImplement)
 	case RedisKeyCommandSort:
+		cli.ResponseReError(re.ErrFunctionNotImplement)
 	case RedisKeyCommandTTL:
+		cli.ResponseReError(re.ErrFunctionNotImplement)
 	case RedisKeyCommandType:
 		handler.Type(cli)
 	case RedisKeyCommandScan:
+		cli.ResponseReError(re.ErrFunctionNotImplement)
 	default:
 		cli.ResponseReError(re.ErrUnknownCommand, cli.GetOriginCommandName())
 	}
