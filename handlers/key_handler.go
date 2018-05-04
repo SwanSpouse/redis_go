@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"math/rand"
 	"redis_go/client"
 	re "redis_go/error"
 	"strings"
+	"time"
 )
 
 var (
@@ -11,10 +13,27 @@ var (
 )
 
 const (
-	RedisKeyCommandDel    = "DEL"
-	RedisKeyCommandExists = "EXISTS"
-	RedisKeyCommandType   = "TYPE"
-	RedisKeyCommandObject = "OBJECT"
+	RedisKeyCommandDel       = "DEL"
+	RedisKeyCommandExists    = "EXISTS"
+	RedisKeyCommandType      = "TYPE"
+	RedisKeyCommandObject    = "OBJECT"
+	RedisKeyCommandDump      = "DUMP"
+	RedisKeyCommandExpire    = "EXPIRE"
+	RedisKeyCommandExpireAt  = "EXPIREAT"
+	RedisKeyCommandKeys      = "KEYS"
+	RedisKeyCommandMigrate   = "MIGRATE"
+	RedisKeyCommandMove      = "MOVE"
+	RedisKeyCommandPersist   = "PERSIST"
+	RedisKeyCommandPExpire   = "PEXPIRE"
+	RedisKeyCommandPExpireAt = "PEXPIREAT"
+	RedisKeyCommandPTTL      = "PTTL"
+	RedisKeyCommandRandomKey = "RANDOMKEY"
+	RedisKeyCommandRename    = "RENAME"
+	RedisKeyCommandRenameNx  = "RENAMENX"
+	RedisKeyCommandRestore   = "RESTORE"
+	RedisKeyCommandSort      = "SORT"
+	RedisKeyCommandTTL       = "TTL"
+	RedisKeyCommandScan      = "SCAN"
 )
 
 const (
@@ -33,29 +52,31 @@ func (handler *KeyHandler) Process(cli *client.Client) {
 	switch cli.GetCommandName() {
 	case RedisKeyCommandDel:
 		handler.Del(cli)
-	case "DUMP":
+	case RedisKeyCommandDump:
 	case RedisKeyCommandExists:
 		handler.Exists(cli)
-	case "EXPIRE":
-	case "EXPIREAT":
-	case "KEYS":
-	case "MIGRATE":
-	case "MOVE":
+	case RedisKeyCommandExpire:
+	case RedisKeyCommandExpireAt:
+	case RedisKeyCommandKeys:
+	case RedisKeyCommandMigrate:
+	case RedisKeyCommandMove:
 	case RedisKeyCommandObject:
 		handler.Object(cli)
-	case "PERSIST":
-	case "PEXPIRE":
-	case "PEXPIREAT":
-	case "PTTL":
-	case "RANDOMKEY":
-	case "RENAME":
-	case "RENAMENX":
-	case "RESTORE":
-	case "SORT":
-	case "TTL":
+	case RedisKeyCommandPersist:
+	case RedisKeyCommandPExpire:
+	case RedisKeyCommandPExpireAt:
+	case RedisKeyCommandPTTL:
+	case RedisKeyCommandRandomKey:
+		handler.RandomKey(cli)
+	case RedisKeyCommandRename:
+		handler.Rename(cli)
+	case RedisKeyCommandRenameNx:
+	case RedisKeyCommandRestore:
+	case RedisKeyCommandSort:
+	case RedisKeyCommandTTL:
 	case RedisKeyCommandType:
 		handler.Type(cli)
-	case "SCAN":
+	case RedisKeyCommandScan:
 	default:
 		cli.ResponseReError(re.ErrUnknownCommand, cli.GetOriginCommandName())
 	}
@@ -69,7 +90,7 @@ func (handler *KeyHandler) Del(cli *client.Client) {
 
 func (handler *KeyHandler) Exists(cli *client.Client) {
 	successCount, _ := cli.SelectedDatabase().SearchKeysInDB(cli.Argv)
-	cli.Response(int64(len(successCount)))
+	cli.Response(len(successCount))
 }
 
 func (handler *KeyHandler) Type(cli *client.Client) {
@@ -77,6 +98,26 @@ func (handler *KeyHandler) Type(cli *client.Client) {
 		cli.Response(nil)
 	} else {
 		cli.Response(tb.GetObjectType())
+	}
+}
+
+func (handler *KeyHandler) RandomKey(cli *client.Client) {
+	keys := cli.SelectedDatabase().GetAllKeys()
+	if len(keys) == 0 {
+		cli.Response(nil)
+	} else {
+		r := rand.New(rand.NewSource(time.Now().UnixNano()))
+		cli.Response(keys[r.Intn(len(keys))])
+	}
+}
+
+func (handler *KeyHandler) Rename(cli *client.Client) {
+	if tb := cli.SelectedDatabase().SearchKeyInDB(cli.Argv[1]); tb == nil {
+		cli.ResponseReError(re.ErrNoSuchKey)
+	} else {
+		cli.SelectedDatabase().RemoveKeyInDB([]string{cli.Argv[1]})
+		cli.SelectedDatabase().SetKeyInDB(cli.Argv[2], tb)
+		cli.ResponseOK()
 	}
 }
 
