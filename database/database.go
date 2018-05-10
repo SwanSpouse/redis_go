@@ -71,3 +71,7 @@ func (db *Database) GetAllKeys() []string {
 	}
 	return ret
 }
+
+func (db *Database) DBSize() int {
+	return db.dict.Size()
+}

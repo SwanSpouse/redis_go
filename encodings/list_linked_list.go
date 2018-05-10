@@ -190,6 +190,18 @@ func (ll *ListLinkedList) String() string {
 	}
 }
 
+func (ll *ListLinkedList) GetAllMembers() []string {
+	ret := make([]string, 0)
+	if linkedList, ok := ll.GetValue().(*raw_type.List); !ok {
+		return ret
+	} else {
+		for node := linkedList.ListFirst(); node != nil; node = node.NodeNext() {
+			ret = append(ret, node.NodeValue())
+		}
+		return ret
+	}
+}
+
 func (ll *ListLinkedList) Debug() {
 	loggers.Info(ll.String())
 }
