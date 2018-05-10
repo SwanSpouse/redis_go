@@ -35,6 +35,7 @@ type TList interface {
 	LRem(int, string) int
 	LTrim(int, int) error
 	LSet(int, string) error
+	GetAllMembers() []string
 	Debug()
 }
 

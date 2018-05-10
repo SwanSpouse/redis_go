@@ -27,6 +27,7 @@ const (
 	ErrNotANilMessage         = protoError("ERR Protocol error: expected a nil")
 	ErrBadResponseType        = protoError("ERR Protocol error: bad response type")
 	ErrUnknown                = protoError("ERR Protocol error: unknown")
+	ErrImpossible             = protoError("ERR Protocol error: impossible")
 
 	ErrNotIntegerOrOutOfRange = protoError("value is not an integer or out of range")
 	ErrWrongNumberOfArgs      = protoError("wrong number of arguments for '%s' command")

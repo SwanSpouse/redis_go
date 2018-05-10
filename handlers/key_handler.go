@@ -45,10 +45,6 @@ const (
 type KeyHandler struct{}
 
 func (handler *KeyHandler) Process(cli *client.Client) {
-	if cli.Cmd == nil {
-		cli.ResponseReError(re.ErrNilCommand)
-		return
-	}
 	switch cli.GetCommandName() {
 	case RedisKeyCommandDel:
 		handler.Del(cli)
