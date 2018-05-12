@@ -1,12 +1,14 @@
 package rdb
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
 	"math"
+	"os"
 	"redis_go/loggers"
 	"strconv"
 )
@@ -63,8 +65,67 @@ type byteReader interface {
 	io.ByteReader
 }
 
+// A IDecoder must be implemented to parse a RDB file.
+type IDecoder interface {
+	// StartRDB is called when parsing of a valid RDB file starts.
+	StartRDB()
+	// StartDatabase is called when database n starts.
+	// Once a database starts, another database will not start until EndDatabase is called.
+	StartDatabase(n int)
+	// AUX field
+	Aux(key, value []byte)
+	// ResizeDB hint
+	ResizeDatabase(dbSize, expiresSize uint32)
+	// Set is called once for each string key.
+	Set(key, value []byte, expiry int64)
+	// StartHash is called at the beginning of a hash.
+	// Hset will be called exactly length times before EndHash.
+	StartHash(key []byte, length, expiry int64)
+	// Hset is called once for each field=value pair in a hash.
+	Hset(key, field, value []byte)
+	// EndHash is called when there are no more fields in a hash.
+	EndHash(key []byte)
+	// StartSet is called at the beginning of a set.
+	// Sadd will be called exactly cardinality times before EndSet.
+	StartSet(key []byte, cardinality, expiry int64)
+	// Sadd is called once for each member of a set.
+	Sadd(key, member []byte)
+	// EndSet is called when there are no more fields in a set.
+	EndSet(key []byte)
+	// StartList is called at the beginning of a list.
+	// Rpush will be called exactly length times before EndList.
+	// If length of the list is not known, then length is -1
+	StartList(key []byte, length, expiry int64)
+	// Rpush is called once for each value in a list.
+	Rpush(key, value []byte)
+	// EndList is called when there are no more values in a list.
+	EndList(key []byte)
+	// StartZSet is called at the beginning of a sorted set.
+	// Zadd will be called exactly cardinality times before EndZSet.
+	StartZSet(key []byte, cardinality, expiry int64)
+	// Zadd is called once for each member of a sorted set.
+	Zadd(key []byte, score float64, member []byte)
+	// EndZSet is called when there are no more members in a sorted set.
+	EndZSet(key []byte)
+	// EndDatabase is called at the end of a database.
+	EndDatabase(n int)
+	// EndRDB is called when parsing of the RDB file is complete.
+	EndRDB()
+}
+
 type Decoder struct {
-	r byteReader
+	r      byteReader
+	server IDecoder
+}
+
+func NewDecoder(filename string, event IDecoder) (*Decoder, error) {
+	if f, err := os.Open(filename); err != nil {
+		return nil, err
+	} else {
+		return &Decoder{
+			r:      bufio.NewReader(f),
+			server: event}, nil
+	}
 }
 
 func (d *Decoder) checkRDBFileHeader() error {
@@ -84,10 +145,15 @@ func (d *Decoder) checkRDBFileHeader() error {
 	return nil
 }
 
-func (d *Decoder) decode() error {
+func (d *Decoder) Decode() error {
 	if err := d.checkRDBFileHeader(); err != nil {
+		loggers.Errorf("check rdb file header error %+v", err)
 		return err
 	}
+	d.server.StartRDB()
+
+	firstDB := true
+	var db uint32
 	var expiry int64
 	for {
 		objType, err := d.r.ReadByte()
@@ -98,13 +164,18 @@ func (d *Decoder) decode() error {
 		}
 		switch objType {
 		case rdbFlagSelectDB:
-			dbNo, _, err := d.readLength()
+			if !firstDB {
+				d.server.EndDatabase(int(db))
+			}
+			db, _, err = d.readLength()
 			if err != nil {
 				return err
 			}
-			fmt.Printf("current database NO: %d\n", int(dbNo))
+			d.server.StartDatabase(int(db))
 		case rdbFlagEOF:
 			fmt.Printf("reach EOF\n")
+			d.server.EndDatabase(int(db))
+			d.server.EndRDB()
 			return nil
 		case rdbFlagExpiryMS:
 			// TODO 接下来将要读入8个字节长度、毫秒为单位的过期时间
@@ -160,35 +231,43 @@ func (d *Decoder) readObject(key []byte, typo ValueType, expiry int64) error {
 			return err
 		}
 		loggers.Info("we get a string object key:%s, value:%s, expiry:%d", key, value, expiry)
+		d.server.Set(key, value, expiry)
 	case TypeList:
 		length, _, err := d.readLength()
 		if err != nil {
 			return err
 		}
+		d.server.StartList(key, int64(length), expiry)
 		for i := uint32(0); i < length; i++ {
 			value, err := d.readString()
 			if err != nil {
 				return err
 			}
 			loggers.Info("we get a list object key:%s, item:%s, expiry:%d", key, value, expiry)
+			d.server.Rpush(key, value)
 		}
+		d.server.EndList(key)
 	case TypeSet:
 		cardinality, _, err := d.readLength()
 		if err != nil {
 			return err
 		}
+		d.server.StartSet(key, int64(cardinality), expiry)
 		for i := uint32(0); i < cardinality; i++ {
 			member, err := d.readString()
 			if err != nil {
 				return err
 			}
 			loggers.Info("we get a set object key:%s, item:%s, expiry:%d", key, member, expiry)
+			d.server.Sadd(key, member)
 		}
+		d.server.EndSet(key)
 	case TypeHash:
 		length, _, err := d.readLength()
 		if err != nil {
 			return err
 		}
+		d.server.StartHash(key, int64(length), expiry)
 		for i := uint32(0); i < length; i++ {
 			field, err := d.readString()
 			if err != nil {
@@ -199,12 +278,15 @@ func (d *Decoder) readObject(key []byte, typo ValueType, expiry int64) error {
 				return err
 			}
 			loggers.Info("we get a hash object key:%s, field:%s, value:%s, expiry:%d", key, field, value, expiry)
+			d.server.Hset(key, field, value)
 		}
+		d.server.EndHash(key)
 	case TypeZSet:
 		cardinality, _, err := d.readLength()
 		if err != nil {
 			return err
 		}
+		d.server.StartZSet(key, int64(cardinality), expiry)
 		for i := uint32(0); i < cardinality; i++ {
 			member, err := d.readString()
 			if err != nil {
@@ -215,7 +297,9 @@ func (d *Decoder) readObject(key []byte, typo ValueType, expiry int64) error {
 				return err
 			}
 			loggers.Info("we get a zset object  key:%s, member:%s, score:%.2f, expiry:%d", key, member, score, expiry)
+			d.server.Zadd(key, score, member)
 		}
+		d.server.EndZSet(key)
 	default:
 		return fmt.Errorf("rdb: unknown object type %d for key %s", typo, key)
 	}

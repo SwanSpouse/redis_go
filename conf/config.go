@@ -15,6 +15,14 @@ const (
 	RedisIOWriterPoolThreadNum = 5
 
 	RedisLogLevel = loggers.DEBUG
+
+	/* AOF states */
+	RedisAofOff         = 0 /* AOF is off */
+	RedisAofOn          = 1 /* AOF is on */
+	RedisAofWaitRewrite = 2 /* AOF waits rewrite to start appending */
+
+	/* RDB persistence */
+	RedisRDBDefaultFilePath = "./dump.rdb"
 )
 
 // redis server configuration
@@ -34,6 +42,23 @@ type ServerConfig struct {
 	Verbosity   int   /* Log level in redis.conf */
 	MaxIdleTime int64 /* Client timeout in seconds */
 	DBNum       int   /* Total number of configured DBs */
+
+	/* Aof persistence */
+	AofState    int
+	AofSync     int
+	AofFilename string
+
+	/* RDB persistence */
+	Dirty                 int64
+	DirtyBeforeBgSave     int64
+	RdbFilename           string
+	RdbCompression        int
+	RdbChecksum           int
+	LastSave              time.Time
+	RdbSaveTimeLast       time.Time
+	RdbSaveTimeStart      time.Time
+	LastBgSaveStatus      int
+	StopWritesOnBgSaveErr int
 }
 
 func InitServerConfig() *ServerConfig {
@@ -46,5 +71,6 @@ func InitServerConfig() *ServerConfig {
 	sc.Timeout = 5 * time.Second
 	sc.ReaderPoolNum = RedisIOReaderPoolThreadNum
 	sc.WriterPoolNum = RedisIOWriterPoolThreadNum
+	sc.RdbFilename = RedisRDBDefaultFilePath
 	return sc
 }

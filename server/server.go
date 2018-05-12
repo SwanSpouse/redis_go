@@ -9,14 +9,17 @@ import (
 	"redis_go/loggers"
 	"redis_go/tcp"
 	"sync"
+	"time"
 )
 
 // Redis server
 type Server struct {
 	Config       *conf.ServerConfig
 	Databases    []*database.Database /* database*/
+	dbIndex      int                  // rdb process current db
 	clients      []*client.Client
-	password     string /* Pass for AUTH command, or NULL */
+	FakeClient   *client.Client // used in rdb and aof
+	password     string         /* Pass for AUTH command, or NULL */
 	commandTable map[string]*client.Command
 	mu           sync.RWMutex
 }
@@ -40,6 +43,8 @@ func NewServer(config *conf.ServerConfig) *Server {
 	server.populateCommandTable()
 	// init time events
 	go server.initTimeEvents()
+	// load data
+	server.loadDataFromDisk()
 	loggers.Info("redis server: %+v", server)
 	return server
 }
@@ -111,6 +116,20 @@ func (srv *Server) getDefaultDB() *database.Database {
 		srv.initDB()
 	}
 	return srv.Databases[0]
+}
+
+func (srv *Server) loadDataFromDisk() {
+	startTime := time.Now()
+	if srv.Config.AofState == conf.RedisAofOn {
+		loggers.Info("redis aof start to load data from disk at %s", startTime.Format("20060102 15:04:05"))
+		// TODO lmj AOF
+	} else {
+		loggers.Info("redis rdb start to load data from disk at %s", startTime.Format("20060102 15:04:05"))
+		err := srv.rdbLoad()
+		if err != nil {
+			loggers.Errorf("rdb process error %+v", err)
+		}
+	}
 }
 
 /*
