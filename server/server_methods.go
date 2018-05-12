@@ -108,7 +108,6 @@ func (srv *Server) rdbLoad() error {
 		return fmt.Errorf("redis rdb file not exits")
 	}
 	srv.FakeClient = client.NewFakeClient()
-
 	decoder, err := rdb.NewDecoder(srv.Config.RdbFilename, srv)
 	if err != nil {
 		return fmt.Errorf("rdb new encoder error %+v", err)

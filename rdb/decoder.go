@@ -122,7 +122,6 @@ func NewDecoder(filename string, event IDecoder) (*Decoder, error) {
 	if f, err := os.Open(filename); err != nil {
 		return nil, err
 	} else {
-		defer f.Close()
 		return &Decoder{
 			r:      bufio.NewReader(f),
 			server: event}, nil
@@ -148,6 +147,7 @@ func (d *Decoder) checkRDBFileHeader() error {
 
 func (d *Decoder) Decode() error {
 	if err := d.checkRDBFileHeader(); err != nil {
+		loggers.Errorf("check rdb file header error %+v", err)
 		return err
 	}
 	d.server.StartRDB()
