@@ -85,7 +85,7 @@ func (srv *Server) Process(cli *client.Client) {
 
 // rdb save
 func (srv *Server) commandSave(cli *client.Client) {
-	encoder, err := rdb.NewEncoder("dump.rdb.test")
+	encoder, err := rdb.NewEncoder(srv.Config.RdbFilename)
 	if err != nil {
 		cli.ResponseReError(re.ErrUnknown)
 		return
@@ -142,4 +142,5 @@ func (srv *Server) commandSave(cli *client.Client) {
 	}
 	encoder.EncodeFooter()
 	cli.ResponseOK()
+	loggers.Info("redis rdb save finished")
 }

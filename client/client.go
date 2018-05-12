@@ -1,6 +1,7 @@
 package client
 
 import (
+	"errors"
 	"net"
 	"redis_go/database"
 	re "redis_go/error"
@@ -18,12 +19,12 @@ const (
 )
 
 var (
-	clientInc  = uint64(0)
+	clientInc  = int64(0)
 	clientPool sync.Pool
 )
 
 type Client struct {
-	id          uint64
+	id          int64
 	cn          net.Conn
 	db          *database.Database // chosen database
 	Closed      bool
@@ -41,7 +42,7 @@ type Client struct {
 
 func (c *Client) reset(cn net.Conn, defaultDB *database.Database) {
 	*c = Client{
-		id: atomic.AddUint64(&clientInc, 1),
+		id: atomic.AddInt64(&clientInc, 1),
 		cn: cn,
 		db: defaultDB,
 	}
@@ -50,6 +51,9 @@ func (c *Client) reset(cn net.Conn, defaultDB *database.Database) {
 }
 
 func (c *Client) release() {
+	if c.IsFakeClient() {
+		return
+	}
 	c.reader.ReturnBufIoReader()
 	c.writer.ReturnBufIoWriter()
 	clientPool.Put(c)
@@ -70,12 +74,29 @@ func NewClient(cn net.Conn, defaultDB *database.Database) *Client {
 	return c
 }
 
+func NewFakeClient() *Client {
+	return &Client{
+		id: -1,
+	}
+}
+
+func (c *Client) IsFakeClient() bool {
+	return c.id == -1
+}
+
 // unique client id
-func (c *Client) ID() uint64 { return c.id }
+func (c *Client) ID() int64 { return c.id }
 
 // return the remote client address
 func (c *Client) RemoteAddr() net.Addr {
+	if c.IsFakeClient() {
+		return nil
+	}
 	return c.cn.RemoteAddr()
+}
+
+func (c *Client) SetDatabase(db *database.Database) {
+	c.db = db
 }
 
 func (c *Client) SelectedDatabase() *database.Database {
@@ -83,6 +104,9 @@ func (c *Client) SelectedDatabase() *database.Database {
 }
 
 func (c *Client) Buffered() int {
+	if c.IsFakeClient() {
+		return 0
+	}
 	return c.reader.Buffered()
 }
 
@@ -138,6 +162,9 @@ command format:
 	5. multi bulk reply : *3\r\n$3\r\nSET\r\n$5\r\nMyKey\r\n$7\r\nMyValue\r\n
 */
 func (c *Client) ProcessInputBuffer() error {
+	if c.IsFakeClient() {
+		return errors.New("this client is a fake client")
+	}
 	// read one line from buffer
 	line, err := c.reader.PeekLine(0)
 	if err != nil || len(line) == 0 {
@@ -174,6 +201,9 @@ func (c *Client) ProcessInputBuffer() error {
 }
 
 func (c *Client) peekCmd(offset int) (string, error) {
+	if c.IsFakeClient() {
+		return "", errors.New("this client is a fake client")
+	}
 	line, err := c.reader.PeekLine(offset)
 	if err != nil {
 		return "", err
@@ -211,14 +241,23 @@ func (c *Client) peekCmd(offset int) (string, error) {
 }
 
 func (c *Client) Response(value interface{}) {
+	if c.IsFakeClient() {
+		return
+	}
 	c.writer.Append(value)
 }
 
 func (c *Client) ResponseOK() {
+	if c.IsFakeClient() {
+		return
+	}
 	c.writer.AppendOK()
 }
 
 func (c *Client) ResponseError(msg string, args ...interface{}) {
+	if c.IsFakeClient() {
+		return
+	}
 	if len(args) == 0 {
 		c.writer.AppendError(msg)
 	} else {
@@ -228,6 +267,9 @@ func (c *Client) ResponseError(msg string, args ...interface{}) {
 }
 
 func (c *Client) ResponseReError(err error, args ...interface{}) {
+	if c.IsFakeClient() {
+		return
+	}
 	if re.IsProtocolError(err) {
 		switch err {
 		case re.ErrNilValue:
@@ -241,5 +283,8 @@ func (c *Client) ResponseReError(err error, args ...interface{}) {
 }
 
 func (c *Client) Flush() error {
+	if c.IsFakeClient() {
+		return nil
+	}
 	return c.writer.Flush()
 }
