@@ -10,6 +10,8 @@ var (
 	_ TList = (*encodings.ListLinkedList)(nil)
 
 	_ THash = (*encodings.HashDict)(nil)
+
+	_ TSet = (*encodings.HashSet)(nil)
 )
 
 type TBase interface {

@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"github.com/mitchellh/hashstructure"
 	"math"
+	"math/rand"
 	"redis_go/loggers"
 	"reflect"
 	"sync"
+	"time"
 )
 
 const (
@@ -518,6 +520,19 @@ func (dict *Dict) Values() map[interface{}]bool {
 		dict.segments[index].locker.Unlock()
 	}
 	return ret
+}
+
+func (dict *Dict) RandomKey() interface{} {
+	keySet := dict.KeySet()
+	if len(keySet) == 0 {
+		return nil
+	}
+	keyList := make([]interface{}, 0)
+	for key := range keySet {
+		keyList = append(keyList, key)
+	}
+	rand.Seed(time.Now().Unix())
+	return keyList[rand.Intn(len(keySet)-1)]
 }
 
 func (dict *Dict) printDictForDebug() {

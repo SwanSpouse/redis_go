@@ -182,6 +182,7 @@ func (srv *Server) populateCommandTable() {
 	keyHandler := new(handlers.KeyHandler)
 	listHandler := new(handlers.ListHandler)
 	hashHandler := new(handlers.HashHandler)
+	setHandler := new(handlers.SetHandler)
 
 	// connection command
 	srv.commandTable[handlers.RedisConnectionCommandPing] = client.NewCommand(handlers.RedisConnectionCommandPing, 1, "r", connectionHandler)
@@ -261,7 +262,24 @@ func (srv *Server) populateCommandTable() {
 	srv.commandTable[handlers.RedisHashCommandHStrLen] = client.NewCommand(handlers.RedisHashCommandHStrLen, 3, "r", hashHandler)
 	srv.commandTable[handlers.RedisHashCommandHDebug] = client.NewCommand(handlers.RedisHashCommandHDebug, 2, "r", hashHandler)
 
-	// server handler
+	// set command
+	srv.commandTable[handlers.RedisSetCommandSADD] = client.NewCommand(handlers.RedisSetCommandSADD, -3, "wm", setHandler)
+	srv.commandTable[handlers.RedisSetCommandSCARD] = client.NewCommand(handlers.RedisSetCommandSCARD, 2, "r", setHandler)
+	srv.commandTable[handlers.RedisSetCommandSDIFF] = client.NewCommand(handlers.RedisSetCommandSDIFF, -2, "rS", setHandler)
+	srv.commandTable[handlers.RedisSetCommandSDIFFSTORE] = client.NewCommand(handlers.RedisSetCommandSDIFFSTORE, -3, "wm", setHandler)
+	srv.commandTable[handlers.RedisSetCommandSINTER] = client.NewCommand(handlers.RedisSetCommandSINTER, -2, "rS", setHandler)
+	srv.commandTable[handlers.RedisSetCommandSINTERSTORE] = client.NewCommand(handlers.RedisSetCommandSINTERSTORE, -3, "wm", setHandler)
+	srv.commandTable[handlers.RedisSetCommandSISMEMBER] = client.NewCommand(handlers.RedisSetCommandSISMEMBER, 3, "r", setHandler)
+	srv.commandTable[handlers.RedisSetCommandSMEMBERS] = client.NewCommand(handlers.RedisSetCommandSMEMBERS, 2, "rS", setHandler)
+	srv.commandTable[handlers.RedisSetCommandSMOVE] = client.NewCommand(handlers.RedisSetCommandSMOVE, 4, "w", setHandler)
+	srv.commandTable[handlers.RedisSetCommandSPOP] = client.NewCommand(handlers.RedisSetCommandSPOP, 2, "wRs", setHandler)
+	srv.commandTable[handlers.RedisSetCommandSRANDMEMBER] = client.NewCommand(handlers.RedisSetCommandSRANDMEMBER, -2, "rR", setHandler)
+	srv.commandTable[handlers.RedisSetCommandSREM] = client.NewCommand(handlers.RedisSetCommandSREM, -3, "r", setHandler)
+	srv.commandTable[handlers.RedisSetCommandSUNION] = client.NewCommand(handlers.RedisSetCommandSUNION, -2, "rS", setHandler)
+	srv.commandTable[handlers.RedisSetCommandSUNIONSTORE] = client.NewCommand(handlers.RedisSetCommandSUNIONSTORE, -3, "wm", setHandler)
+	srv.commandTable[handlers.RedisSetCommandSSCAN] = client.NewCommand(handlers.RedisSetCommandSSCAN, 2, "rS", setHandler)
+
+	// server command
 	srv.commandTable[RedisServerCommandBGSRewriteAof] = client.NewCommand(RedisServerCommandBGSRewriteAof, 1, "ar", srv)
 	srv.commandTable[RedisServerCommandBGSave] = client.NewCommand(RedisServerCommandBGSave, 1, "ar", srv)
 	srv.commandTable[RedisServerCommandClient] = client.NewCommand(RedisServerCommandClient, -2, "ar", srv)
