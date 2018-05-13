@@ -80,9 +80,6 @@ func (handler *ListHandler) Process(cli *client.Client) {
 }
 
 func getTListValueByKey(cli *client.Client, key string) (database.TList, error) {
-	if cli.Cmd == nil {
-		return nil, re.ErrNilCommand
-	}
 	baseType := cli.SelectedDatabase().SearchKeyInDB(key)
 	if baseType == nil {
 		return nil, re.ErrNoSuchKey

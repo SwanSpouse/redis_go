@@ -42,10 +42,10 @@ func (ll *ListLinkedList) LPush(vals []string) int {
 	return list.ListLength()
 }
 
-func (ll *ListLinkedList) RPush(vals []string) int {
+func (ll *ListLinkedList) RPush(values []string) int {
 	list := ll.GetValue().(*raw_type.List)
 	var newList *raw_type.List
-	for _, val := range vals {
+	for _, val := range values {
 		newList = list.ListAddNodeTail(val)
 	}
 	ll.SetValue(newList)

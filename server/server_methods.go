@@ -72,7 +72,7 @@ func (srv *Server) StartList(key []byte, length, expiry int64) {
 func (srv *Server) Rpush(key, value []byte) {
 	loggers.Info("rdb process RPush key:%s value%s", key, value)
 	srv.FakeClient.Argv = []string{handlers.RedisListCommandRPush, string(key), string(value)}
-	srv.commandTable[handlers.RedisHashCommandHSet].Handler.Process(srv.FakeClient)
+	srv.commandTable[handlers.RedisListCommandRPush].Handler.Process(srv.FakeClient)
 }
 
 func (srv *Server) EndList(key []byte) {

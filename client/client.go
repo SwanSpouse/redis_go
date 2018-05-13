@@ -268,6 +268,7 @@ func (c *Client) ResponseError(msg string, args ...interface{}) {
 
 func (c *Client) ResponseReError(err error, args ...interface{}) {
 	if c.IsFakeClient() {
+		loggers.Errorf("fake client receive a error:%+v", err)
 		return
 	}
 	if re.IsProtocolError(err) {

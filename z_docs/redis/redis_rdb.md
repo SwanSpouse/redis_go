@@ -201,5 +201,6 @@ REDIS_ENCODING_INTSET 编码的 REDIS_SET 类型值保存为以下结构：
 #### reference
 
 * http://redisbook.readthedocs.io/en/latest/internal/rdb.html
+* https://github.com/wen866595/open-doc/blob/master/redis-doc/Redis-RDB-Dump-File-Format-cn.md
 
 
