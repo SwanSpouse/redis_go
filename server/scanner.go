@@ -6,6 +6,7 @@ import (
 	re "redis_go/error"
 	"redis_go/loggers"
 	"sync/atomic"
+	"time"
 )
 
 func (srv *Server) scanClients() {
@@ -56,6 +57,12 @@ func (srv *Server) handlerCommand(c *client.Client) {
 		c.ResponseReError(err)
 		return
 	}
+
+	// 如果服务器正在进行阻塞操作，不接受客户端发过来的请求
+	if srv.Status.Load() == RedisServerStatusRdbSaveInProcess {
+		c.ResponseReError(re.ErrRedisRdbSaveInProcess)
+		return
+	}
 	/**
 	首先判断是否在command table中,
 		如果不在command table中,则返回command not found
@@ -84,5 +91,14 @@ func (srv *Server) handlerCommand(c *client.Client) {
 		// TODO 判断命令造成了多少个dirty, 执行时间等一些统计信息
 		// 在这里对client端发送过来的命令进行处理
 		command.Handler.Process(c)
+
+		// 在rdb save结束之后，重新统计dirty数量并记录本次rdb结束的时间
+		if c.GetCommandName() == RedisServerCommandSave {
+			srv.Dirty = 0
+			srv.LastSave = time.Now()
+		} else {
+			srv.Dirty += c.Dirty
+		}
+		c.Dirty = 0
 	}
 }

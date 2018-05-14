@@ -111,6 +111,7 @@ func (handler *SetHandler) SAdd(cli *client.Client) {
 		cli.ResponseReError(err)
 	} else {
 		cli.Response(ts.SAdd(cli.Argv[2:]))
+		cli.Dirty += 1
 	}
 }
 
@@ -170,6 +171,7 @@ func (handler *SetHandler) SPop(cli *client.Client) {
 			cli.ResponseReError(err)
 		} else {
 			cli.Response(key)
+			cli.Dirty += 1
 		}
 	}
 }
@@ -180,6 +182,7 @@ func (handler *SetHandler) SRem(cli *client.Client) {
 		cli.ResponseReError(err)
 	} else {
 		cli.Response(ts.SRem(cli.Argv[2:]))
+		cli.Dirty += 1
 	}
 }
 

@@ -9,7 +9,14 @@ import (
 	"redis_go/loggers"
 	"redis_go/tcp"
 	"sync"
+	"sync/atomic"
 	"time"
+)
+
+const (
+	RedisServerStatusNormal             = 0
+	RedisServerStatusRdbSaveInProcess   = 1
+	RedisServerStatusRdbBgSaveInProcess = 2
 )
 
 // Redis server
@@ -22,6 +29,9 @@ type Server struct {
 	password     string         /* Pass for AUTH command, or NULL */
 	commandTable map[string]*client.Command
 	mu           sync.RWMutex
+	Status       atomic.Value
+	Dirty        int64
+	LastSave     time.Time
 }
 
 func NewServer(config *conf.ServerConfig) *Server {
