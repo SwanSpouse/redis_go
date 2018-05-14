@@ -135,12 +135,14 @@ func (handler *StringHandler) Append(cli *client.Client) {
 		}
 	}
 	cli.Response(ts.Append(cli.Argv[2]))
+	cli.Dirty += 1
 }
 
 func (handler *StringHandler) Set(cli *client.Client) {
 	key := cli.Argv[1]
 	cli.SelectedDatabase().SetKeyInDB(key, database.NewRedisStringObject(cli.Argv[2]))
 	cli.ResponseOK()
+	cli.Dirty += 1
 }
 
 func (handler *StringHandler) SetNx(cli *client.Client) {
@@ -148,6 +150,7 @@ func (handler *StringHandler) SetNx(cli *client.Client) {
 	if cli.SelectedDatabase().SearchKeyInDB(key) == nil {
 		cli.SelectedDatabase().SetKeyInDB(key, database.NewRedisStringObject(cli.Argv[2]))
 		cli.Response(1)
+		cli.Dirty += 1
 	} else {
 		cli.Response(0)
 	}
@@ -173,6 +176,7 @@ func (handler *StringHandler) MSetNx(cli *client.Client) {
 			cli.SelectedDatabase().SetKeyInDB(cli.Argv[i], database.NewRedisStringObject(cli.Argv[i+1]))
 		}
 		cli.Response(1)
+		cli.Dirty += 1
 	}
 }
 
@@ -200,6 +204,7 @@ func (handler *StringHandler) GetSet(cli *client.Client) {
 		cli.ResponseReError(re.ErrNilValue)
 	} else {
 		cli.Response(ts.String())
+		cli.Dirty += 1
 	}
 }
 
@@ -224,6 +229,7 @@ func (handler *StringHandler) MSet(cli *client.Client) {
 	for i := 1; i < len(cli.Argv); i += 2 {
 		cli.SelectedDatabase().SetKeyInDB(cli.Argv[i], database.NewRedisStringObject(cli.Argv[i+1]))
 	}
+	cli.Dirty += int64((len(cli.Argv) - 1) / 2)
 	cli.ResponseOK()
 }
 
@@ -240,6 +246,7 @@ func (handler *StringHandler) Incr(cli *client.Client) {
 			cli.ResponseReError(err)
 		} else {
 			cli.Response(ret)
+			cli.Dirty += 1
 		}
 	}
 }
@@ -260,6 +267,7 @@ func (handler *StringHandler) IncrBy(cli *client.Client) {
 		cli.ResponseReError(err)
 	} else {
 		cli.Response(ret)
+		cli.Dirty += 1
 	}
 }
 
@@ -291,6 +299,7 @@ func (handler *StringHandler) IncrByFloat(cli *client.Client) {
 			cli.ResponseReError(err)
 		} else {
 			cli.Response(ret)
+			cli.Dirty += 1
 		}
 	}
 }
@@ -308,6 +317,7 @@ func (handler *StringHandler) Decr(cli *client.Client) {
 			cli.ResponseReError(err)
 		} else {
 			cli.Response(ret)
+			cli.Dirty += 1
 		}
 	}
 }
@@ -329,6 +339,7 @@ func (handler *StringHandler) DecrBy(cli *client.Client) {
 			cli.ResponseReError(err)
 		} else {
 			cli.Response(ret)
+			cli.Dirty += 1
 		}
 	}
 }

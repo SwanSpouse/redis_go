@@ -44,7 +44,7 @@ func (srv *Server) Process(cli *client.Client) {
 	case RedisServerCommandBGSRewriteAof:
 		cli.ResponseReError(re.ErrFunctionNotImplement)
 	case RedisServerCommandBGSave:
-		cli.ResponseReError(re.ErrFunctionNotImplement)
+		srv.bgSave(cli)
 	case RedisServerCommandClient:
 		cli.ResponseReError(re.ErrFunctionNotImplement)
 	case RedisServerCommandConfig:
@@ -66,7 +66,7 @@ func (srv *Server) Process(cli *client.Client) {
 	case RedisServerCommandPSync:
 		cli.ResponseReError(re.ErrFunctionNotImplement)
 	case RedisServerCommandSave:
-		srv.commandSave(cli)
+		srv.save(cli)
 	case RedisServerCommandShutDown:
 		cli.ResponseReError(re.ErrFunctionNotImplement)
 	case RedisServerCommandSlaveOf:
@@ -83,13 +83,7 @@ func (srv *Server) Process(cli *client.Client) {
 	cli.Flush()
 }
 
-// rdb save
-func (srv *Server) commandSave(cli *client.Client) {
-	encoder, err := rdb.NewEncoder(srv.Config.RdbFilename)
-	if err != nil {
-		cli.ResponseReError(re.ErrUnknown)
-		return
-	}
+func (srv *Server) doSave(cli *client.Client, encoder *rdb.Encoder) {
 	loggers.Info("redis rdb save start")
 	encoder.EncodeHeader()
 	for dbNo, db := range srv.Databases {
@@ -141,6 +135,40 @@ func (srv *Server) commandSave(cli *client.Client) {
 		}
 	}
 	encoder.EncodeFooter()
-	cli.ResponseOK()
 	loggers.Info("redis rdb save finished")
+	cli.ResponseOK()
+}
+
+// rdb save
+func (srv *Server) save(cli *client.Client) {
+	if srv.Status.Load() == RedisServerStatusRdbSaveInProcess || srv.Status.Load() == RedisServerStatusRdbBgSaveInProcess {
+		cli.ResponseReError(re.ErrRedisRdbSaveInProcess)
+		return
+	}
+	srv.Status.Store(RedisServerStatusRdbSaveInProcess)
+	defer srv.Status.Store(RedisServerStatusNormal)
+
+	encoder, err := rdb.NewEncoder(srv.Config.RdbFilename)
+	if err != nil {
+		cli.ResponseReError(re.ErrUnknown)
+		return
+	}
+	srv.doSave(cli, encoder)
+}
+
+// rdb bg save
+func (srv *Server) bgSave(cli *client.Client) {
+	if srv.Status.Load() == RedisServerStatusRdbSaveInProcess || srv.Status.Load() == RedisServerStatusRdbBgSaveInProcess {
+		cli.ResponseReError(re.ErrRedisRdbSaveInProcess)
+		return
+	}
+	srv.Status.Store(RedisServerStatusRdbBgSaveInProcess)
+	defer srv.Status.Store(RedisServerStatusNormal)
+
+	encoder, err := rdb.NewEncoder(srv.Config.RdbFilename)
+	if err != nil {
+		cli.ResponseReError(re.ErrUnknown)
+		return
+	}
+	go srv.doSave(cli, encoder)
 }

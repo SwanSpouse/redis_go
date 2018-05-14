@@ -142,6 +142,7 @@ func (handler *ListHandler) LInsert(cli *client.Client) {
 			cli.ResponseReError(err)
 		} else {
 			cli.Response(ret)
+			cli.Dirty += 1
 		}
 	}
 }
@@ -163,6 +164,7 @@ func (handler *ListHandler) LPop(cli *client.Client) {
 		cli.ResponseReError(err)
 	} else {
 		cli.Response(tl.LPop())
+		cli.Dirty += 1
 	}
 }
 
@@ -176,6 +178,7 @@ func (handler *ListHandler) LPush(cli *client.Client) {
 		cli.ResponseReError(err)
 	} else {
 		cli.Response(tl.LPush(cli.Argv[2:]))
+		cli.Dirty += 1
 	}
 }
 
@@ -211,6 +214,7 @@ func (handler *ListHandler) LRem(cli *client.Client) {
 			return
 		}
 		cli.Response(ts.LRem(index, cli.Argv[3]))
+		cli.Dirty += 1
 	}
 }
 
@@ -228,6 +232,7 @@ func (handler *ListHandler) LSet(cli *client.Client) {
 			cli.ResponseReError(err)
 		} else {
 			cli.ResponseOK()
+			cli.Dirty += 1
 		}
 	}
 }
@@ -249,6 +254,7 @@ func (handler *ListHandler) LTrim(cli *client.Client) {
 			cli.ResponseReError(err)
 		} else {
 			cli.ResponseOK()
+			cli.Dirty += 1
 		}
 	}
 }
@@ -259,6 +265,7 @@ func (handler *ListHandler) RPop(cli *client.Client) {
 		cli.ResponseReError(err)
 	} else {
 		cli.Response(tl.RPop())
+		cli.Dirty += 1
 	}
 }
 
@@ -276,6 +283,7 @@ func (handler *ListHandler) RPush(cli *client.Client) {
 		cli.ResponseReError(err)
 	} else {
 		cli.Response(tl.RPush(cli.Argv[2:]))
+		cli.Dirty += 1
 	}
 }
 

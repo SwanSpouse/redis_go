@@ -112,6 +112,7 @@ func (handler *HashHandler) HDel(cli *client.Client) {
 		cli.ResponseReError(err)
 	} else {
 		cli.Response(th.HDel(cli.Argv[2:]))
+		cli.Dirty += 1
 	}
 }
 
@@ -200,6 +201,7 @@ func (handler *HashHandler) HMSet(cli *client.Client) {
 			th.HSet(cli.Argv[i], cli.Argv[i+1])
 		}
 		cli.ResponseOK()
+		cli.Dirty += 1
 	}
 }
 
@@ -213,6 +215,7 @@ func (handler *HashHandler) HSet(cli *client.Client) {
 		cli.ResponseReError(err)
 	} else {
 		cli.Response(th.HSet(cli.Argv[2], cli.Argv[3]))
+		cli.Dirty += 1
 	}
 }
 
@@ -227,6 +230,7 @@ func (handler *HashHandler) HSetNX(cli *client.Client) {
 	} else {
 		if val, _ := th.HGet(cli.Argv[2]); val == "" {
 			cli.Response(th.HSet(cli.Argv[2], cli.Argv[3]))
+			cli.Dirty += 1
 		} else {
 			cli.Response(0)
 		}
@@ -273,6 +277,7 @@ func (handler *HashHandler) HIncrBy(cli *client.Client) {
 			cli.ResponseReError(err)
 		} else {
 			cli.Response(ret)
+			cli.Dirty += 1
 		}
 	}
 }
@@ -290,6 +295,7 @@ func (handler *HashHandler) HIncrByFloat(cli *client.Client) {
 			cli.ResponseReError(err)
 		} else {
 			cli.Response(ret)
+			cli.Dirty += 1
 		}
 	}
 }

@@ -34,6 +34,7 @@ type Client struct {
 	Argc        int              // arguments counter
 	Cmd         *Command         // current command
 	LastCmd     *Command         // last command
+	Dirty       int64
 	execTimeout time.Time
 	idleTimeout time.Time // timeout
 	Status      uint32
