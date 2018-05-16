@@ -24,6 +24,7 @@ Redis原始源码来自： https://github.com/antirez/redis
 
 #### framework
 * [framework](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/framework/framework.md)
+* [redis object](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/framework/redis_object.md)
 * [map compare](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/framework/map%20compare.md)
 * [hash code](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/framework/hash_code.md)
 * [new redis go server model](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/framework/redis_go_server_model.md)
