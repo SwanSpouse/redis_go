@@ -23,14 +23,14 @@ var _ = Describe("TestRedisHashCommand", func() {
 	var r *protocol.ResponseReader
 
 	srv := server.NewServer(nil)
-	lis, err := net.Listen("tcp", "127.0.0.1:9737")
+	lis, err := net.Listen("tcp", "127.0.0.1:9733")
 	if err != nil {
 		loggers.Errorf("server start error %+v", err)
 	}
 	go srv.Serve(lis)
 
 	BeforeEach(func() {
-		cn, err = net.Dial("tcp", "127.0.0.1:9737")
+		cn, err = net.Dial("tcp", "127.0.0.1:9733")
 		w = protocol.NewRequestWriter(cn)
 		r = protocol.NewResponseReader(cn)
 	})
