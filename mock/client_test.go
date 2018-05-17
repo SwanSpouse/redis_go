@@ -24,7 +24,7 @@ var _ = Describe("MockRedisClient", func() {
 	var r *protocol.ResponseReader
 
 	srv := server.NewServer(nil)
-	lis, err := net.Listen("tcp", "127.0.0.1:9736")
+	lis, err := net.Listen("tcp", "127.0.0.1:9739")
 	if err != nil {
 		loggers.Errorf("server start error %+v", err)
 		return
@@ -33,7 +33,7 @@ var _ = Describe("MockRedisClient", func() {
 	go srv.Serve(lis)
 
 	BeforeEach(func() {
-		cn, err = net.Dial("tcp", "127.0.0.1:9736")
+		cn, err = net.Dial("tcp", "127.0.0.1:9739")
 		Expect(err).To(BeNil())
 
 		w = protocol.NewRequestWriter(cn)

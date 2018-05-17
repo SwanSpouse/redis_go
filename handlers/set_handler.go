@@ -39,7 +39,6 @@ type SetHandler struct{}
 
 func (handler *SetHandler) Process(cli *client.Client) {
 	switch cli.GetCommandName() {
-
 	case RedisSetCommandSADD:
 		handler.SAdd(cli)
 	case RedisSetCommandSCARD:
@@ -110,8 +109,11 @@ func (handler *SetHandler) SAdd(cli *client.Client) {
 	if ts, err := getTSetValueByKey(cli, key); err != nil {
 		cli.ResponseReError(err)
 	} else {
-		cli.Response(ts.SAdd(cli.Argv[2:]))
-		cli.Dirty += 1
+		ret := ts.SAdd(cli.Argv[2:])
+		cli.Response(ret)
+		if ret != 0 {
+			cli.Dirty += 1
+		}
 	}
 }
 
@@ -181,8 +183,11 @@ func (handler *SetHandler) SRem(cli *client.Client) {
 	if ts, err := getTSetValueByKey(cli, key); err != nil {
 		cli.ResponseReError(err)
 	} else {
-		cli.Response(ts.SRem(cli.Argv[2:]))
-		cli.Dirty += 1
+		ret := ts.SRem(cli.Argv[2:])
+		cli.Response(ret)
+		if ret != 0 {
+			cli.Dirty += 1
+		}
 	}
 }
 
