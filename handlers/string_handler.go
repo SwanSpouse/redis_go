@@ -49,7 +49,7 @@ var stringEncodingTypeDict = map[string]bool{
 type StringHandler struct{}
 
 func (handler *StringHandler) Process(cli *client.Client) {
-	switch cli.GetCommandName() {
+	switch cli.Cmd.GetName() {
 	case RedisStringCommandAppend:
 		handler.Append(cli)
 	case RedisStringCommandBitCount, RedisStringCommandBitop, RedisStringCommandGetBit, RedisStringCommandSetBit:
@@ -89,7 +89,7 @@ func (handler *StringHandler) Process(cli *client.Client) {
 	case RedisStringCommandStrLen:
 		handler.Strlen(cli)
 	default:
-		cli.ResponseReError(re.ErrUnknownCommand, cli.GetOriginCommandName())
+		cli.ResponseReError(re.ErrUnknownCommand, cli.Cmd.GetOriginName())
 	}
 	// 最后统一发送数据
 	cli.Flush()
@@ -159,7 +159,7 @@ func (handler *StringHandler) SetNx(cli *client.Client) {
 func (handler *StringHandler) MSetNx(cli *client.Client) {
 	args := cli.Argv
 	if len(args)%2 == 0 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.GetOriginCommandName())
+		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
 		return
 	}
 	var containsKey bool
@@ -223,7 +223,7 @@ func (handler *StringHandler) MGet(cli *client.Client) {
 
 func (handler *StringHandler) MSet(cli *client.Client) {
 	if len(cli.Argv)%2 == 0 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.GetOriginCommandName())
+		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
 		return
 	}
 	for i := 1; i < len(cli.Argv); i += 2 {

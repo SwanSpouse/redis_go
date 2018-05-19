@@ -7,7 +7,6 @@ import (
 	re "redis_go/error"
 	"redis_go/loggers"
 	"redis_go/tcp"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -144,14 +143,6 @@ func (c *Client) IsExecTimeout() bool {
 
 func (c *Client) GetExecTimeoutAt() time.Time {
 	return c.execTimeout
-}
-
-func (c *Client) GetCommandName() string {
-	return strings.ToUpper(c.Argv[0])
-}
-
-func (c *Client) GetOriginCommandName() string {
-	return c.Argv[0]
 }
 
 /**

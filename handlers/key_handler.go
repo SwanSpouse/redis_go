@@ -45,7 +45,7 @@ const (
 type KeyHandler struct{}
 
 func (handler *KeyHandler) Process(cli *client.Client) {
-	switch cli.GetCommandName() {
+	switch cli.Cmd.GetName() {
 	case RedisKeyCommandDel:
 		handler.Del(cli)
 	case RedisKeyCommandDump:
@@ -89,13 +89,14 @@ func (handler *KeyHandler) Process(cli *client.Client) {
 	case RedisKeyCommandScan:
 		cli.ResponseReError(re.ErrFunctionNotImplement)
 	default:
-		cli.ResponseReError(re.ErrUnknownCommand, cli.GetOriginCommandName())
+		cli.ResponseReError(re.ErrUnknownCommand, cli.Cmd.GetOriginName())
 	}
 	cli.Flush()
 }
 
 func (handler *KeyHandler) Del(cli *client.Client) {
 	successCount := cli.SelectedDatabase().RemoveKeyInDB(cli.Argv)
+	cli.Dirty += successCount
 	cli.Response(successCount)
 }
 
@@ -128,6 +129,7 @@ func (handler *KeyHandler) Rename(cli *client.Client) {
 	} else {
 		cli.SelectedDatabase().RemoveKeyInDB([]string{cli.Argv[1]})
 		cli.SelectedDatabase().SetKeyInDB(cli.Argv[2], tb)
+		cli.Dirty += 1
 		cli.ResponseOK()
 	}
 }
