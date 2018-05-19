@@ -5,6 +5,7 @@ import (
 	"redis_go/client"
 	re "redis_go/error"
 	"redis_go/loggers"
+	"strings"
 	"sync/atomic"
 	"time"
 )
@@ -59,7 +60,7 @@ func (srv *Server) handlerCommand(c *client.Client) {
 	}
 
 	// 如果服务器正在进行阻塞操作，不接受客户端发过来的请求
-	if srv.Status.Load() == RedisServerStatusRdbSaveInProcess {
+	if !srv.isInService() {
 		c.ResponseReError(re.ErrRedisRdbSaveInProcess)
 		return
 	}
@@ -68,9 +69,9 @@ func (srv *Server) handlerCommand(c *client.Client) {
 		如果不在command table中,则返回command not found
 		如果在command table中，则获取到相应的command handler来进行处理。
 	*/
-	if command, ok := srv.commandTable[c.GetCommandName()]; !ok || command == nil {
-		loggers.Errorf(string(re.ErrUnknownCommand), c.GetOriginCommandName())
-		c.ResponseReError(re.ErrUnknownCommand, c.GetOriginCommandName())
+	if command, ok := srv.commandTable[strings.ToUpper(c.Argv[0])]; !ok || command == nil {
+		loggers.Errorf(string(re.ErrUnknownCommand), c.Argv[0])
+		c.ResponseReError(re.ErrUnknownCommand, c.Argv[0])
 	} else {
 		c.LastCmd = c.Cmd
 		c.Cmd = command
@@ -82,9 +83,10 @@ func (srv *Server) handlerCommand(c *client.Client) {
 		if (command.Arity > 0 && c.Argc != command.Arity) ||
 			(c.Argc < -command.Arity) {
 			loggers.Errorf("wrong number of args %+v", command)
-			c.ResponseReError(re.ErrWrongNumberOfArgs, c.GetOriginCommandName())
+			c.ResponseReError(re.ErrWrongNumberOfArgs, c.Argv[0])
 			return
 		}
+
 		// TODO 检查用户是否验证过身份
 		// TODO 集群模式等在这里进行一些操作
 		// TODO 判断是否是事务相关命令
@@ -93,12 +95,20 @@ func (srv *Server) handlerCommand(c *client.Client) {
 		command.Handler.Process(c)
 
 		// 在rdb save结束之后，重新统计dirty数量并记录本次rdb结束的时间
-		if c.GetCommandName() == RedisServerCommandSave {
+		if c.Cmd.GetName() == RedisServerCommandSave {
 			srv.Dirty = 0
-			srv.LastSave = time.Now()
+			srv.rdbLastSave = time.Now()
 		} else {
 			srv.Dirty += c.Dirty
 		}
+
+		// 在这里判断命令是否要发送到aof_buf或者Aof文件
+		if c.Cmd.Flags&client.RedisCmdWrite > 0 && c.Dirty != 0 {
+			loggers.Debug("Client exec a write cmd or make db dirty")
+			srv.propagate(c)
+		}
+		// 将srv aof_buf中的数据同步到文件中
+		//srv.flushAppendOnlyFile()
 		c.Dirty = 0
 	}
 }

@@ -40,7 +40,7 @@ type HashHandler struct {
 }
 
 func (handler *HashHandler) Process(cli *client.Client) {
-	switch cli.GetCommandName() {
+	switch cli.Cmd.GetName() {
 	case RedisHashCommandHDel:
 		handler.HDel(cli)
 	case RedisHashCommandHExists:
@@ -75,7 +75,7 @@ func (handler *HashHandler) Process(cli *client.Client) {
 	case RedisHashCommandHDebug:
 		handler.HDebug(cli)
 	default:
-		cli.ResponseReError(re.ErrUnknownCommand, cli.GetOriginCommandName())
+		cli.ResponseReError(re.ErrUnknownCommand, cli.Cmd.GetOriginName())
 	}
 	// 最后统一发送数据
 	cli.Flush()
@@ -187,7 +187,7 @@ func (handler *HashHandler) HMGet(cli *client.Client) {
 func (handler *HashHandler) HMSet(cli *client.Client) {
 	key := cli.Argv[1]
 	if len(cli.Argv)%2 == 1 {
-		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.GetOriginCommandName())
+		cli.ResponseReError(re.ErrWrongNumberOfArgs, cli.Cmd.GetOriginName())
 		return
 	}
 	if err := createHashIfNotExists(cli, key); err != nil {

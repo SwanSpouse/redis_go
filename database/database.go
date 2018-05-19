@@ -3,23 +3,22 @@ package database
 import (
 	"redis_go/loggers"
 	"redis_go/raw_type"
-	"sync/atomic"
-)
-
-var (
-	databaseInc = uint64(0)
 )
 
 type Database struct {
-	id   uint64         // 数据库编号
+	id   int            // 数据库编号
 	dict *raw_type.Dict // 数据库
 }
 
-func NewDatabase() *Database {
+func NewDatabase(id int) *Database {
 	return &Database{
-		id:   atomic.AddUint64(&databaseInc, 1),
+		id:   id,
 		dict: raw_type.NewDict(),
 	}
+}
+
+func (db *Database) GetID() int {
+	return db.id
 }
 
 // 获取Key在数据库中对应的Value

@@ -17,12 +17,18 @@ const (
 	RedisLogLevel = loggers.DEBUG
 
 	/* AOF states */
-	RedisAofOff         = 0 /* AOF is off */
-	RedisAofOn          = 1 /* AOF is on */
-	RedisAofWaitRewrite = 2 /* AOF waits rewrite to start appending */
+	RedisAofOff             = 0 /* AOF is off */
+	RedisAofOn              = 1 /* AOF is on */
+	RedisAofWaitRewrite     = 2 /* AOF waits rewrite to start appending */
+	RedisAofAppendOnlyYes   = "yes"
+	RedisAofAppendonlyNo    = "no"
+	RedisAofFSyncAlways     = "always"
+	RedisAofFSyncEverySec   = "everysec"
+	RedisAofFSyncNo         = "no"
+	RedisAofDefaultFilePath = "appendonly.aof"
 
 	/* RDB persistence */
-	RedisRDBDefaultFilePath = "./dump.rdb"
+	RedisRDBDefaultFilePath = "dump.rdb"
 )
 
 // redis server configuration
@@ -45,7 +51,7 @@ type ServerConfig struct {
 
 	/* Aof persistence */
 	AofState    int
-	AofSync     int
+	AofFSync    string
 	AofFilename string
 
 	/* RDB persistence */
@@ -72,5 +78,8 @@ func InitServerConfig() *ServerConfig {
 	sc.ReaderPoolNum = RedisIOReaderPoolThreadNum
 	sc.WriterPoolNum = RedisIOWriterPoolThreadNum
 	sc.RdbFilename = RedisRDBDefaultFilePath
+	sc.AofState = RedisAofOn
+	sc.AofFSync = RedisAofFSyncAlways
+	sc.AofFilename = RedisAofDefaultFilePath
 	return sc
 }

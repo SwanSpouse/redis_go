@@ -19,13 +19,13 @@ type ConnectionHandler struct {
 }
 
 func (handler *ConnectionHandler) Process(cli *client.Client) {
-	switch cli.GetCommandName() {
+	switch cli.Cmd.GetName() {
 	case RedisConnectionCommandPing:
 		handler.ping(cli)
 	case RedisConnectionCommandAuth:
 		handler.auth(cli)
 	default:
-		cli.ResponseReError(re.ErrUnknownCommand, cli.GetOriginCommandName())
+		cli.ResponseReError(re.ErrUnknownCommand, cli.Cmd.GetOriginName())
 		return
 	}
 	cli.Flush()

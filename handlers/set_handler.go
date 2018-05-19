@@ -38,7 +38,7 @@ var setEncodingTypeDict = map[string]bool{
 type SetHandler struct{}
 
 func (handler *SetHandler) Process(cli *client.Client) {
-	switch cli.GetCommandName() {
+	switch cli.Cmd.GetName() {
 	case RedisSetCommandSADD:
 		handler.SAdd(cli)
 	case RedisSetCommandSCARD:
@@ -70,7 +70,7 @@ func (handler *SetHandler) Process(cli *client.Client) {
 	case RedisSetCommandSSCAN:
 		cli.ResponseReError(re.ErrFunctionNotImplement)
 	default:
-		cli.ResponseReError(re.ErrUnknownCommand, cli.GetOriginCommandName())
+		cli.ResponseReError(re.ErrUnknownCommand, cli.Cmd.GetOriginName())
 	}
 	cli.Flush()
 }

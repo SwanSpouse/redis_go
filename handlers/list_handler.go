@@ -42,7 +42,7 @@ type ListHandler struct {
 }
 
 func (handler *ListHandler) Process(cli *client.Client) {
-	switch cli.GetCommandName() {
+	switch cli.Cmd.GetName() {
 	case RedisListCommandLIndex:
 		handler.LIndex(cli)
 	case RedisListCommandLInsert:
@@ -74,7 +74,7 @@ func (handler *ListHandler) Process(cli *client.Client) {
 	case RedisListCommandLDebug:
 		handler.Debug(cli)
 	default:
-		cli.ResponseReError(re.ErrUnknownCommand, cli.GetOriginCommandName())
+		cli.ResponseReError(re.ErrUnknownCommand, cli.Cmd.GetOriginName())
 	}
 	cli.Flush()
 }

@@ -37,10 +37,12 @@ const (
 	RedisServerCommandSlowLog       = "SLOWLOG"
 	RedisServerCommandSync          = "SYNC"
 	RedisServerCommandTime          = "TIME"
+	RedisServerCommandAofDebug      = "AOFDEBUG"
+	RedisServerCommandAofFlush      = "AOFFLUSH"
 )
 
 func (srv *Server) Process(cli *client.Client) {
-	switch cli.GetCommandName() {
+	switch cli.Cmd.GetName() {
 	case RedisServerCommandBGSRewriteAof:
 		cli.ResponseReError(re.ErrFunctionNotImplement)
 	case RedisServerCommandBGSave:
@@ -77,8 +79,12 @@ func (srv *Server) Process(cli *client.Client) {
 		cli.ResponseReError(re.ErrFunctionNotImplement)
 	case RedisServerCommandTime:
 		cli.ResponseReError(re.ErrFunctionNotImplement)
+	case RedisServerCommandAofDebug:
+		srv.aofDebug(cli)
+	case RedisServerCommandAofFlush:
+		srv.aofFlush(cli)
 	default:
-		cli.ResponseReError(re.ErrUnknownCommand, cli.GetOriginCommandName())
+		cli.ResponseReError(re.ErrUnknownCommand, cli.Cmd.GetOriginName())
 	}
 	cli.Flush()
 }
@@ -171,4 +177,16 @@ func (srv *Server) bgSave(cli *client.Client) {
 		return
 	}
 	go srv.doSave(cli, encoder)
+}
+
+func (srv *Server) aofDebug(cli *client.Client) {
+	cli.ResponseOK()
+	loggers.Debug("current aof buf:%s", string(srv.aofBuf))
+}
+
+func (srv *Server) aofFlush(cli *client.Client) {
+	cli.ResponseOK()
+	loggers.Debug("current aof buf:%s", string(srv.aofBuf))
+	srv.flushAppendOnlyFile()
+	loggers.Debug("current aof buf:%s", string(srv.aofBuf))
 }
