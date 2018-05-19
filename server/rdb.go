@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"redis_go/client"
 	"redis_go/handlers"
 	"redis_go/loggers"
@@ -103,18 +102,19 @@ func (srv *Server) EndRDB() {
 	loggers.Info("rdb process End RDB")
 }
 
-func (srv *Server) rdbLoad() error {
+func (srv *Server) rdbLoad() {
 	if !util.FileExists(srv.Config.RdbFilename) {
-		return fmt.Errorf("redis rdb file not exits")
+		loggers.Errorf("redis rdb file not exits")
+		return
 	}
 	srv.FakeClient = client.NewFakeClient()
 	decoder, err := rdb.NewDecoder(srv.Config.RdbFilename, srv)
 	if err != nil {
-		return fmt.Errorf("rdb new encoder error %+v", err)
+		loggers.Errorf("rdb new encoder error %+v", err)
+		return
 	}
 	decoder.Decode()
 	if err != nil {
-		return fmt.Errorf("rdb decode error %+v", err)
+		loggers.Errorf("rdb decode error %+v", err)
 	}
-	return nil
 }

@@ -80,8 +80,7 @@ func (srv *Server) handlerCommand(c *client.Client) {
 			1. 如果Arity > 0, 要求参数个数必须严格等于Arity
 			2. 如果Arity < 0, 要求参数个数至少为|Arity|
 		*/
-		if (command.Arity > 0 && c.Argc != command.Arity) ||
-			(c.Argc < -command.Arity) {
+		if (command.Arity > 0 && c.Argc != command.Arity) || (c.Argc < -command.Arity) {
 			loggers.Errorf("wrong number of args %+v", command)
 			c.ResponseReError(re.ErrWrongNumberOfArgs, c.Argv[0])
 			return

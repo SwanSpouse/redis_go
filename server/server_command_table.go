@@ -61,6 +61,9 @@ func (srv *Server) populateCommandTable() {
 	// connection command
 	srv.commandTable[handlers.RedisConnectionCommandPing] = client.NewCommand(handlers.RedisConnectionCommandPing, 1, "r", connectionHandler)
 	srv.commandTable[handlers.RedisConnectionCommandAuth] = client.NewCommand(handlers.RedisConnectionCommandAuth, 2, "rs", connectionHandler)
+	srv.commandTable[handlers.RedisConnectionCommandSelect] = client.NewCommand(handlers.RedisConnectionCommandSelect, 2, "r", connectionHandler)
+	srv.commandTable[handlers.RedisConnectionCommandEcho] = client.NewCommand(handlers.RedisConnectionCommandSelect, 2, "r", connectionHandler)
+	srv.commandTable[handlers.RedisConnectionCommandQuit]   = client.NewCommand(handlers.RedisConnectionCommandSelect, 1, "r", connectionHandler)
 
 	// key command
 	srv.commandTable[handlers.RedisKeyCommandDel] = client.NewCommand(handlers.RedisKeyCommandDel, -2, "w", keyHandler)

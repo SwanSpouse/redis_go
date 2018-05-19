@@ -144,12 +144,9 @@ func (srv *Server) loadDataFromDisk() {
 	startTime := time.Now()
 	if srv.Config.AofState == conf.RedisAofOn {
 		loggers.Info("redis aof start to load data from disk at %s", startTime.Format("20060102 15:04:05"))
-		// TODO lmj AOF
+		srv.loadAppendOnlyFile()
 	} else {
 		loggers.Info("redis rdb start to load data from disk at %s", startTime.Format("20060102 15:04:05"))
-		err := srv.rdbLoad()
-		if err != nil {
-			loggers.Errorf("rdb process error %+v", err)
-		}
+		srv.rdbLoad()
 	}
 }

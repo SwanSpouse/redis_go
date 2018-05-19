@@ -2,11 +2,13 @@ package server
 
 import (
 	"fmt"
+	"io"
 	"redis_go/aof"
 	"redis_go/client"
 	"redis_go/conf"
 	"redis_go/handlers"
 	"redis_go/loggers"
+	"strings"
 	"time"
 )
 
@@ -77,4 +79,44 @@ func (srv *Server) flushAppendOnlyFile() {
 		srv.aofBuf = make([]byte, 0)
 		loggers.Debug("flush aof file end")
 	}
+}
+
+func (srv *Server) loadAppendOnlyFile() {
+	loggers.Debug("start to load append only file")
+	decoder := aof.NewDecoder(srv.Config.AofFilename)
+	if decoder == nil {
+		loggers.Info("aof file:%s not exists", srv.Config.AofFilename)
+		return
+	}
+	// 创建伪终端来发送命令
+	srv.FakeClient = client.NewFakeClient()
+	srv.FakeClient.SetDatabase(srv.Databases[0])
+	for true {
+		out, err := decoder.ReadCmd()
+		if err != nil && err == io.EOF {
+			break
+		} else if err != nil {
+			loggers.Errorf("load append only file error:%+v", err)
+			return
+		}
+		cmd, ok := srv.commandTable[strings.ToUpper(out.Argv[0])]
+		if !ok {
+			loggers.Errorf("Unknown command '%s' reading the append only file", out.Argv[0])
+			return
+		}
+		if (cmd.Arity > 0 && out.Argc != cmd.Arity) || (out.Argc < -cmd.Arity) {
+			loggers.Errorf("wrong number of args %+v", out.Argv[0])
+			return
+		}
+		loggers.Debug("current cmd we receive in aof argv:%+v", out.Argv)
+		srv.FakeClient.LastCmd = srv.FakeClient.Cmd
+		srv.FakeClient.Cmd = cmd
+		srv.FakeClient.Argc = out.Argc
+		srv.FakeClient.Argv = out.Argv
+		// process command
+		cmd.Handler.Process(srv.FakeClient)
+		srv.FakeClient.Argc = 0
+		srv.FakeClient.Argv = nil
+	}
+	loggers.Debug("load append only file end")
 }
