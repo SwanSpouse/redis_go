@@ -154,9 +154,6 @@ command format:
 	5. multi bulk reply : *3\r\n$3\r\nSET\r\n$5\r\nMyKey\r\n$7\r\nMyValue\r\n
 */
 func (c *Client) ProcessInputBuffer() error {
-	if c.IsFakeClient() {
-		return errors.New("this client is a fake client")
-	}
 	// read one line from buffer
 	line, err := c.reader.PeekLine(0)
 	if err != nil || len(line) == 0 {
