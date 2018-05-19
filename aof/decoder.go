@@ -30,7 +30,7 @@ type CmdOutput struct {
 	Argv []string
 }
 
-func (decoder *Decoder) ReadCmd() (*CmdOutput, error) {
+func (decoder *Decoder) DecodeAppendOnlyFile() (*CmdOutput, error) {
 	out := &CmdOutput{
 		Argc: 0,
 		Argv: make([]string, 0),

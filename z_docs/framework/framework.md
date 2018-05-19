@@ -1,6 +1,33 @@
 
 ![framework](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/framework/framework.png?raw=true)
 
+
+### 当前设计存在的问题：
+
+server和handler的这个设计不好，没有完全解耦。
+
+server_handler里面要用到好多server的信息，所以现在已经把server_handler放到了server的pkg中。
+
+handler command client 之间的矛盾：
+
+    * 本想着能够通过设计把handler command client很好的拆分开。但是写着写着发现又合回去了。
+
+    * command由自己对应的handler来进行处理。handler是用来处理client的，然后client又拥有command队列。这就循环引用了。
+
+    * 所以抽象出来了一个base_handler来分离handler和client & command之间的耦合。但是client和command好像很难拆分开了。
+
+server database client 之间的矛盾：
+
+    * database是单独出来的。client中应该包含它选择的database，不能只包含index，不然每次获取数据都需要server的参与。
+
+    * 现在只有在创建client的时候，server会把client选择的db告诉它。剩下的都交给handler来处理了。所以client就失去了换database的机会。这很尴尬。
+
+server handler client 之间的矛盾：
+
+    * 接受到客户端的命令之后。不好把命令直接交给cmmand对应的handler来进行处理。这样当client需要找server的时候，就联系不到了。
+
+最终的解决办法可能就是把handler和server进行合并。但是这又是我不想看到的。看来设计模式不过关啊，设计设计着就耦合到一起了。
+
 ### client
 client.go: redis客户端，向服务器发送请求
 command: redis command，定义command结构，其中包括command名称、参数个数、处理当前command的方法等。

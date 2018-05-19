@@ -92,7 +92,7 @@ func (srv *Server) loadAppendOnlyFile() {
 	srv.FakeClient = client.NewFakeClient()
 	srv.FakeClient.SetDatabase(srv.Databases[0])
 	for true {
-		out, err := decoder.ReadCmd()
+		out, err := decoder.DecodeAppendOnlyFile()
 		if err != nil && err == io.EOF {
 			break
 		} else if err != nil {
