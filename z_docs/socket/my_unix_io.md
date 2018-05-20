@@ -1,5 +1,5 @@
 
-#### 五种 unix io 模型
+### 五种 unix io 模型
 
 Unix系统将所有外部设备都看做是一个文件来操作，对一个文件的读写操作会调用内核提供的系统命令，返回一个file descriptor (fd 文件描述符)。
 
@@ -24,21 +24,21 @@ Unix系统将所有外部设备都看做是一个文件来操作，对一个文�
 | Asynchronous  | io multiplexing(select/poll)  |   AIO |
 
 
-##### 同步阻塞
+#### 同步阻塞
 
 用户进程调用API(read, write)会转化成一个I/O请求，一直等到I/O请求完成API调用才会完成。这意味着：在API调用期间用户程序是同步的；这个API调用会导致系统以阻塞的模式执行I/O，如果此时没有数据
 则一直等待（放弃CPU主动挂起--Sleep状态）
 
 ![BlockingIO](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/socket/BlockingIO.png?raw=true)
 
-##### 同步非阻塞
+#### 同步非阻塞
 
 这种模式通过调用read,write的时候指定O_NONBLOCK参数。和"同步阻塞"的区别在于系统调用的时候它是以非阻塞的方式执行的，无论是否有数据都会立即返回。
 
 ![Non-blockingIO](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/socket/Non-blockingIO.png?raw=true)
 
 
-##### 异步阻塞
+#### 异步阻塞
 
 同步模型最主要的问题是占用CPU，阻塞I/O会主动让出CPU但是用户空间的系统调用还是不会返回依然耗费CPU；
 
@@ -65,7 +65,7 @@ I/O函数是一样的。（都是read、write）唯一的区别在是异步模�
 ![IOMultiplexing](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/socket/IOMultiplexing.png?raw=true)
 
 
-##### 异步非阻塞
+#### 异步非阻塞
 
 ![AsynchronousIO](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/socket/AsynchronousIO.png?raw=true)
 
