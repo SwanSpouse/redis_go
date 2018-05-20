@@ -21,6 +21,7 @@ Redis原始源码来自： https://github.com/antirez/redis
 * [golang socket](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/socket/socket.md)
 * [tcp layer](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/socket/tcp_layer.md)
 * [unix io模型](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/socket/unix%20io.md)
+* [unix io模型整理版本](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/socket/my_unix_io.md)
 
 #### framework
 * [framework](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/framework/framework.md)
