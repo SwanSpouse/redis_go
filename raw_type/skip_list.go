@@ -1,7 +1,10 @@
 package raw_type
 
 import (
+	"fmt"
+	"github.com/onsi/gomega/matchers/support/goraph/node"
 	"math/rand"
+	"redis_go/loggers"
 	"strings"
 	"time"
 )
@@ -342,4 +345,29 @@ func (sl *SkipList) GetElementByRank(rank int) *SkipNode {
 		}
 	}
 	return nil
+}
+
+// debug skip list
+func (sl *SkipList) DebugSkipListInfo() {
+	fmt.Printf("current skip list info length:%d level:%d\n", sl.length, sl.level)
+
+	for level := sl.level - 1; level >= 0; level -= 1 {
+		for node := sl.header.level[0].forward; node != nil; node = node.level[0].forward {
+			if level > len(node.level) {
+				fmt.Printf("E\t")
+			} else {
+				fmt.Printf("D\t")
+			}
+		}
+		fmt.Printf("\n")
+	}
+
+}
+
+func printSkipNodeLevel(node *SkipNode, level int) string {
+	ret := fmt.Sprintf("*->\t")
+	for i := 0; i < node.level[level].span; i++ {
+		ret += fmt.Sprintf("?->\t")
+	}
+	return ret
 }
