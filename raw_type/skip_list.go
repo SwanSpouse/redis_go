@@ -2,9 +2,7 @@ package raw_type
 
 import (
 	"fmt"
-	"github.com/onsi/gomega/matchers/support/goraph/node"
 	"math/rand"
-	"redis_go/loggers"
 	"strings"
 	"time"
 )
@@ -36,15 +34,16 @@ type SkipNode struct {
 */
 func getNewSkipNodeLevel() int {
 	levelCount := 1
-	rand.Seed(time.Now().Unix())
+	rand.Seed(time.Now().UnixNano())
 
-	for rand.Intn(10) >= 5 {
+	cur := rand.Intn(10)
+	for ; cur < 5; cur = rand.Intn(10) {
 		levelCount += 1
 	}
 	return levelCount
 }
 
-func (sn *SkipNode) GetValue() interface{} {
+func (sn *SkipNode) GetValue() string {
 	return sn.obj
 }
 
@@ -60,8 +59,9 @@ func createSkipNode(obj string, score float64) *SkipNode {
 	}
 }
 
-func createDummySkipNode() *SkipNode {
+func createHeaderSkipNode() *SkipNode {
 	return &SkipNode{
+		obj:   "H",
 		level: make([]SkipLevel, SkipListMaxLevel),
 	}
 }
@@ -78,7 +78,7 @@ type SkipList struct {
 
 func NewSkipList() *SkipList {
 	return &SkipList{
-		header: createDummySkipNode(),
+		header: createHeaderSkipNode(),
 		tail:   nil,
 		length: 0,
 		level:  1,
@@ -106,13 +106,14 @@ func (sl *SkipList) Insert(obj string, score float64) *SkipList {
 	newNode := createSkipNode(obj, score)
 	if len(newNode.level) > sl.level {
 		for i := sl.level; i < len(newNode.level); i++ {
+			rank[i] = 0
 			updates[i] = sl.header
 			updates[i].level[i].span = sl.length
 		}
 		sl.level = len(newNode.level)
 	}
 	// 更新level
-	for i := 0; i < sl.level; i++ {
+	for i := 0; i < len(newNode.level); i++ {
 		newNode.level[i].forward = updates[i].level[i].forward
 		updates[i].level[i].forward = newNode
 
@@ -136,6 +137,7 @@ func (sl *SkipList) Insert(obj string, score float64) *SkipList {
 	} else {
 		sl.tail = newNode
 	}
+	sl.length += 1
 	return sl
 }
 
@@ -178,7 +180,7 @@ func (sl *SkipList) Delete(obj string, score float64) int {
 
 	cur = cur.level[0].forward
 	// 只有当找到的时候才会进行删除
-	if cur != nil && cur.level[0].forward.score == score && strings.Compare(cur.level[0].forward.obj, obj) == 0 {
+	if cur != nil && cur.score == score && strings.Compare(cur.obj, obj) == 0 {
 		sl.DeleteNode(cur, updates)
 		return 1
 	}
@@ -251,12 +253,12 @@ func (sl *SkipList) LastInRange(rng rangeSpec) *SkipNode {
 	// 自顶向下，查找符合条件的最后一个元素
 	cur := sl.header
 	for i := sl.level - 1; i >= 0; i-- {
-		for cur.level[i].forward != nil && valueGteMin(cur.level[i].forward.score, rng) {
+		for cur.level[i].forward != nil && valueLteMax(cur.level[i].forward.score, rng) {
 			cur = cur.level[i].forward
 		}
 	}
 
-	if !valueLteMax(cur.score, rng) {
+	if !valueGteMin(cur.score, rng) {
 		return nil
 	}
 	return cur
@@ -320,8 +322,8 @@ func (sl *SkipList) GetRank(obj string, score float64) int {
 	for i := sl.level - 1; i >= 0; i-- {
 		for cur.level[i].forward != nil &&
 			(cur.level[i].forward.score < score || (cur.level[i].forward.score == score && strings.Compare(cur.level[i].forward.obj, obj) <= 0)) {
-			cur = cur.level[i].forward
 			rank += cur.level[i].span
+			cur = cur.level[i].forward
 		}
 	}
 
@@ -349,18 +351,33 @@ func (sl *SkipList) GetElementByRank(rank int) *SkipNode {
 
 // debug skip list
 func (sl *SkipList) DebugSkipListInfo() {
-	fmt.Printf("current skip list info length:%d level:%d\n", sl.length, sl.level)
+	fmt.Printf("current skip list info length:%d curLevel:%d\n", sl.length, sl.level)
 
-	for level := sl.level - 1; level >= 0; level -= 1 {
-		for node := sl.header.level[0].forward; node != nil; node = node.level[0].forward {
-			if level > len(node.level) {
-				fmt.Printf("E\t")
+	for curLevel := sl.level - 1; curLevel >= 0; curLevel -= 1 {
+		for node := sl.header; node != nil; node = node.level[0].forward {
+			if curLevel < len(node.level) {
+				fmt.Printf("%d\t\t", node.level[curLevel].span)
 			} else {
-				fmt.Printf("D\t")
+				fmt.Printf("E\t\t")
 			}
 		}
 		fmt.Printf("\n")
 	}
+
+	for node := sl.header; node != nil; node = node.level[0].forward {
+		fmt.Printf("%s\t\t", node.obj)
+	}
+	fmt.Println()
+
+	for node := sl.header; node != nil; node = node.level[0].forward {
+		fmt.Printf("%.1f\t\t", node.score)
+	}
+	fmt.Println()
+
+	for node := sl.header; node != nil; node = node.level[0].forward {
+		fmt.Printf("%d\t\t", len(node.level))
+	}
+	fmt.Println()
 
 }
 
