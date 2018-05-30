@@ -57,13 +57,14 @@ func (srv *Server) populateCommandTable() {
 	listHandler := new(handlers.ListHandler)
 	hashHandler := new(handlers.HashHandler)
 	setHandler := new(handlers.SetHandler)
+	sortedSetHandler := new(handlers.SortedSetHandler)
 
 	// connection command
 	srv.commandTable[handlers.RedisConnectionCommandPing] = client.NewCommand(handlers.RedisConnectionCommandPing, 1, "r", connectionHandler)
 	srv.commandTable[handlers.RedisConnectionCommandAuth] = client.NewCommand(handlers.RedisConnectionCommandAuth, 2, "rs", connectionHandler)
 	srv.commandTable[handlers.RedisConnectionCommandSelect] = client.NewCommand(handlers.RedisConnectionCommandSelect, 2, "r", connectionHandler)
 	srv.commandTable[handlers.RedisConnectionCommandEcho] = client.NewCommand(handlers.RedisConnectionCommandSelect, 2, "r", connectionHandler)
-	srv.commandTable[handlers.RedisConnectionCommandQuit]   = client.NewCommand(handlers.RedisConnectionCommandSelect, 1, "r", connectionHandler)
+	srv.commandTable[handlers.RedisConnectionCommandQuit] = client.NewCommand(handlers.RedisConnectionCommandSelect, 1, "r", connectionHandler)
 
 	// key command
 	srv.commandTable[handlers.RedisKeyCommandDel] = client.NewCommand(handlers.RedisKeyCommandDel, -2, "w", keyHandler)
@@ -155,6 +156,25 @@ func (srv *Server) populateCommandTable() {
 	srv.commandTable[handlers.RedisSetCommandSUNION] = client.NewCommand(handlers.RedisSetCommandSUNION, -2, "rS", setHandler)
 	srv.commandTable[handlers.RedisSetCommandSUNIONSTORE] = client.NewCommand(handlers.RedisSetCommandSUNIONSTORE, -3, "wm", setHandler)
 	srv.commandTable[handlers.RedisSetCommandSSCAN] = client.NewCommand(handlers.RedisSetCommandSSCAN, 2, "rS", setHandler)
+
+	// sorted set command
+	srv.commandTable[handlers.RedisSortedSetCommandZAdd] = client.NewCommand(handlers.RedisSortedSetCommandZAdd, -4, "wm", sortedSetHandler)
+	srv.commandTable[handlers.RedisSortedSetCommandZCard] = client.NewCommand(handlers.RedisSortedSetCommandZCard, 2, "r", sortedSetHandler)
+	srv.commandTable[handlers.RedisSortedSetCommandZCount] = client.NewCommand(handlers.RedisSortedSetCommandZCount, 4, "r", sortedSetHandler)
+	srv.commandTable[handlers.RedisSortedSetCommandZIncrBy] = client.NewCommand(handlers.RedisSortedSetCommandZIncrBy, 4, "wm", sortedSetHandler)
+	srv.commandTable[handlers.RedisSortedSetCommandZRange] = client.NewCommand(handlers.RedisSortedSetCommandZRange, -4, "r", sortedSetHandler)
+	srv.commandTable[handlers.RedisSortedSetCommandZRangeByScore] = client.NewCommand(handlers.RedisSortedSetCommandZRangeByScore, -4, "r", sortedSetHandler)
+	srv.commandTable[handlers.RedisSortedSetCommandZRank] = client.NewCommand(handlers.RedisSortedSetCommandZRank, 3, "r", sortedSetHandler)
+	srv.commandTable[handlers.RedisSortedSetCommandZRem] = client.NewCommand(handlers.RedisSortedSetCommandZRem, -3, "w", sortedSetHandler)
+	srv.commandTable[handlers.RedisSortedSetCommandZRemRangeByRank] = client.NewCommand(handlers.RedisSortedSetCommandZRemRangeByRank, 4, "w", sortedSetHandler)
+	srv.commandTable[handlers.RedisSortedSetCommandZRemRangeByScore] = client.NewCommand(handlers.RedisSortedSetCommandZRemRangeByScore, 4, "w", sortedSetHandler)
+	srv.commandTable[handlers.RedisSortedSetCommandZRevRange] = client.NewCommand(handlers.RedisSortedSetCommandZRevRange, -4, "r", sortedSetHandler)
+	srv.commandTable[handlers.RedisSortedSetCommandZRevRangeByScore] = client.NewCommand(handlers.RedisSortedSetCommandZRevRangeByScore, -4, "r", sortedSetHandler)
+	srv.commandTable[handlers.RedisSortedSetCommandZRevRank] = client.NewCommand(handlers.RedisSortedSetCommandZRevRank, 3, "r", sortedSetHandler)
+	srv.commandTable[handlers.RedisSortedSetCommandZScore] = client.NewCommand(handlers.RedisSortedSetCommandZScore, 3, "r", sortedSetHandler)
+	srv.commandTable[handlers.RedisSortedSetCommandZUnionStore] = client.NewCommand(handlers.RedisSortedSetCommandZUnionStore, -4, "wm", sortedSetHandler)
+	srv.commandTable[handlers.RedisSortedSetCommandZInterStore] = client.NewCommand(handlers.RedisSortedSetCommandZInterStore, -4, "wm", sortedSetHandler)
+	srv.commandTable[handlers.RedisSortedSetCommandZScan] = client.NewCommand(handlers.RedisSortedSetCommandZScan, 2, "r", sortedSetHandler)
 
 	// server command
 	srv.commandTable[RedisServerCommandBGSRewriteAof] = client.NewCommand(RedisServerCommandBGSRewriteAof, 1, "ar", srv)
