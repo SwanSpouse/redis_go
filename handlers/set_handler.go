@@ -119,7 +119,9 @@ func (handler *SetHandler) SAdd(cli *client.Client) {
 
 func (handler *SetHandler) SCard(cli *client.Client) {
 	key := cli.Argv[1]
-	if ts, err := getTSetValueByKey(cli, key); err != nil {
+	if ts, err := getTSetValueByKey(cli, key); err != nil && err == re.ErrNoSuchKey {
+		cli.Response(0)
+	} else if err != nil {
 		cli.ResponseReError(err)
 	} else {
 		cli.Response(ts.SCard())

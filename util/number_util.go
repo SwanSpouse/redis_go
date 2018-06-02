@@ -28,3 +28,8 @@ func FormatFloatString(input string) (string, error) {
 		return strings.TrimRight(input, "0"), nil
 	}
 }
+
+// 最高保留6位精度
+func FloatToSimpleString(input float64) string {
+	return strings.TrimRight(fmt.Sprintf("%.6f", input), "0")
+}

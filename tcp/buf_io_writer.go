@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	re "redis_go/error"
 	"redis_go/loggers"
 	"reflect"
 	"strconv"
@@ -234,6 +235,12 @@ func (w *BufIoWriter) Append(v interface{}) error {
 			msg = "ERR " + msg
 		}
 		w.AppendError(msg)
+	case re.ProtoError:
+		msg := v.Error()
+		if !strings.HasPrefix(msg, "ERR ") {
+			msg = "ERR " + msg
+		}
+		w.AppendError(msg)
 	case bool:
 		if v {
 			w.AppendInt(1)
@@ -274,14 +281,20 @@ func (w *BufIoWriter) Append(v interface{}) error {
 		switch reflect.TypeOf(v).Kind() {
 		case reflect.Slice:
 			s := reflect.ValueOf(v)
-
+			if s.Len() == 0 {
+				w.AppendError(re.ErrEmptyListOrSet.Error())
+				return nil
+			}
 			w.AppendArrayLen(s.Len())
 			for i := 0; i < s.Len(); i++ {
 				w.Append(s.Index(i).Interface())
 			}
 		case reflect.Map:
 			s := reflect.ValueOf(v)
-
+			if s.Len() == 0 {
+				w.AppendError(re.ErrEmptyListOrSet.Error())
+				return nil
+			}
 			w.AppendArrayLen(s.Len() * 2)
 			for _, key := range s.MapKeys() {
 				w.Append(key.Interface())

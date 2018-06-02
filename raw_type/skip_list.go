@@ -51,6 +51,14 @@ func (sn *SkipNode) GetScore() float64 {
 	return sn.score
 }
 
+func (sn *SkipNode) SetScore(score float64) {
+	sn.score = score
+}
+
+func (sn *SkipNode) GetNextNode() *SkipNode {
+	return sn.level[0].forward
+}
+
 func createSkipNode(obj string, score float64) *SkipNode {
 	return &SkipNode{
 		obj:   obj,
@@ -85,7 +93,7 @@ func NewSkipList() *SkipList {
 	}
 }
 
-func (sl *SkipList) Insert(obj string, score float64) *SkipList {
+func (sl *SkipList) Insert(obj string, score float64) *SkipNode {
 	updates := make([]*SkipNode, SkipListMaxLevel)
 	rank := make([]int, SkipListMaxLevel)
 
@@ -138,11 +146,15 @@ func (sl *SkipList) Insert(obj string, score float64) *SkipList {
 		sl.tail = newNode
 	}
 	sl.length += 1
-	return sl
+	return newNode
+}
+
+func (sl *SkipList) Length() int {
+	return sl.length
 }
 
 // 这个函数要保证传进来的肯定是需要删除的
-func (sl *SkipList) DeleteNode(node *SkipNode, updates []*SkipNode) {
+func (sl *SkipList) deleteNode(node *SkipNode, updates []*SkipNode) {
 	// 更新forward指针
 	for i := 0; i < sl.level; i++ {
 		if updates[i].level[i].forward == node {
@@ -181,36 +193,36 @@ func (sl *SkipList) Delete(obj string, score float64) int {
 	cur = cur.level[0].forward
 	// 只有当找到的时候才会进行删除
 	if cur != nil && cur.score == score && strings.Compare(cur.obj, obj) == 0 {
-		sl.DeleteNode(cur, updates)
+		sl.deleteNode(cur, updates)
 		return 1
 	}
 	return 0
 }
 
-type rangeSpec struct {
-	min, max     float64
-	minEx, maxEx bool
+type RangeSpec struct {
+	Min, Max     float64
+	MinEx, MaxEx bool
 }
 
 // 检查score是否比rangeSpec.min大
-func valueGteMin(score float64, rng rangeSpec) bool {
-	if rng.minEx {
-		return score > rng.min
+func valueGteMin(score float64, rng RangeSpec) bool {
+	if rng.MinEx {
+		return score > rng.Min
 	}
-	return score >= rng.min
+	return score >= rng.Min
 }
 
 // 检查score是否比rangeSpec.max小
-func valueLteMax(score float64, rng rangeSpec) bool {
-	if rng.maxEx {
-		return score < rng.max
+func valueLteMax(score float64, rng RangeSpec) bool {
+	if rng.MaxEx {
+		return score < rng.Max
 	}
-	return score <= rng.max
+	return score <= rng.Max
 }
 
 // 检查SkipList中的元素是否在rangeSpec之中
-func (sl *SkipList) IsInRange(rng rangeSpec) bool {
-	if rng.min > rng.max || (rng.min == rng.max && (rng.minEx || rng.maxEx)) {
+func (sl *SkipList) IsInRange(rng RangeSpec) bool {
+	if rng.Min > rng.Max || (rng.Min == rng.Max && (rng.MinEx || rng.MaxEx)) {
 		return false
 	}
 	cur := sl.tail
@@ -226,7 +238,7 @@ func (sl *SkipList) IsInRange(rng rangeSpec) bool {
 }
 
 // 返回在SkipList中第一个在给定区间中的元素
-func (sl *SkipList) FirstInRange(rng rangeSpec) *SkipNode {
+func (sl *SkipList) FirstInRange(rng RangeSpec) *SkipNode {
 	if !sl.IsInRange(rng) {
 		return nil
 	}
@@ -246,7 +258,7 @@ func (sl *SkipList) FirstInRange(rng rangeSpec) *SkipNode {
 }
 
 // 返回在SkipList中最后一个在给定区间中的元素
-func (sl *SkipList) LastInRange(rng rangeSpec) *SkipNode {
+func (sl *SkipList) LastInRange(rng RangeSpec) *SkipNode {
 	if !sl.IsInRange(rng) {
 		return nil
 	}
@@ -264,24 +276,24 @@ func (sl *SkipList) LastInRange(rng rangeSpec) *SkipNode {
 	return cur
 }
 
-func (sl *SkipList) DeleteRangeByScore(rng rangeSpec) int {
+func (sl *SkipList) DeleteRangeByScore(rng RangeSpec) int {
 	updates := make([]*SkipNode, SkipListMaxLevel)
 
 	cur := sl.header
 	for i := sl.level - 1; i >= 0; i-- {
-		for cur.level[i].forward != nil && ((rng.minEx && cur.level[i].forward.score <= rng.min) || (!rng.minEx && cur.level[i].forward.score < rng.min)) {
+		for cur.level[i].forward != nil && ((rng.MinEx && cur.level[i].forward.score <= rng.Min) || (!rng.MinEx && cur.level[i].forward.score < rng.Min)) {
 			cur = cur.level[i].forward
 		}
 		updates[i] = cur
 	}
-	/* Current node is the last with score < or <= min. */
+	/* Current node is the last with score < or <= Min. */
 	cur = cur.level[0].forward
 
 	removed := 0
-	for cur != nil && ((rng.maxEx && cur.score < rng.max) || !rng.maxEx && cur.score <= rng.max) {
+	for cur != nil && ((rng.MaxEx && cur.score < rng.Max) || !rng.MaxEx && cur.score <= rng.Max) {
 		// 保存后继节点，然后删除当前节点
 		next := cur.level[0].forward
-		sl.DeleteNode(cur, updates)
+		sl.deleteNode(cur, updates)
 		removed += 1
 		cur = next
 	}
@@ -307,7 +319,7 @@ func (sl *SkipList) DeleteRangeByRank(start, end int) int {
 	cur = cur.level[0].forward
 	for cur != nil && traversed <= end {
 		nextNode := cur.level[0].forward
-		sl.DeleteNode(cur, updates)
+		sl.deleteNode(cur, updates)
 		removed += 1
 		traversed += 1
 		cur = nextNode
