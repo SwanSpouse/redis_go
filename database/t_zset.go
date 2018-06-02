@@ -25,20 +25,20 @@ type TZSet interface {
 	String() string
 
 	// sorted set command operation
-	ZAdd([]string) int
+	ZAdd([]string) (int, error)
 	ZCard() int
-	ZCount() int
-	ZIncrBy(string, float64) float64
-	ZRange(int, int) []string
-	ZRangeByScore(float64, float64) []string
-	ZRevRange(int, int) []string
-	ZRevRangeByScore(float64, float64) []string
-	ZRank(string) int
-	ZRevRank(string) int
+	ZCount(string, string) (int, error)
+	ZIncrBy(string, string) (float64, error)
+	ZRange(string, string) ([]string, error)
+	ZRangeByScore(string, string) ([]string, error)
+	ZRevRange(string, string) ([]string, error)
+	ZRevRangeByScore(string, string) ([]string, error)
+	ZRank(string) (int, error)
+	ZRevRank(string) (int, error)
 	ZRem([]string) int
-	ZRemRangeByRyRank(int, int) int
-	ZRemRangeByScore(float64, float64) int
-	ZScore(string) float64
+	ZRemRangeByRank(string, string) (int, error)
+	ZRemRangeByScore(string, string) (int, error)
+	ZScore(string) (float64, error)
 	//ZUnionStore()
 	//ZInterStore()
 	//ZScan()

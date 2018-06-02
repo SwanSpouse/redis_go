@@ -48,128 +48,128 @@ var _ = Describe("test skip list", func() {
 
 	It("test IsInRange", func() {
 		// 闭区间
-		ret := sl.IsInRange(rangeSpec{
-			min:   0,
-			max:   9.9,
-			minEx: false,
-			maxEx: false,
+		ret := sl.IsInRange(RangeSpec{
+			Min:   0,
+			Max:   9.9,
+			MinEx: false,
+			MaxEx: false,
 		})
 		Expect(ret).To(Equal(true))
 
-		ret = sl.IsInRange(rangeSpec{
-			min:   10,
-			max:   10.1,
-			minEx: false,
-			maxEx: false,
+		ret = sl.IsInRange(RangeSpec{
+			Min:   10,
+			Max:   10.1,
+			MinEx: false,
+			MaxEx: false,
 		})
 		Expect(ret).To(Equal(false))
 
-		ret = sl.IsInRange(rangeSpec{
-			min:   -2,
-			max:   -1,
-			minEx: false,
-			maxEx: false,
+		ret = sl.IsInRange(RangeSpec{
+			Min:   -2,
+			Max:   -1,
+			MinEx: false,
+			MaxEx: false,
 		})
 		Expect(ret).To(Equal(false))
 
-		ret = sl.IsInRange(rangeSpec{
-			min:   9.8,
-			max:   10.1,
-			minEx: false,
-			maxEx: false,
+		ret = sl.IsInRange(RangeSpec{
+			Min:   9.8,
+			Max:   10.1,
+			MinEx: false,
+			MaxEx: false,
 		})
 		Expect(ret).To(Equal(true))
 
-		ret = sl.IsInRange(rangeSpec{
-			min:   -10,
-			max:   0,
-			minEx: false,
-			maxEx: false,
+		ret = sl.IsInRange(RangeSpec{
+			Min:   -10,
+			Max:   0,
+			MinEx: false,
+			MaxEx: false,
 		})
 		Expect(ret).To(Equal(true))
 
 		// 开区间
-		ret = sl.IsInRange(rangeSpec{
-			min:   9.9,
-			max:   10.1,
-			minEx: true,
-			maxEx: false,
+		ret = sl.IsInRange(RangeSpec{
+			Min:   9.9,
+			Max:   10.1,
+			MinEx: true,
+			MaxEx: false,
 		})
 		Expect(ret).To(Equal(false))
 
-		ret = sl.IsInRange(rangeSpec{
-			min:   -1,
-			max:   0.0,
-			minEx: false,
-			maxEx: true,
+		ret = sl.IsInRange(RangeSpec{
+			Min:   -1,
+			Max:   0.0,
+			MinEx: false,
+			MaxEx: true,
 		})
 		Expect(ret).To(Equal(false))
 	})
 
 	It("test FirstInRange and LastInRange", func() {
-		node := sl.FirstInRange(rangeSpec{
-			min:   1.0,
-			max:   9.9,
-			minEx: false,
-			maxEx: false,
+		node := sl.FirstInRange(RangeSpec{
+			Min:   1.0,
+			Max:   9.9,
+			MinEx: false,
+			MaxEx: false,
 		})
 		Expect(node.score).To(Equal(1.0))
 
-		node = sl.FirstInRange(rangeSpec{
-			min:   1.0,
-			max:   9.9,
-			minEx: true,
-			maxEx: false,
+		node = sl.FirstInRange(RangeSpec{
+			Min:   1.0,
+			Max:   9.9,
+			MinEx: true,
+			MaxEx: false,
 		})
 		Expect(node.score).To(Equal(1.1))
 
-		node = sl.LastInRange(rangeSpec{
-			min:   1.0,
-			max:   9.9,
-			minEx: false,
-			maxEx: false,
+		node = sl.LastInRange(RangeSpec{
+			Min:   1.0,
+			Max:   9.9,
+			MinEx: false,
+			MaxEx: false,
 		})
 		Expect(node.score).To(Equal(9.9))
 
-		node = sl.LastInRange(rangeSpec{
-			min:   1.0,
-			max:   9.9,
-			minEx: false,
-			maxEx: true,
+		node = sl.LastInRange(RangeSpec{
+			Min:   1.0,
+			Max:   9.9,
+			MinEx: false,
+			MaxEx: true,
 		})
 		Expect(node.score).To(Equal(9.8))
 	})
 
 	It("test DeleteRangeByScore", func() {
-		count := sl.DeleteRangeByScore(rangeSpec{
-			min:   0.0,
-			max:   0.9,
-			minEx: false,
-			maxEx: false,
+		count := sl.DeleteRangeByScore(RangeSpec{
+			Min:   0.0,
+			Max:   0.9,
+			MinEx: false,
+			MaxEx: false,
 		})
 		Expect(count).To(Equal(10))
 
-		count = sl.DeleteRangeByScore(rangeSpec{
-			min:   1.0,
-			max:   1.9,
-			minEx: true,
-			maxEx: false,
+		count = sl.DeleteRangeByScore(RangeSpec{
+			Min:   1.0,
+			Max:   1.9,
+			MinEx: true,
+			MaxEx: false,
 		})
 		Expect(count).To(Equal(9))
 
-		count = sl.DeleteRangeByScore(rangeSpec{
-			min:   2.0,
-			max:   2.9,
-			minEx: false,
-			maxEx: true,
+		count = sl.DeleteRangeByScore(RangeSpec{
+			Min:   2.0,
+			Max:   2.9,
+			MinEx: false,
+			MaxEx: true,
 		})
 		Expect(count).To(Equal(9))
 
-		count = sl.DeleteRangeByScore(rangeSpec{
-			min:   3.0,
-			max:   3.9,
-			minEx: true,
-			maxEx: true,
+		count = sl.DeleteRangeByScore(RangeSpec{
+			Min:   3.0,
+			Max:   3.9,
+			MinEx: true,
+			MaxEx: true,
 		})
 		Expect(count).To(Equal(8))
 	})

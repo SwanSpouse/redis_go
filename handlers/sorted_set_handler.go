@@ -117,10 +117,14 @@ func (handler *SortedSetHandler) ZAdd(cli *client.Client) {
 	if tss, err := getTZSetValueByKey(cli, key); err != nil {
 		cli.ResponseReError(err)
 	} else {
-		ret := tss.ZAdd(cli.Argv[2:])
-		cli.Response(ret)
-		if ret != 0 {
-			cli.Dirty += 1
+		count, err := tss.ZAdd(cli.Argv[2:])
+		if err != nil {
+			cli.ResponseReError(err)
+		} else {
+			cli.Response(count)
+			if count != 0 {
+				cli.Dirty += 1
+			}
 		}
 	}
 }
@@ -137,23 +141,85 @@ func (handler *SortedSetHandler) ZCard(cli *client.Client) {
 }
 
 func (handler *SortedSetHandler) ZCount(cli *client.Client) {
-
+	key := cli.Argv[1]
+	if tss, err := getTZSetValueByKey(cli, key); err != nil && err == re.ErrNoSuchKey {
+		cli.Response(0)
+	} else if err != nil {
+		cli.ResponseReError(err)
+	} else {
+		count, err := tss.ZCount(cli.Argv[2], cli.Argv[3])
+		if err != nil {
+			cli.ResponseReError(err)
+		} else {
+			cli.Response(count)
+		}
+	}
 }
 
 func (handler *SortedSetHandler) ZIncrBy(cli *client.Client) {
-
+	key := cli.Argv[1]
+	if err := createZSetIfNotExists(cli, key); err != nil {
+		cli.ResponseReError(err)
+		return
+	}
+	if tss, err := getTZSetValueByKey(cli, key); err != nil && err == re.ErrNoSuchKey {
+		cli.Response(0)
+	} else if err != nil {
+		cli.ResponseReError(err)
+	} else {
+		ret, err := tss.ZIncrBy(cli.Argv[2], cli.Argv[3])
+		if err != nil {
+			cli.ResponseReError(err)
+		} else {
+			cli.Response(ret)
+			cli.Dirty += 1
+		}
+	}
 }
 
 func (handler *SortedSetHandler) ZRange(cli *client.Client) {
-
+	key := cli.Argv[1]
+	if tss, err := getTZSetValueByKey(cli, key); err != nil && err == re.ErrNoSuchKey {
+		cli.ResponseReError(re.ErrEmptyListOrSet)
+	} else if err != nil {
+		cli.ResponseReError(err)
+	} else {
+		if ret, err := tss.ZRange(cli.Argv[2], cli.Argv[3]); err != nil {
+			cli.ResponseReError(err)
+		} else {
+			cli.Response(ret)
+		}
+	}
 }
 
 func (handler *SortedSetHandler) ZRangeByScore(cli *client.Client) {
-
+	key := cli.Argv[1]
+	if tss, err := getTZSetValueByKey(cli, key); err != nil && err == re.ErrNoSuchKey {
+		cli.ResponseReError(re.ErrEmptyListOrSet)
+	} else if err != nil {
+		cli.ResponseReError(err)
+	} else {
+		if ret, err := tss.ZRangeByScore(cli.Argv[2], cli.Argv[3]); err != nil {
+			cli.ResponseReError(err)
+		} else {
+			cli.Response(ret)
+		}
+	}
 }
 
 func (handler *SortedSetHandler) ZRank(cli *client.Client) {
-
+	key := cli.Argv[1]
+	if tss, err := getTZSetValueByKey(cli, key); err != nil && err == re.ErrNoSuchKey {
+		cli.Response(nil)
+	} else if err != nil {
+		cli.ResponseReError(err)
+	} else {
+		if rank, err := tss.ZRank(cli.Argv[2]); err != nil {
+			cli.ResponseReError(err)
+		} else {
+			cli.Response(rank)
+		}
+	}
 }
 
 func (handler *SortedSetHandler) ZRem(cli *client.Client) {
@@ -168,23 +234,80 @@ func (handler *SortedSetHandler) ZRem(cli *client.Client) {
 }
 
 func (handler *SortedSetHandler) ZRemRangeByRank(cli *client.Client) {
-
+	key := cli.Argv[1]
+	if tss, err := getTZSetValueByKey(cli, key); err != nil && err == re.ErrNoSuchKey {
+		cli.ResponseReError(re.ErrEmptyListOrSet)
+	} else if err != nil {
+		cli.ResponseReError(err)
+	} else {
+		if ret, err := tss.ZRemRangeByRank(cli.Argv[2], cli.Argv[3]); err != nil {
+			cli.ResponseReError(err)
+		} else {
+			cli.Response(ret)
+			cli.Dirty += int64(ret)
+		}
+	}
 }
 
 func (handler *SortedSetHandler) ZRemRangeByScore(cli *client.Client) {
-
+	key := cli.Argv[1]
+	if tss, err := getTZSetValueByKey(cli, key); err != nil && err == re.ErrNoSuchKey {
+		cli.ResponseReError(re.ErrEmptyListOrSet)
+	} else if err != nil {
+		cli.ResponseReError(err)
+	} else {
+		if ret, err := tss.ZRemRangeByScore(cli.Argv[2], cli.Argv[3]); err != nil {
+			cli.ResponseReError(err)
+		} else {
+			cli.Response(ret)
+			cli.Dirty += int64(ret)
+		}
+	}
 }
 
 func (handler *SortedSetHandler) ZRevRange(cli *client.Client) {
-
+	key := cli.Argv[1]
+	if tss, err := getTZSetValueByKey(cli, key); err != nil && err == re.ErrNoSuchKey {
+		cli.ResponseReError(re.ErrEmptyListOrSet)
+	} else if err != nil {
+		cli.ResponseReError(err)
+	} else {
+		if ret, err := tss.ZRevRange(cli.Argv[2], cli.Argv[3]); err != nil {
+			cli.ResponseReError(err)
+		} else {
+			cli.Response(ret)
+		}
+	}
 }
 
 func (handler *SortedSetHandler) ZRevRangeByScore(cli *client.Client) {
-
+	key := cli.Argv[1]
+	if tss, err := getTZSetValueByKey(cli, key); err != nil && err == re.ErrNoSuchKey {
+		cli.ResponseReError(re.ErrEmptyListOrSet)
+	} else if err != nil {
+		cli.ResponseReError(err)
+	} else {
+		if ret, err := tss.ZRevRangeByScore(cli.Argv[2], cli.Argv[3]); err != nil {
+			cli.ResponseReError(err)
+		} else {
+			cli.Response(ret)
+		}
+	}
 }
 
 func (handler *SortedSetHandler) ZRevRank(cli *client.Client) {
-
+	key := cli.Argv[1]
+	if tss, err := getTZSetValueByKey(cli, key); err != nil && err == re.ErrNoSuchKey {
+		cli.ResponseReError(re.ErrEmptyListOrSet)
+	} else if err != nil {
+		cli.ResponseReError(err)
+	} else {
+		if ret, err := tss.ZRevRank(cli.Argv[2]); err != nil {
+			cli.ResponseReError(err)
+		} else {
+			cli.Response(ret)
+		}
+	}
 }
 
 func (handler *SortedSetHandler) ZScore(cli *client.Client) {
@@ -194,7 +317,10 @@ func (handler *SortedSetHandler) ZScore(cli *client.Client) {
 	} else if err != nil {
 		cli.ResponseReError(err)
 	} else {
-		score := tss.ZScore(cli.Argv[2])
-		cli.Response(util.FloatToSimpleString(score))
+		if score, err := tss.ZScore(cli.Argv[2]); err == re.ErrNoSuchKey {
+			cli.Response(nil)
+		} else {
+			cli.Response(util.FloatToSimpleString(score))
+		}
 	}
 }

@@ -12,6 +12,8 @@ var (
 	_ THash = (*encodings.HashDict)(nil)
 
 	_ TSet = (*encodings.HashSet)(nil)
+
+	_ TZSet = (*encodings.SortedSet)(nil)
 )
 
 type TBase interface {
