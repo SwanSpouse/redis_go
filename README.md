@@ -17,6 +17,7 @@ Redis原始源码来自： https://github.com/antirez/redis
 * [redis RDB](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/redis/redis_rdb.md)
 * [redis 复制](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/redis/redis_duplicate.md)
 * [redis 事务](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/redis/redis_transaction.md)
+* [redis sentinel](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/redis/redis_sentinel.md)
 
 #### socket
 * [golang socket](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/socket/socket.md)

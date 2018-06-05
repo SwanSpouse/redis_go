@@ -64,6 +64,8 @@ Sentinel对__sentinel__:hello 频道的订阅会一直持续到Sentinel与服务
 
 当Sentinel通过频道信息发现一个新的Sentinel时，它不仅会为新的Sentinel在sentinels字典中创建相应的实例结构，还会创建一个连向新Sentinel的命令连接，而新的Sentinel同样会创建向这个Sentinel的命令连接。
 
+无须为运行的每个 Sentinel 分别设置其他 Sentinel 的地址， 因为 Sentinel 可以通过发布与订阅功能来自动发现正在监视相同主服务器的其他 Sentinel ， 这一功能是通过向频道 __sentinel__:hello 发送信息来实现的。
+
 #### 检测主观下线状态
 
 默认情况下，Sentinel会以每秒一次的频率向所有与它创建了命令连接的实例（包括主服务器，从服务器，其他Sentinel在内）发送PING命令，并通过返回值来判断实例是否在线。
@@ -72,14 +74,22 @@ Sentinel对__sentinel__:hello 频道的订阅会一直持续到Sentinel与服务
 
 #### 检查客观下线状态
 
-当一个Sentinel将一个服务器判断为主观下线之后，为了确认这个服务器是否真的下线了，它会向同样监视这一服务器的其他Sentinel进行询问。当Sentinel从其他Sentinel那里接收到足够数量的已下线判断之后，
-Sentinel就会将服务器判定为客观下线。
+当一个Sentinel将一个主服务器判断为主观下线之后，为了确认这个主服务器是否真的下线了，它会向同样监视这一主服务器的其他Sentinel进行询问。当Sentinel从其他Sentinel那里接收到足够数量的已下线判断之后，
+Sentinel就会将主服务器判定为客观下线。
 
 * 使用SENTINEL is-master-down-by-addr <ip> <port> <current_epoch> <run_id> 命令询问其他Sentinel是否同意服务器已下线
 
 * 接收到SENTINEL is-master-down-by-addr命令时，会检查目标服务器是否已下线，然后对命令进行回复。
 
 * 判断客观下线的条件：根据配置文件配置的数量。sentinel monitor master 127.0.0.1 6379 2，包括当前Sentinel在内，如果有两个Sentinel认为服务器已经下线，当前Sentinel就将服务器判断为客观下线。
+
+#### 主观下线到客观下线
+
+从主观下线状态切换到客观下线状态并没有使用严格的法定人数算法（strong quorum algorithm）， 而是使用了流言协议： 如果 Sentinel 在给定的时间范围内， 从其他 Sentinel 那里接收到了足够数量的主服务器下线报告， 那么 Sentinel 就会将主服务器的状态从主观下线改变为客观下线。 如果之后其他 Sentinel 不再报告主服务器已下线， 那么客观下线状态就会被移除。
+
+客观下线条件只适用于主服务器： 对于任何其他类型的 Redis 实例， Sentinel 在将它们判断为下线前不需要进行协商， 所以从服务器或者其他 Sentinel 永远不会达到客观下线条件。
+
+只要一个 Sentinel 发现某个主服务器进入了客观下线状态， 这个 Sentinel 就可能会被其他 Sentinel 推选出， 并对失效的主服务器执行自动故障迁移操作。
 
 #### redis领头sentinel选举规则
 
@@ -103,7 +113,7 @@ Sentinel的局部领头Sentinel的运行ID和配置纪元。
 源Sentinel在接收到目标Sentinel返回的命令之后，会检查回复中的leader_epoch参数的值和自己的配置纪元是否相同，如果相同的话，那么源Sentinel继续取出回复中的leader_runid参数，
 如果leader_runid参数的值和源Sentinel的运行ID一致，那么表示目标Sentinel将源Sentinel设置成了局部领头Sentinel。
 
-如果有某个Sentinel被板书以上的Sentinel设置成了局部领头Sentinel，那么这个Sentinel成为领头Sentinel。在一个由10个Sentinel组成的Sentinel系统里面，只要有大于等于10/2+1=6个
+如果有某个Sentinel被半数以上的Sentinel设置成了局部领头Sentinel，那么这个Sentinel成为领头Sentinel。在一个由10个Sentinel组成的Sentinel系统里面，只要有大于等于10/2+1=6个
 Sentinel将某个Sentinel设置为局部领头Sentinel，那么被设置的那个Sentinel就会成为领头Sentinel。
 
 因为领头Sentinel的产生需要半数以上的Sentinel支持，并且每个Sentinel在每个配置纪元里面只能设置一次局部领头Sentinel，所以在一个配置纪元里面，只会出现一个领头Sentinel。
