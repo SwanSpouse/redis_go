@@ -13,6 +13,7 @@ Redis原始源码来自： https://github.com/antirez/redis
 
 #### redis
 * [redis](https://github.com/antirez/redis)
+* [redis version info ](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/redis/redis_version.md)
 * [一次完整的客户端与服务器连接事件示例](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/redis/conn_event.md)
 * [redis RDB](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/redis/redis_rdb.md)
 * [redis 复制](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/redis/redis_duplicate.md)
