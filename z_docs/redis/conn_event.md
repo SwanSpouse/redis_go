@@ -52,6 +52,10 @@ if (c->bufpos == 0 && listLength(c->reply) == 0) {
 }
 ```
 
+#### 流程图
+
+![server-client-communication](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/redis/server_client_communication.png?raw=true)
+
 
 #### 思考
 
