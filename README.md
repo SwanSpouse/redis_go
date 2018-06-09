@@ -34,10 +34,10 @@ Redis原始源码来自： https://github.com/antirez/redis
 * [hash code](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/framework/hash_code.md)
 * [new redis go server model](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/framework/redis_go_server_model.md)
 
-
 #### 数据库
 * [数据库事务](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/database/db_transaction.md)
 * [数据库锁和索引](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/database/database_index.md)
+* [数据库SQL语句执行顺序](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/database/database_sql_order.md)
 
 #### data type
 * [Hash表实现](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/data_type/redis_go_dict.md)
