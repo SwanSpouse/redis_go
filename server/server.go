@@ -44,7 +44,6 @@ func NewServer(config *conf.ServerConfig) *Server {
 		Config:       config,
 		commandTable: make(map[string]*client.Command),
 	}
-	loggers.Info("redis server config: %+v", config)
 	// init general parameters
 	server.initServer()
 	// init Reader & Writer Sync Pool

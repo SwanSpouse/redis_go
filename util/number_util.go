@@ -31,5 +31,9 @@ func FormatFloatString(input string) (string, error) {
 
 // 最高保留6位精度
 func FloatToSimpleString(input float64) string {
-	return strings.TrimRight(fmt.Sprintf("%.6f", input), "0")
+	ret := strings.TrimRight(fmt.Sprintf("%.6f", input), "0")
+	if len(ret) > 0 && ret[len(ret)-1] == '.' {
+		ret += "0"
+	}
+	return ret
 }

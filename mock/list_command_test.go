@@ -1,4 +1,4 @@
-package mock
+package mock_test
 
 import (
 	"fmt"
@@ -9,15 +9,9 @@ import (
 	"redis_go/loggers"
 	"redis_go/protocol"
 	"redis_go/server"
-	"testing"
 )
 
-func TestRedisListCommands(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Test Redis String Commands")
-}
-
-var _ = Describe("TestRedisListCommand", func() {
+var _ = FDescribe("TestRedisListCommand", func() {
 	var cn net.Conn
 	var w *protocol.RequestWriter
 	var r *protocol.ResponseReader
@@ -29,6 +23,7 @@ var _ = Describe("TestRedisListCommand", func() {
 		loggers.Errorf("server start error %+v", err)
 	}
 	go srv.Serve(lis)
+	loggers.Info("redis server start at %s:%s", "127.0.0.1", "9732")
 
 	BeforeEach(func() {
 		cn, err = net.Dial("tcp", "127.0.0.1:9732")
@@ -50,7 +45,9 @@ var _ = Describe("TestRedisListCommand", func() {
 	AfterEach(func() {
 		w.WriteCmdString(handlers.RedisKeyCommandDel, commonKey)
 		w.Flush()
-		cn.Close()
+		ret, err := r.Read()
+		Expect(err).To(BeNil())
+		Expect(ret[0]).To(Equal("1"))
 	})
 
 	It("test redis list command LPush LPop LLen", func() {
@@ -210,5 +207,8 @@ var _ = Describe("TestRedisListCommand", func() {
 		ret, err = r.Read()
 		Expect(err).To(BeNil())
 		Expect(ret[0]).To(Equal("5"))
+
+		w.WriteCmdString(handlers.RedisKeyCommandDel, curKey)
+		w.Flush()
 	})
 })

@@ -1,4 +1,4 @@
-package mock
+package mock_test
 
 import (
 	"fmt"
@@ -9,19 +9,9 @@ import (
 	"redis_go/loggers"
 	"redis_go/protocol"
 	"redis_go/server"
-	"testing"
 )
 
-func TestWriteTest(t *testing.T) {
-	// 编写Test的时候在这里写，写好了再迁移到Describe里
-}
-
-func TestRedisStringCommands(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Test Redis String Commands")
-}
-
-var _ = Describe("TestRedisStringCommand", func() {
+var _ = FDescribe("TestRedisStringCommand", func() {
 	var cn net.Conn
 	var w *protocol.RequestWriter
 	var r *protocol.ResponseReader
@@ -32,15 +22,12 @@ var _ = Describe("TestRedisStringCommand", func() {
 		loggers.Errorf("server start error %+v", err)
 	}
 	go srv.Serve(lis)
+	loggers.Info("redis server start at %s:%s", "127.0.0.1", "9731")
 
 	BeforeEach(func() {
 		cn, err = net.Dial("tcp", "127.0.0.1:9731")
 		w = protocol.NewRequestWriter(cn)
 		r = protocol.NewResponseReader(cn)
-	})
-
-	AfterEach(func() {
-		cn.Close()
 	})
 
 	It("test redis string command set and get", func() {

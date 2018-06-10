@@ -22,6 +22,7 @@ func NewRequestWriter(wr io.Writer) *RequestWriter {
 
 func (w *RequestWriter) Reset(wr io.Writer) {
 	w.w.Reset(wr)
+	w.w = nil
 }
 
 func (w *RequestWriter) Buffered() int {

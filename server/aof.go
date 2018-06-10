@@ -51,7 +51,7 @@ func (srv *Server) propagate(c *client.Client) {
 
 	// 将命令写入srv的 aof_buf，下次同步到aof文件的时候这些数据就会被刷新到文件中。
 	srv.aofBuf = append(srv.aofBuf, outBuf...)
-	loggers.Debug("current aof bug:%s", string(srv.aofBuf))
+	loggers.Debug("current aof debug:%s", string(srv.aofBuf))
 }
 
 func (srv *Server) flushAppendOnlyFile() {

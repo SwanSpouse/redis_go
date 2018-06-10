@@ -13,7 +13,7 @@ import (
 
 const (
 	MaximumCapacity         = 1 << 30
-	DefaultCapacity         = 1 << 4
+	DefaultCapacity         = 1 << 6
 	DefaultConcurrencyLevel = 16
 	MaxSegments             = 1 << 16
 	MinSegmentTableCapacity = 2

@@ -1,4 +1,4 @@
-package mock
+package mock_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -8,15 +8,9 @@ import (
 	"redis_go/loggers"
 	"redis_go/protocol"
 	"redis_go/server"
-	"testing"
 )
 
-func TestRedisKeyCommand(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Test Redis key command")
-}
-
-var _ = Describe("Test Redis key command", func() {
+var _ = FDescribe("Test Redis key command", func() {
 	var cn net.Conn
 	var w *protocol.RequestWriter
 	var r *protocol.ResponseReader
@@ -27,8 +21,8 @@ var _ = Describe("Test Redis key command", func() {
 		loggers.Errorf("server start error %+v", err)
 		return
 	}
-
 	go srv.Serve(lis)
+	loggers.Info("redis server start at %s:%s", "127.0.0.1", "9738")
 
 	BeforeEach(func() {
 		cn, err = net.Dial("tcp", "127.0.0.1:9738")
@@ -36,10 +30,6 @@ var _ = Describe("Test Redis key command", func() {
 
 		w = protocol.NewRequestWriter(cn)
 		r = protocol.NewResponseReader(cn)
-	})
-
-	AfterEach(func() {
-		cn.Close()
 	})
 
 	It("test key command exists and del", func() {

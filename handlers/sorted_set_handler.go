@@ -214,8 +214,8 @@ func (handler *SortedSetHandler) ZRank(cli *client.Client) {
 	} else if err != nil {
 		cli.ResponseReError(err)
 	} else {
-		if rank, err := tss.ZRank(cli.Argv[2]); err != nil {
-			cli.ResponseReError(err)
+		if rank, err := tss.ZRank(cli.Argv[2]); err != nil && err == re.ErrNoSuchKey {
+			cli.Response(nil)
 		} else {
 			cli.Response(rank)
 		}
