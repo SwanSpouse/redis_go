@@ -185,7 +185,7 @@ func (c *Client) ProcessInputBuffer() error {
 		}
 	}
 	c.Argc = len(c.Argv)
-	loggers.Info("ProcessInputBuffer we have %d args, argv: %+v", c.Argc, c.Argv)
+	loggers.Info("server receive:%d args, argv:%+v", c.Argc, c.Argv)
 	return nil
 }
 
@@ -233,6 +233,7 @@ func (c *Client) Response(value interface{}) {
 	if c.IsFakeClient() {
 		return
 	}
+	loggers.Debug("server response:%+v", value)
 	c.writer.Append(value)
 }
 
@@ -260,6 +261,7 @@ func (c *Client) ResponseReError(err error, args ...interface{}) {
 		loggers.Errorf("fake client receive a error:%+v", err)
 		return
 	}
+	loggers.Debug("server response error:%+v args:%+v", err, args)
 	if re.IsProtocolError(err) {
 		switch err {
 		case re.ErrNilValue:

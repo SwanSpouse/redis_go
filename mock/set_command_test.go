@@ -1,4 +1,4 @@
-package mock
+package mock_test
 
 import (
 	"fmt"
@@ -9,15 +9,9 @@ import (
 	"redis_go/loggers"
 	"redis_go/protocol"
 	"redis_go/server"
-	"testing"
 )
 
-func TestRedisSetCommands(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Test Redis Set Commands")
-}
-
-var _ = Describe("TestRedisSetCommand", func() {
+var _ = FDescribe("TestRedisSetCommand", func() {
 	var cn net.Conn
 	var w *protocol.RequestWriter
 	var r *protocol.ResponseReader
@@ -30,6 +24,7 @@ var _ = Describe("TestRedisSetCommand", func() {
 		loggers.Errorf("server start error %+v", err)
 	}
 	go srv.Serve(lis)
+	loggers.Info("redis server start at %s:%s", "127.0.0.1", "9734")
 
 	BeforeEach(func() {
 		cn, err = net.Dial("tcp", "127.0.0.1:9734")
@@ -52,7 +47,9 @@ var _ = Describe("TestRedisSetCommand", func() {
 	AfterEach(func() {
 		w.WriteCmdString(handlers.RedisKeyCommandDel, setCmdTestBaseKey)
 		w.Flush()
-		cn.Close()
+		ret, err := r.Read()
+		Expect(err).To(BeNil())
+		Expect(ret[0]).To(Equal("1"))
 	})
 
 	It("Test redis set command SAdd SCard", func() {

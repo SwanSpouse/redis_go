@@ -327,7 +327,7 @@ func (sl *SkipList) DeleteRangeByRank(start, end int) int {
 	return removed
 }
 
-// 获取obj在score在有序集中的排名。不存在返回0
+// 获取obj的score在有序集中的排名。不存在返回0
 func (sl *SkipList) GetRank(obj string, score float64) int {
 	rank := 0
 	cur := sl.header
@@ -345,7 +345,7 @@ func (sl *SkipList) GetRank(obj string, score float64) int {
 	return 0
 }
 
-// 根据元素的排名来查找元素
+// 根据元素的排名来查找元素 第一个元素的排名是1
 func (sl *SkipList) GetElementByRank(rank int) *SkipNode {
 	traversed := 0
 	cur := sl.header

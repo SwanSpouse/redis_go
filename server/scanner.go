@@ -3,6 +3,7 @@ package server
 import (
 	"io"
 	"redis_go/client"
+	"redis_go/conf"
 	re "redis_go/error"
 	"redis_go/loggers"
 	"strings"
@@ -35,7 +36,6 @@ func (srv *Server) scanClients() {
 			}
 		}
 		srv.mu.Unlock()
-		//runtime.Gosched() TODO lmj 加上这行代码会有bug
 	}
 }
 
@@ -49,6 +49,8 @@ func (srv *Server) handlerCommand(c *client.Client) {
 	defer atomic.StoreUint32(&c.Status, client.RedisClientStatusIdle)
 	//c.SetIdleTimeout(5 * time.Hour)
 	//c.SetExecTimeout(5 * time.Second)
+
+	loggers.Info("handler command from client:%s", c.RemoteAddr())
 	// ReadCmd这里会阻塞知道有数据或者客户端断开连接
 	if err := c.ProcessInputBuffer(); err != nil && err == io.EOF {
 		c.Close()
@@ -102,12 +104,13 @@ func (srv *Server) handlerCommand(c *client.Client) {
 		}
 
 		// 在这里判断命令是否要发送到aof_buf或者Aof文件
-		if c.Cmd.Flags&client.RedisCmdWrite > 0 && c.Dirty != 0 {
+		if srv.Config.AofState == conf.RedisAofOn && c.Cmd.Flags&client.RedisCmdWrite > 0 && c.Dirty != 0 {
 			loggers.Debug("Client exec a write cmd or make db dirty")
 			srv.propagate(c)
+
+			// 将srv aof_buf中的数据同步到文件中
+			//srv.flushAppendOnlyFile()
+			c.Dirty = 0
 		}
-		// 将srv aof_buf中的数据同步到文件中
-		//srv.flushAppendOnlyFile()
-		c.Dirty = 0
 	}
 }

@@ -87,8 +87,8 @@ func NewBufIoWriter(cn net.Conn) *BufIoWriter {
 	return w
 }
 
-func (b *BufIoWriter) ReturnBufIoWriter() {
-	WriterPool.Put(b)
+func (w *BufIoWriter) ReturnBufIoWriter() {
+	WriterPool.Put(w)
 }
 
 func NewBufIoWriterWithoutConn() *BufIoWriter {
@@ -96,132 +96,132 @@ func NewBufIoWriterWithoutConn() *BufIoWriter {
 }
 
 // returns the number of buffered bytes
-func (b *BufIoWriter) Buffered() int {
-	b.mu.Lock()
-	n := len(b.buf)
-	b.mu.Unlock()
+func (w *BufIoWriter) Buffered() int {
+	w.mu.Lock()
+	n := len(w.buf)
+	w.mu.Unlock()
 	return n
 }
 
-func (b *BufIoWriter) appendSize(c byte, n int64) {
-	b.buf = append(b.buf, c)
-	b.buf = append(b.buf, strconv.FormatInt(n, 10)...)
-	b.buf = append(b.buf, BinCRLF...)
+func (w *BufIoWriter) appendSize(c byte, n int64) {
+	w.buf = append(w.buf, c)
+	w.buf = append(w.buf, strconv.FormatInt(n, 10)...)
+	w.buf = append(w.buf, BinCRLF...)
 }
 
-func (b *BufIoWriter) reset(buf []byte, wr io.Writer) {
-	*b = BufIoWriter{buf: buf[:0], Writer: wr}
+func (w *BufIoWriter) reset(buf []byte, wr io.Writer) {
+	*w = BufIoWriter{buf: buf[:0], Writer: wr}
 }
 
-func (b *BufIoWriter) flush() error {
-	if len(b.buf) == 0 {
+func (w *BufIoWriter) flush() error {
+	if len(w.buf) == 0 {
 		return nil
 	}
 
-	if _, err := b.Write(b.buf); err != nil {
+	if _, err := w.Write(w.buf); err != nil {
 		return err
 	}
-	b.buf = b.buf[:0]
+	w.buf = w.buf[:0]
 	return nil
 }
 
 // appends an array header  to the output buffer
-func (b *BufIoWriter) AppendArrayLen(n int) {
-	b.mu.Lock()
-	b.appendSize('*', int64(n))
-	b.mu.Unlock()
+func (w *BufIoWriter) AppendArrayLen(n int) {
+	w.mu.Lock()
+	w.appendSize('*', int64(n))
+	w.mu.Unlock()
 }
 
 // appends bulk bytes to the output buffer
-func (b *BufIoWriter) AppendBulk(p []byte) {
-	b.mu.Lock()
-	b.appendSize('$', int64(len(p)))
-	b.buf = append(b.buf, p...)
-	b.buf = append(b.buf, BinCRLF...)
-	b.mu.Unlock()
+func (w *BufIoWriter) AppendBulk(p []byte) {
+	w.mu.Lock()
+	w.appendSize('$', int64(len(p)))
+	w.buf = append(w.buf, p...)
+	w.buf = append(w.buf, BinCRLF...)
+	w.mu.Unlock()
 }
 
 // appends a bulk string to the output buffer
-func (b *BufIoWriter) AppendBulkString(s string) {
-	b.mu.Lock()
-	b.appendSize('$', int64(len(s)))
-	b.buf = append(b.buf, s...)
-	b.buf = append(b.buf, BinCRLF...)
-	b.mu.Unlock()
+func (w *BufIoWriter) AppendBulkString(s string) {
+	w.mu.Lock()
+	w.appendSize('$', int64(len(s)))
+	w.buf = append(w.buf, s...)
+	w.buf = append(w.buf, BinCRLF...)
+	w.mu.Unlock()
 }
 
 // appends inline bytes to the output buffer
-func (b *BufIoWriter) AppendInline(p []byte) {
-	b.mu.Lock()
-	b.buf = append(b.buf, '+')
-	b.buf = append(b.buf, p...)
-	b.buf = append(b.buf, BinCRLF...)
-	b.mu.Unlock()
+func (w *BufIoWriter) AppendInline(p []byte) {
+	w.mu.Lock()
+	w.buf = append(w.buf, '+')
+	w.buf = append(w.buf, p...)
+	w.buf = append(w.buf, BinCRLF...)
+	w.mu.Unlock()
 }
 
 // appends an inline string to the output buffer
-func (b *BufIoWriter) AppendInlineString(s string) {
-	b.mu.Lock()
-	b.buf = append(b.buf, '+')
-	b.buf = append(b.buf, s...)
-	b.buf = append(b.buf, BinCRLF...)
-	b.mu.Unlock()
+func (w *BufIoWriter) AppendInlineString(s string) {
+	w.mu.Lock()
+	w.buf = append(w.buf, '+')
+	w.buf = append(w.buf, s...)
+	w.buf = append(w.buf, BinCRLF...)
+	w.mu.Unlock()
 }
 
 // appends an error message to the output buffer
-func (b *BufIoWriter) AppendError(msg string) {
-	b.mu.Lock()
-	b.buf = append(b.buf, '-')
-	b.buf = append(b.buf, msg...)
-	b.buf = append(b.buf, BinCRLF...)
-	b.mu.Unlock()
+func (w *BufIoWriter) AppendError(msg string) {
+	w.mu.Lock()
+	w.buf = append(w.buf, '-')
+	w.buf = append(w.buf, msg...)
+	w.buf = append(w.buf, BinCRLF...)
+	w.mu.Unlock()
 }
 
-func (b *BufIoWriter) AppendErrorf(pattern string, args ...interface{}) {
-	b.AppendError(fmt.Sprintf(pattern, args...))
+func (w *BufIoWriter) AppendErrorf(pattern string, args ...interface{}) {
+	w.AppendError(fmt.Sprintf(pattern, args...))
 }
 
 // appends a numeric response to the output buffer
-func (b *BufIoWriter) AppendInt(n int64) {
-	b.mu.Lock()
+func (w *BufIoWriter) AppendInt(n int64) {
+	w.mu.Lock()
 	switch n {
 	case 0:
-		b.buf = append(b.buf, BinZERO...)
+		w.buf = append(w.buf, BinZERO...)
 	case 1:
-		b.buf = append(b.buf, BinONE...)
+		w.buf = append(w.buf, BinONE...)
 	default:
-		b.buf = append(b.buf, ':')
-		b.buf = append(b.buf, strconv.FormatInt(n, 10)...)
-		b.buf = append(b.buf, BinCRLF...)
+		w.buf = append(w.buf, ':')
+		w.buf = append(w.buf, strconv.FormatInt(n, 10)...)
+		w.buf = append(w.buf, BinCRLF...)
 	}
-	b.mu.Unlock()
+	w.mu.Unlock()
 }
 
 // appends a nil-value to the output
-func (b *BufIoWriter) AppendNil() {
-	b.mu.Lock()
-	b.buf = append(b.buf, BinNIL...)
-	b.mu.Unlock()
+func (w *BufIoWriter) AppendNil() {
+	w.mu.Lock()
+	w.buf = append(w.buf, BinNIL...)
+	w.mu.Unlock()
 }
 
 // appends OK to the output buffer
-func (b *BufIoWriter) AppendOK() {
-	b.mu.Lock()
-	b.buf = append(b.buf, BinOK...)
-	b.mu.Unlock()
+func (w *BufIoWriter) AppendOK() {
+	w.mu.Lock()
+	w.buf = append(w.buf, BinOK...)
+	w.mu.Unlock()
 }
 
 // flush pending buffer
-func (b *BufIoWriter) Flush() error {
-	b.mu.Lock()
-	err := b.flush()
-	defer b.mu.Unlock()
+func (w *BufIoWriter) Flush() error {
+	w.mu.Lock()
+	err := w.flush()
+	defer w.mu.Unlock()
 	return err
 }
 
 // resets the writer with an new interface
-func (b *BufIoWriter) Reset(w io.Writer) {
-	b.reset(MkStdBuffer(), w)
+func (w *BufIoWriter) Reset(writer io.Writer) {
+	w.reset(MkStdBuffer(), writer)
 }
 
 // Append implements ResponseWriter
@@ -308,9 +308,9 @@ func (w *BufIoWriter) Append(v interface{}) error {
 }
 
 // 来啥写啥，一点儿不变
-func (b *BufIoWriter) AppendRawString(rawInput []byte) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
+func (w *BufIoWriter) AppendRawString(rawInput []byte) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
 	loggers.Debug("raw string %s", string(rawInput))
-	b.buf = append(b.buf, rawInput...)
+	w.buf = append(w.buf, rawInput...)
 }

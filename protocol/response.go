@@ -22,6 +22,11 @@ func NewResponseReader(rd io.Reader) *ResponseReader {
 	return &ResponseReader{r: r}
 }
 
+func (r *ResponseReader) Reset(rd io.Reader) {
+	r.r.Reset(rd)
+	r.r = nil
+}
+
 func (r *ResponseReader) PeekType() (tcp.ResponseType, error) {
 	return r.r.PeekType()
 }
@@ -60,8 +65,6 @@ func (r *ResponseReader) Read() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	loggers.Debug("RESPONSE TYPE %s", responseType.String())
 
 	switch responseType {
 	case tcp.TypeInt:

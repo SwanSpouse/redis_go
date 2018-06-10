@@ -76,8 +76,18 @@ func (ss *SortedSet) ZCount(lower, upper string) (int, error) {
 	firstNode := skipList.FirstInRange(raw_type.RangeSpec{
 		Min: fLower, Max: fUpper, MinEx: false, MaxEx: false,
 	})
+
+	lastNode := skipList.LastInRange(raw_type.RangeSpec{
+		Min: fLower, Max: fUpper, MinEx: false, MaxEx: false,
+	})
+	if firstNode != nil && firstNode == lastNode {
+		return 1, nil
+	}
 	count := 0
-	for cur := firstNode; cur != nil; cur.GetNextNode() {
+	for cur := firstNode; cur != lastNode; cur = cur.GetNextNode() {
+		count += 1
+	}
+	if lastNode != nil && firstNode != lastNode {
 		count += 1
 	}
 	return count, nil
@@ -110,20 +120,20 @@ func (ss *SortedSet) ZRange(lower, upper string) ([]string, error) {
 	skipList := ss.GetValue().(*raw_type.SkipList)
 	ret := make([]string, 0)
 
-	if iLower > skipList.Length() || -iLower > skipList.Length() {
+	if iLower > skipList.Length() || -iLower >= skipList.Length() {
 		return ret, re.ErrEmptyListOrSet
 	}
-	if (iLower > 0 && iUpper > 0) || (iLower < 0 && iUpper < 0) && iLower > iUpper {
+	if ((iLower > 0 && iUpper > 0) || (iLower < 0 && iUpper < 0)) && iLower > iUpper {
 		return ret, re.ErrEmptyListOrSet
 	}
 	if iLower < 0 {
-		iLower = skipList.Length() - 1 + iLower
+		iLower = skipList.Length() + iLower
 	}
 	if iUpper < 0 {
-		iUpper = skipList.Length() - 1 + iUpper
+		iUpper = skipList.Length() + iUpper
 	}
-	endNode := skipList.GetElementByRank(iUpper)
-	for cur := skipList.GetElementByRank(iLower); cur != endNode; cur.GetNextNode() {
+	endNode := skipList.GetElementByRank(iUpper + 1)
+	for cur := skipList.GetElementByRank(iLower + 1); cur != endNode; cur = cur.GetNextNode() {
 		ret = append(ret, cur.GetValue())
 		ret = append(ret, util.FloatToSimpleString(cur.GetScore()))
 	}
@@ -147,7 +157,7 @@ func (ss *SortedSet) ZRangeByScore(lower, upper string) ([]string, error) {
 		Min: fLower, Max: fUpper, MinEx: false, MaxEx: false,
 	}
 	endNode := skipList.LastInRange(spec)
-	for cur := skipList.FirstInRange(spec); cur != endNode; cur.GetNextNode() {
+	for cur := skipList.FirstInRange(spec); cur != endNode; cur = cur.GetNextNode() {
 		ret = append(ret, cur.GetValue())
 		ret = append(ret, util.FloatToSimpleString(cur.GetScore()))
 	}
@@ -173,7 +183,7 @@ func (ss *SortedSet) ZRevRange(lower, upper string) ([]string, error) {
 }
 
 func (ss *SortedSet) ZRevRangeByScore(lower, upper string) ([]string, error) {
-	if ret, err := ss.ZRange(lower, upper); err != nil {
+	if ret, err := ss.ZRangeByScore(lower, upper); err != nil {
 		return ret, nil
 	} else {
 		revRet := make([]string, len(ret))
@@ -191,7 +201,7 @@ func (ss *SortedSet) ZRank(key string) (int, error) {
 		return 0, re.ErrNoSuchKey
 	} else {
 		skipList := ss.GetValue().(*raw_type.SkipList)
-		return skipList.GetRank(key, obj.GetScore()), nil
+		return skipList.GetRank(key, obj.GetScore()) - 1, nil
 	}
 }
 
@@ -219,14 +229,26 @@ func (ss *SortedSet) ZRem(inputs []string) int {
 	return count
 }
 
-func (ss *SortedSet) ZRemRangeByRank(start, end string) (int, error) {
-	iStart, err1 := strconv.Atoi(start)
-	iEnd, err2 := strconv.Atoi(end)
+func (ss *SortedSet) ZRemRangeByRank(lower, upper string) (int, error) {
+	iLower, err1 := strconv.Atoi(lower)
+	iUpper, err2 := strconv.Atoi(upper)
 	if err1 != nil || err2 != nil {
 		return 0, re.ErrNotIntegerOrOutOfRange
 	}
 	skipList := ss.GetValue().(*raw_type.SkipList)
-	return skipList.DeleteRangeByRank(iStart, iEnd), nil
+	if iLower > skipList.Length() || -iLower > skipList.Length() {
+		return 0, re.ErrEmptyListOrSet
+	}
+	if ((iLower > 0 && iUpper > 0) || (iLower < 0 && iUpper < 0)) && iLower > iUpper {
+		return 0, re.ErrEmptyListOrSet
+	}
+	if iLower < 0 {
+		iLower = skipList.Length() - 1 + iLower
+	}
+	if iUpper < 0 {
+		iUpper = skipList.Length() - 1 + iUpper
+	}
+	return skipList.DeleteRangeByRank(iLower+1, iUpper+1), nil
 }
 
 func (ss *SortedSet) ZRemRangeByScore(lower, upper string) (int, error) {

@@ -54,7 +54,7 @@ func (handler *ListHandler) Process(cli *client.Client) {
 	case RedisListCommandLPush:
 		handler.LPush(cli)
 	case RedisListCommandLPushX:
-		handler.LPushX(cli)
+		cli.ResponseReError(re.ErrFunctionNotImplement)
 	case RedisListCommandLRange:
 		handler.LRange(cli)
 	case RedisListCommandLRem:
@@ -66,11 +66,11 @@ func (handler *ListHandler) Process(cli *client.Client) {
 	case RedisListCommandRPop:
 		handler.RPop(cli)
 	case RedisListCommandRPopLPush:
-		handler.RPopLPush(cli)
+		cli.ResponseReError(re.ErrFunctionNotImplement)
 	case RedisListCommandRPush:
 		handler.RPush(cli)
 	case RedisListCommandRpushX:
-		handler.RPushX(cli)
+		cli.ResponseReError(re.ErrFunctionNotImplement)
 	case RedisListCommandLDebug:
 		handler.Debug(cli)
 	default:
@@ -182,10 +182,6 @@ func (handler *ListHandler) LPush(cli *client.Client) {
 	}
 }
 
-func (handler *ListHandler) LPushX(cli *client.Client) {
-
-}
-
 func (handler *ListHandler) LRange(cli *client.Client) {
 	key := cli.Argv[1]
 	if ts, err := getTListValueByKey(cli, key); err != nil && err != re.ErrNoSuchKey {
@@ -205,7 +201,7 @@ func (handler *ListHandler) LRange(cli *client.Client) {
 
 func (handler *ListHandler) LRem(cli *client.Client) {
 	key := cli.Argv[1]
-	if ts, err := getTListValueByKey(cli, key); err != nil && err != re.ErrNoSuchKey {
+	if ts, err := getTListValueByKey(cli, key); err != nil {
 		cli.ResponseReError(err)
 	} else {
 		index, err := strconv.Atoi(cli.Argv[2])
@@ -220,7 +216,7 @@ func (handler *ListHandler) LRem(cli *client.Client) {
 
 func (handler *ListHandler) LSet(cli *client.Client) {
 	key := cli.Argv[1]
-	if ts, err := getTListValueByKey(cli, key); err != nil && err != re.ErrNoSuchKey {
+	if ts, err := getTListValueByKey(cli, key); err != nil {
 		cli.ResponseReError(err)
 	} else {
 		index, err := strconv.Atoi(cli.Argv[2])
@@ -269,10 +265,6 @@ func (handler *ListHandler) RPop(cli *client.Client) {
 	}
 }
 
-func (handler *ListHandler) RPopLPush(cli *client.Client) {
-
-}
-
 func (handler *ListHandler) RPush(cli *client.Client) {
 	key := cli.Argv[1]
 	if err := createListIfNotExists(cli, key); err != nil {
@@ -285,10 +277,6 @@ func (handler *ListHandler) RPush(cli *client.Client) {
 		cli.Response(tl.RPush(cli.Argv[2:]))
 		cli.Dirty += 1
 	}
-}
-
-func (handler *ListHandler) RPushX(cli *client.Client) {
-
 }
 
 func (handler *ListHandler) Debug(cli *client.Client) {

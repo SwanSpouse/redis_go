@@ -1,4 +1,4 @@
-package mock
+package mock_test
 
 import (
 	"fmt"
@@ -15,10 +15,10 @@ import (
 
 func TestRedisClient(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Test Redis client")
+	RunSpecs(t, "Test Redis Mock Test")
 }
 
-var _ = Describe("MockRedisClient", func() {
+var _ = FDescribe("MockRedisClient", func() {
 	var cn net.Conn
 	var w *protocol.RequestWriter
 	var r *protocol.ResponseReader
@@ -31,6 +31,7 @@ var _ = Describe("MockRedisClient", func() {
 	}
 
 	go srv.Serve(lis)
+	loggers.Info("redis server start at %s:%s", "127.0.0.1", "9739")
 
 	BeforeEach(func() {
 		cn, err = net.Dial("tcp", "127.0.0.1:9739")
