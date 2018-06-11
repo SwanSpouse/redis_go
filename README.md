@@ -11,7 +11,7 @@ Redis原始源码来自： https://github.com/antirez/redis
 
 同时这里也会记录一些自己学习的经历。希望自己能够坚持下来。
 
-#### redis
+#### Redis
 * [redis](https://github.com/antirez/redis)
 * [redis version info ](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/redis/redis_version.md)
 * [一次完整的客户端与服务器连接事件示例](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/redis/conn_event.md)
@@ -40,7 +40,8 @@ Redis原始源码来自： https://github.com/antirez/redis
 * [数据库SQL语句执行顺序](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/database/database_sql_order.md)
 
 #### 分布式数据库理论
-* [CAP理论](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/theory/distributed_system.md)
+* [分布式系统概论](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/theory/distributed_system.md)
+* [CAP理论](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/theory/cap_theory.md)
 
 #### 数据类型
 * [Hash表实现](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/data_type/redis_go_dict.md)
