@@ -21,13 +21,13 @@ Redis原始源码来自： https://github.com/antirez/redis
 * [redis sentinel](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/redis/redis_sentinel.md)
 * [redis cluster](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/redis/redis_cluster.md)
 
-#### socket
+#### 网络通信
 * [golang socket](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/socket/socket.md)
 * [tcp layer](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/socket/tcp_layer.md)
 * [unix io模型](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/socket/unix%20io.md)
 * [unix io模型整理版本](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/socket/my_unix_io.md)
 
-#### framework
+#### 架构设计
 * [framework](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/framework/framework.md)
 * [redis object](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/framework/redis_object.md)
 * [map compare](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/framework/map%20compare.md)
@@ -39,7 +39,10 @@ Redis原始源码来自： https://github.com/antirez/redis
 * [数据库锁和索引](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/database/database_index.md)
 * [数据库SQL语句执行顺序](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/database/database_sql_order.md)
 
-#### data type
+#### 分布式数据库理论
+* [CAP理论](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/theory/distributed_system.md)
+
+#### 数据类型
 * [Hash表实现](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/data_type/redis_go_dict.md)
 
 #### 参考源码
