@@ -32,7 +32,7 @@ Paxos协议是一个两阶段协议，分为Prepare阶段和Accept阶段。
 * Accept 阶段：Acceptor 应答Accept
 	- Acceptor 收到Accept请求后，检查不违背自己之前做出约定的情况下，持久化前ProposalID和提案的内容。最后Proposal收集到多数派应答的Accept回复后，形成决议。
 
-#### 2PC 2阶段提交协议 atomic commitment protocol
+### 2PC 2阶段提交协议 atomic commitment protocol
 
 是一种典型的原子提交协议。它是一种由协调器来处理分布式原子参与者是提交或者回滚事务的分布式算法。
 
@@ -43,7 +43,7 @@ Paxos协议是一个两阶段协议，分为Prepare阶段和Accept阶段。
 
 2PC 最大的不足是提交协议是阻塞型协议，如果事务协调器宕机，某些参与者将无法解决他们的事务。
 
-#### 3PC
+### 3PC
 
 3PC分为3次交互，
 * 第一阶段，投票，事务协调器询问参与者是否能提交，得到肯定答复后进行第二阶段。
@@ -52,4 +52,4 @@ Paxos协议是一个两阶段协议，分为Prepare阶段和Accept阶段。
 
 3PC在2PC的基础之上增加了一次交互，preCommit，只要预提交成功，则一定要保证doCommit成功。这是协议的基本思想，一般通过重试补偿策略保证doCommit提交成功。
 
-#### Raft协议
+### Raft协议
