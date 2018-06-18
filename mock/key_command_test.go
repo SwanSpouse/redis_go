@@ -10,7 +10,7 @@ import (
 	"redis_go/server"
 )
 
-var _ = FDescribe("Test Redis key command", func() {
+var _ = Describe("Test Redis key command", func() {
 	var cn net.Conn
 	var w *protocol.RequestWriter
 	var r *protocol.ResponseReader

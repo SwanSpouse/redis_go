@@ -11,7 +11,7 @@ import (
 	"redis_go/server"
 )
 
-var _ = FDescribe("TestRedisHashCommand", func() {
+var _ = Describe("TestRedisHashCommand", func() {
 	var cn net.Conn
 	var w *protocol.RequestWriter
 	var r *protocol.ResponseReader

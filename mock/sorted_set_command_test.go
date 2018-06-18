@@ -12,7 +12,7 @@ import (
 	"redis_go/util"
 )
 
-var _ = FDescribe("TestRedisSortedSetCommands", func() {
+var _ = Describe("TestRedisSortedSetCommands", func() {
 	var cn net.Conn
 	var w *protocol.RequestWriter
 	var r *protocol.ResponseReader

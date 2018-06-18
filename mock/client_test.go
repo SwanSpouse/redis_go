@@ -18,7 +18,7 @@ func TestRedisClient(t *testing.T) {
 	RunSpecs(t, "Test Redis Mock Test")
 }
 
-var _ = FDescribe("MockRedisClient", func() {
+var _ = Describe("MockRedisClient", func() {
 	var cn net.Conn
 	var w *protocol.RequestWriter
 	var r *protocol.ResponseReader

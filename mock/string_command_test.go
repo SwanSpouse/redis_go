@@ -11,7 +11,7 @@ import (
 	"redis_go/server"
 )
 
-var _ = FDescribe("TestRedisStringCommand", func() {
+var _ = Describe("TestRedisStringCommand", func() {
 	var cn net.Conn
 	var w *protocol.RequestWriter
 	var r *protocol.ResponseReader
