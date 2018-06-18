@@ -34,7 +34,7 @@
 #### 脏读（Dirty Read）
 事务A读取了事务B更新的数据，然后B回滚操作，那么A读取到的数据是脏数据。
 
-![diray_read](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/database/diray_read.png?raw=true)
+![dirty_read](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/database/dirty_read.png?raw=true)
 
 余额应该为 1500 元才对！请看 T5 时间点，事务 A 此时查询余额为 0 元，这个数据就是脏数据，它是事务 B 造成的，明显事务没有进行隔离。
 
