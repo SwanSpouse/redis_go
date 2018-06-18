@@ -1,4 +1,9 @@
 
+
+### NoSQL的三大基石（CAP、BASE和最终一致性） 	
+
+CAP，BASE和最终一致性是NoSQL数据库存在的三大基石。
+
 ### CAP理论
 
 CAP原则是NOSQL数据库的基石。
@@ -56,7 +61,49 @@ AP without C
 * 如果将CAP理论中的C认为是指多个数据副本之间读写一致性的问题，那么它对关系型数据库与NoSQL数据库来讲是完全一样的，它只是运行在分布式环境中的数据管理设施在设计读写一致性问题时需要遵循的一个原则而已，却并不是NoSQL数据库具有优秀的水平可扩展性的真正原因。
 * 如果将CAP理论中的一致性C理解为读写一致性、事务与关联操作的综合，则可以认为关系型数据库选择了C与A，而NoSQL数据库则全都是选择了A与P。
 
+### BASE理论
+Basically Available--基本可用
+
+Soft-state --软状态/柔性 事务
+* "Soft state" 可以理解为"无连接"的, 而 "Hard state" 是"面向连接"的
+
+Eventual Consistency --最终一致性
+* 最终一致性， 也是是 ACID 的最终目的。
+
+BASE模型反ACID模型，完全不同ACID模型，牺牲高一致性，获得可用性或可靠性： Basically Available基本可用。支持分区失败(e.g. sharding碎片划分数据库) Soft state软状态 状态可以有一段时间不同步，异步。 Eventually consistent最终一致，最终数据是一致的就可以了，而不是时时一致。
+
+BASE思想主要强调基本的可用性，如果你需要高可用性，也就是纯粹的高性能，那么就要以一致性或容错性为牺牲，BASE思想的方案在性能上还是有潜力可挖的。
+
+### 最终一致性
+
+一言以蔽之：过程松，结果紧，最终结果必须保持一致性
+
+强一致性
+* 强一致性（即时一致性） 假如A先写入了一个值到存储系统，存储系统保证后续A,B,C的读取操作都将返回最新值
+
+弱一致性
+* 假如A先写入了一个值到存储系统，存储系统不能保证后续A,B,C的读取操作能读取到最新值。此种情况下有一个“不一致性窗口”的概念，它特指从A写入值，到后续操作A,B,C读取到最新值这一段时间。
+
+最终一致性
+* 最终一致性是弱一致性的一种特例。假如A首先write了一个值到存储系统，存储系统保证如果在A,B,C后续读取之前没有其它写操作更新同样的值的话，最终所有的读取操作都会读取到最A写入的最新值。此种情况下，如果没有失败发生的话，“不一致性窗口”的大小依赖于以下的几个因素：交互延迟，系统的负载，以及复制技术中replica的个数（这个可以理解为master/salve模式中，salve的个数），最终一致性方面最出名的系统可以说是DNS系统，当更新一个域名的IP以后，根据配置策略以及缓存控制策略的不同，最终所有的客户都会看到最新的值。
+
+Causal consistency（因果一致性）
+* 如果Process A通知Process B它已经更新了数据，那么Process B的后续读取操作则读取A写入的最新值，而与A没有因果关系的C则可以最终一致性。
+
+Read-your-writes consistency （读己所写一致性）
+* 如果Process A写入了最新的值，那么Process A的后续操作都会读取到最新值。但是其它用户可能要过一会才可以看到。
+
+Session consistency （会话一致性）
+* 此种一致性要求客户端和存储系统交互的整个会话阶段保证Read-your-writes consistency. Hibernate的session提供的一致性保证就属于此种一致性。
+
+Monotonic read consistency （单调读一致性）
+* 此种一致性要求如果Process A已经读取了对象的某个值，那么后续操作将不会读取到更早的值。
+
+Monotonic write consistency （单调写一致性）
+此种一致性保证系统会序列化执行一个Process中的所有写操作。
+
 
 #### reference
 * http://www.jdon.com/bigdata/how-to-understand-cap.html
 * https://blog.csdn.net/sia185300/article/details/79939144
+* https://blog.csdn.net/u013613428/article/details/55259924

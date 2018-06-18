@@ -41,7 +41,7 @@ Redis原始源码来自： https://github.com/antirez/redis
 
 #### 分布式数据库理论
 * [分布式系统概论](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/theory/distributed_system.md)
-* [CAP理论](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/theory/cap_theory.md)
+* [NoSQL理论基础](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/theory/nosql_theory.md)
 * [分布式协议](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/theory/distributed_protocol.md)
 
 #### 数据类型
