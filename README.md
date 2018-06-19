@@ -47,6 +47,13 @@ Redis原始源码来自： https://github.com/antirez/redis
 #### 数据类型
 * [Hash表实现](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/data_type/redis_go_dict.md)
 
+#### Java相关
+* [Java虚拟机](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/jvm/1.java_jvm.md)
+* [JVM对象](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/jvm/2.java_jvm_object.md)
+* [垃圾收集器与内存分配策略](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/jvm/3.memory_distribution.md)
+* [HotSpot的算法实现](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/jvm/4.hotspot.md)
+* [JVM 垃圾收集器](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/jvm/5.garbage_collection.md)
+
 #### 参考源码
 * [java 1.7 ConcurrentHashMap源码](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/source_code/java_concurrent_hashmap.java)
 
