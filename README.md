@@ -47,6 +47,9 @@ Redis原始源码来自： https://github.com/antirez/redis
 #### 数据类型
 * [Hash表实现](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/data_type/redis_go_dict.md)
 
+#### go相关
+* [go 垃圾回收](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/golang/golang_gc.md)
+
 #### Java相关
 * [Java虚拟机](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/jvm/1.java_jvm.md)
 * [JVM对象](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/jvm/2.java_jvm_object.md)
