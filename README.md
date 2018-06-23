@@ -11,6 +11,8 @@ Redis原始源码来自： https://github.com/antirez/redis
 
 同时这里也会记录一些自己学习的经历。希望自己能够坚持下来。
 
+以后就在Gitbook来记录下面的内容吧。这里还是专门用作redis go项目相关的记录。
+
 #### Redis
 * [redis](https://github.com/antirez/redis)
 * [redis version info ](https://github.com/SwanSpouse/redis_go/blob/master/z_docs/redis/redis_version.md)
