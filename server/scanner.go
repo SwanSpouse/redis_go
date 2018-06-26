@@ -19,16 +19,6 @@ func (srv *Server) scanClients() {
 				srv.clients[i] = nil
 				continue
 			}
-			//if srv.clients[i].Status == client.RedisClientStatusInProcess && srv.clients[i].IsExecTimeout() {
-			//	log.Info("redis client %d execute timeout at %+v", i, srv.clients[i].GetExecTimeoutAt())
-			//	srv.clients[i].Close()
-			//	continue
-			//}
-			//if srv.clients[i].Status == client.RedisClientStatusIdle && srv.clients[i].IsIdleTimeout() {
-			//	log.Info("redis client %d idle timeout at %+v", i, srv.clients[i].GetIdleTimeoutAt())
-			//	srv.clients[i].Close()
-			//	continue
-			//}
 			// 如果Client有待处理命令，处理对应的Client
 			if srv.clients[i].Status == client.RedisClientStatusIdle {
 				atomic.StoreUint32(&srv.clients[i].Status, client.RedisClientStatusInProcess)
@@ -45,10 +35,7 @@ func (srv *Server) handlerCommand(c *client.Client) {
 	}
 	c.Locker.Lock()
 	defer c.Locker.Unlock()
-
 	defer atomic.StoreUint32(&c.Status, client.RedisClientStatusIdle)
-	//c.SetIdleTimeout(5 * time.Hour)
-	//c.SetExecTimeout(5 * time.Second)
 
 	loggers.Info("handler command from client:%s", c.RemoteAddr())
 	// ReadCmd这里会阻塞知道有数据或者客户端断开连接

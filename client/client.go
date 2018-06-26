@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	RedisClientStatusIdle      = uint32(0)
-	RedisClientStatusInProcess = uint32(1)
+	RedisClientStatusIdle      = uint32(0) // RedisClient此时没有被处理
+	RedisClientStatusInProcess = uint32(1) // RedisClient此时正在被处理
 )
 
 var (
