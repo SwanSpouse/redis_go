@@ -49,7 +49,7 @@ func (srv *Server) handlerCommand(c *client.Client) {
 	}
 
 	// 如果服务器正在进行阻塞操作，不接受客户端发过来的请求
-	if !srv.isInService() {
+	if !srv.isServiceAvailable() {
 		c.ResponseReError(re.ErrRedisRdbSaveInProcess)
 		return
 	}

@@ -7,6 +7,7 @@ import (
 	"redis_go/database"
 	"redis_go/loggers"
 	"redis_go/tcp"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -61,23 +62,35 @@ func NewServer(config *conf.ServerConfig) *Server {
 }
 
 // 判断server 此时是否可以对外提供服务
-func (srv *Server) isInService() bool {
+func (srv *Server) isServiceAvailable() bool {
 	return srv.Status.Load() == RedisServerStatusNormal || srv.Status.Load() == RedisServerStatusRdbBgSaveInProcess
 }
 
-func (srv *Server) Serve(lis net.Listener) error {
+// 处理来自客户端的请求
+func (srv *Server) IoLoop(conn net.Conn) {
+
+}
+
+// 启动redis server 并开始监听TCP连接
+func (srv *Server) Serve(listener net.Listener) {
+	loggers.Errorf("TCP: listening on %s", listener.Addr())
 	// start to scan clients
 	go srv.scanClients()
-	// loop for accept tcp client
+	// loop for accepting tcp connection from redis client
 	for {
-		cn, err := lis.Accept()
+		clientConn, err := listener.Accept()
 		if err != nil {
-			return err
+			// ignore temporary errors
+			if netError, ok := err.(net.Error); ok && netError.Temporary() {
+				loggers.Warn("temporary Accept() failure %s", err)
+				runtime.Gosched()
+				continue
+			}
+			break
 		}
-		c := client.NewClient(cn, srv.getDefaultDB())
-		srv.addClientToServer(c)
-		loggers.Info("new client %d come in ! from %+v and has been added in server's client list.", c.ID(), cn.RemoteAddr().String())
+		go srv.IOLoop(clientConn)
 	}
+	loggers.Errorf("TCP: closing %s", listener.Addr())
 }
 
 func (srv *Server) addClientToServer(c *client.Client) {

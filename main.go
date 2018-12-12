@@ -23,13 +23,14 @@ func init() {
 func run() error {
 	// TODO lmj 解决这个问题。console输入的参数优先级最高->然后是配置文件里的->然后是系统默认的
 	server := server.NewServer(nil)
-	lis, err := net.Listen("tcp", flags.addr)
+	listener, err := net.Listen("tcp", flags.addr)
 	if err != nil {
 		return err
 	}
-	defer lis.Close()
-	loggers.Info("waiting for connections on %s", lis.Addr().String())
-	return server.Serve(lis)
+	defer listener.Close()
+	loggers.Info("waiting for connections on %s", listener.Addr().String())
+	server.Serve(listener)
+	return nil
 }
 
 func main() {
