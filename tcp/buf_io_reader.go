@@ -33,7 +33,7 @@ func NewBufIoReader(cn net.Conn) *BufIoReader {
 	return r
 }
 
-func (r *BufIoReader) ReturnBufIoReader() {
+func ReturnBufIoReader(r *BufIoReader) {
 	ReaderPool.Put(r)
 }
 

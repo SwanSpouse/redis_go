@@ -7,15 +7,14 @@ import (
 	"net"
 	"redis_go/handlers"
 	"redis_go/loggers"
-	"redis_go/protocol"
 	"redis_go/server"
 	"redis_go/util"
 )
 
 var _ = Describe("TestRedisSortedSetCommands", func() {
 	var cn net.Conn
-	var w *protocol.RequestWriter
-	var r *protocol.ResponseReader
+	var w *RequestWriter
+	var r *ResponseReader
 	sortedSetCommandTestBaseKey := "sorted_set_command_test_base_key"
 
 	srv := server.NewServer(nil)
@@ -28,8 +27,8 @@ var _ = Describe("TestRedisSortedSetCommands", func() {
 
 	BeforeEach(func() {
 		cn, err = net.Dial("tcp", "127.0.0.1:9735")
-		w = protocol.NewRequestWriter(cn)
-		r = protocol.NewResponseReader(cn)
+		w = NewRequestWriter(cn)
+		r = NewResponseReader(cn)
 
 		// init basic set
 		input := make([]string, 0)

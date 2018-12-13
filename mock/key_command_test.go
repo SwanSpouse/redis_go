@@ -1,4 +1,4 @@
-package mock_test
+package mock
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -6,14 +6,13 @@ import (
 	"net"
 	"redis_go/handlers"
 	"redis_go/loggers"
-	"redis_go/protocol"
 	"redis_go/server"
 )
 
 var _ = Describe("Test Redis key command", func() {
 	var cn net.Conn
-	var w *protocol.RequestWriter
-	var r *protocol.ResponseReader
+	var w *RequestWriter
+	var r *ResponseReader
 
 	srv := server.NewServer(nil)
 	lis, err := net.Listen("tcp", "127.0.0.1:9738")
@@ -28,8 +27,8 @@ var _ = Describe("Test Redis key command", func() {
 		cn, err = net.Dial("tcp", "127.0.0.1:9738")
 		Expect(err).To(BeNil())
 
-		w = protocol.NewRequestWriter(cn)
-		r = protocol.NewResponseReader(cn)
+		w = NewRequestWriter(cn)
+		r = NewResponseReader(cn)
 	})
 
 	It("test key command exists and del", func() {

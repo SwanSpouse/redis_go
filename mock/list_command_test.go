@@ -1,4 +1,4 @@
-package mock_test
+package mock
 
 import (
 	"fmt"
@@ -7,14 +7,13 @@ import (
 	"net"
 	"redis_go/handlers"
 	"redis_go/loggers"
-	"redis_go/protocol"
 	"redis_go/server"
 )
 
 var _ = Describe("TestRedisListCommand", func() {
 	var cn net.Conn
-	var w *protocol.RequestWriter
-	var r *protocol.ResponseReader
+	var w *RequestWriter
+	var r *ResponseReader
 
 	commonKey := "redis_list_test_common_key"
 	srv := server.NewServer(nil)
@@ -27,8 +26,8 @@ var _ = Describe("TestRedisListCommand", func() {
 
 	BeforeEach(func() {
 		cn, err = net.Dial("tcp", "127.0.0.1:9732")
-		w = protocol.NewRequestWriter(cn)
-		r = protocol.NewResponseReader(cn)
+		w = NewRequestWriter(cn)
+		r = NewResponseReader(cn)
 
 		input := make([]string, 0)
 		input = append(input, commonKey)
