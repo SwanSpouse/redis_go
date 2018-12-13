@@ -145,7 +145,7 @@ func (srv *Server) IOLoop(conn net.Conn) {
 	}
 	loggers.Info("client %d-%s exiting ioLoop", c.ID(), c.RemoteAddr())
 	if err != nil {
-		loggers.Errorf("client %s %s", c.ID(), err)
+		loggers.Errorf("client %d %s", c.ID(), err)
 	}
 	// remove client form server
 	srv.removeClient(c)

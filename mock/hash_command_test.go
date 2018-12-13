@@ -1,4 +1,4 @@
-package mock_test
+package mock
 
 import (
 	"fmt"
@@ -7,14 +7,13 @@ import (
 	"net"
 	"redis_go/handlers"
 	"redis_go/loggers"
-	"redis_go/protocol"
 	"redis_go/server"
 )
 
 var _ = Describe("TestRedisHashCommand", func() {
 	var cn net.Conn
-	var w *protocol.RequestWriter
-	var r *protocol.ResponseReader
+	var w *RequestWriter
+	var r *ResponseReader
 
 	srv := server.NewServer(nil)
 	lis, err := net.Listen("tcp", "127.0.0.1:9733")
@@ -27,8 +26,8 @@ var _ = Describe("TestRedisHashCommand", func() {
 
 	BeforeEach(func() {
 		cn, err = net.Dial("tcp", "127.0.0.1:9733")
-		w = protocol.NewRequestWriter(cn)
-		r = protocol.NewResponseReader(cn)
+		w = NewRequestWriter(cn)
+		r = NewResponseReader(cn)
 	})
 
 	It("Test redis hash command HSet, HGet HSetNx HExists HDel HLen", func() {

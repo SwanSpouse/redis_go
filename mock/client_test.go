@@ -1,4 +1,4 @@
-package mock_test
+package mock
 
 import (
 	"fmt"
@@ -7,7 +7,6 @@ import (
 	"net"
 	re "redis_go/error"
 	"redis_go/loggers"
-	"redis_go/protocol"
 	"redis_go/server"
 	"redis_go/tcp"
 	"testing"
@@ -20,8 +19,8 @@ func TestRedisClient(t *testing.T) {
 
 var _ = Describe("MockRedisClient", func() {
 	var cn net.Conn
-	var w *protocol.RequestWriter
-	var r *protocol.ResponseReader
+	var w *RequestWriter
+	var r *ResponseReader
 
 	srv := server.NewServer(nil)
 	lis, err := net.Listen("tcp", "127.0.0.1:9739")
@@ -37,8 +36,8 @@ var _ = Describe("MockRedisClient", func() {
 		cn, err = net.Dial("tcp", "127.0.0.1:9739")
 		Expect(err).To(BeNil())
 
-		w = protocol.NewRequestWriter(cn)
-		r = protocol.NewResponseReader(cn)
+		w = NewRequestWriter(cn)
+		r = NewResponseReader(cn)
 	})
 
 	AfterEach(func() {
