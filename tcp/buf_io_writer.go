@@ -87,7 +87,7 @@ func NewBufIoWriter(cn net.Conn) *BufIoWriter {
 	return w
 }
 
-func (w *BufIoWriter) ReturnBufIoWriter() {
+func ReturnBufIoWriter(w *BufIoWriter) {
 	WriterPool.Put(w)
 }
 

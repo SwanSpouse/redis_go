@@ -39,6 +39,8 @@ const (
 	RedisServerCommandTime          = "TIME"
 	RedisServerCommandAofDebug      = "AOFDEBUG"
 	RedisServerCommandAofFlush      = "AOFFLUSH"
+
+	RedisDebugCommandRuntimeStat = "RUNTIME_STAT"
 )
 
 func (srv *Server) Process(cli *client.Client) {
@@ -83,6 +85,8 @@ func (srv *Server) Process(cli *client.Client) {
 		srv.aofDebug(cli)
 	case RedisServerCommandAofFlush:
 		srv.aofFlush(cli)
+	case RedisDebugCommandRuntimeStat:
+		srv.runtimeStat(cli)
 	default:
 		cli.ResponseReError(re.ErrUnknownCommand, cli.Cmd.GetOriginName())
 	}
@@ -189,4 +193,13 @@ func (srv *Server) aofFlush(cli *client.Client) {
 	loggers.Debug("current aof buf:%s", string(srv.aofBuf))
 	srv.flushAppendOnlyFile()
 	loggers.Debug("current aof buf:%s", string(srv.aofBuf))
+}
+
+func (srv *Server) runtimeStat(cli *client.Client) {
+	cli.ResponseOK()
+
+	loggers.Info("list all clients' info ")
+	for _, client := range srv.clients {
+		loggers.Info("clientID:%d client:%+v", client.ID(), client)
+	}
 }

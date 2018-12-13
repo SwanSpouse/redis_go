@@ -104,7 +104,7 @@ func (srv *Server) EndRDB() {
 
 func (srv *Server) rdbLoad() {
 	if !util.FileExists(srv.Config.RdbFilename) {
-		loggers.Errorf("redis rdb file not exits")
+		loggers.Info("redis rdb file not exits")
 		return
 	}
 	srv.FakeClient = client.NewFakeClient()

@@ -1,13 +1,17 @@
 package server
 
 import (
+	"fmt"
+	"io"
 	"net"
 	"redis_go/client"
 	"redis_go/conf"
 	"redis_go/database"
+	re "redis_go/error"
 	"redis_go/loggers"
 	"redis_go/tcp"
 	"runtime"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -21,20 +25,21 @@ const (
 
 // Redis server
 type Server struct {
-	Config        *conf.ServerConfig
-	Databases     []*database.Database /* database*/
-	dbIndex       int                  // rdb process current db
-	clients       []*client.Client
-	FakeClient    *client.Client // used in rdb and aof
-	password      string         /* Pass for AUTH command, or NULL */
-	commandTable  map[string]*client.Command
-	mu            sync.RWMutex
-	Status        atomic.Value
-	Dirty         int64
-	rdbLastSave   time.Time
-	aofSelectDBId int
-	aofBuf        []byte
-	aofLastSave   time.Time
+	clientIDSequence int64 // client auto increasing sequence id
+	Config           *conf.ServerConfig
+	Databases        []*database.Database     /* database*/
+	dbIndex          int                      // rdb process current db
+	clients          map[int64]*client.Client // clientID -> client
+	FakeClient       *client.Client           // used in rdb and aof
+	password         string                   /* Pass for AUTH command, or NULL */
+	commandTable     map[string]*client.Command
+	mu               sync.RWMutex
+	Status           atomic.Value
+	Dirty            int64
+	rdbLastSave      time.Time
+	aofSelectDBId    int
+	aofBuf           []byte
+	aofLastSave      time.Time
 }
 
 func NewServer(config *conf.ServerConfig) *Server {
@@ -44,6 +49,7 @@ func NewServer(config *conf.ServerConfig) *Server {
 	server := &Server{
 		Config:       config,
 		commandTable: make(map[string]*client.Command),
+		clients:      make(map[int64]*client.Client),
 	}
 	// init general parameters
 	server.initServer()
@@ -57,7 +63,7 @@ func NewServer(config *conf.ServerConfig) *Server {
 	go server.initTimeEvents()
 	// load data
 	server.loadDataFromDisk()
-	loggers.Info("redis server: %+v", server)
+	loggers.Debug("redis server: %+v", server)
 	return server
 }
 
@@ -67,15 +73,87 @@ func (srv *Server) isServiceAvailable() bool {
 }
 
 // 处理来自客户端的请求
-func (srv *Server) IoLoop(conn net.Conn) {
+func (srv *Server) IOLoop(conn net.Conn) {
+	loggers.Info("TCP: new client(%s)", conn.RemoteAddr())
+	c := client.NewClient(atomic.AddInt64(&srv.clientIDSequence, 1), conn, srv.getDefaultDB())
+	srv.addClient(c)
 
+	var err error
+	// handle client command
+	for {
+		// read command from client
+		if err = c.ProcessInputBuffer(); err != nil {
+			if err == io.EOF {
+				err = nil
+			} else {
+				err = fmt.Errorf("failed to read command %s", err)
+			}
+			break
+		}
+		if !srv.isServiceAvailable() {
+			c.ResponseReError(re.ErrRedisRdbSaveInProcess)
+			continue
+		}
+		/**
+		首先判断是否在command table中,
+			如果不在command table中,则返回command not found
+			如果在command table中，则获取到相应的command handler来进行处理。
+		*/
+		command, ok := srv.commandTable[strings.ToUpper(c.Argv[0])]
+		if !ok || command == nil {
+			loggers.Errorf(string(re.ErrUnknownCommand), c.Argv[0])
+			c.ResponseReError(re.ErrUnknownCommand, c.Argv[0])
+			continue
+		}
+		c.LastCmd = c.Cmd
+		c.Cmd = command
+		/**
+		在这里对command的参数个数等进行检查
+			1. 如果Arity > 0, 要求参数个数必须严格等于Arity
+			2. 如果Arity < 0, 要求参数个数至少为|Arity|
+		*/
+		if (command.Arity > 0 && c.Argc != command.Arity) || (c.Argc < -command.Arity) {
+			loggers.Errorf("wrong number of args %+v", command)
+			c.ResponseReError(re.ErrWrongNumberOfArgs, c.Argv[0])
+			continue
+		}
+
+		// TODO 检查用户是否验证过身份
+		// TODO 集群模式等在这里进行一些操作
+		// TODO 判断是否是事务相关命令
+		// TODO 判断命令造成了多少个dirty, 执行时间等一些统计信息
+		// 在这里对client端发送过来的命令进行处理
+		command.Handler.Process(c)
+
+		// 在rdb save结束之后，重新统计dirty数量并记录本次rdb结束的时间
+		if c.Cmd.GetName() == RedisServerCommandSave {
+			srv.Dirty = 0
+			srv.rdbLastSave = time.Now()
+		} else {
+			srv.Dirty += c.Dirty
+		}
+
+		// 在这里判断命令是否要发送到aof_buf或者Aof文件
+		if srv.Config.AofState == conf.RedisAofOn && c.Cmd.Flags&client.RedisCmdWrite > 0 && c.Dirty != 0 {
+			loggers.Debug("Client exec a write cmd or make db dirty")
+			srv.propagate(c)
+
+			// 将srv aof_buf中的数据同步到文件中
+			//srv.flushAppendOnlyFile()
+			c.Dirty = 0
+		}
+	}
+	loggers.Info("client %d-%s exiting ioLoop", c.ID(), c.RemoteAddr())
+	if err != nil {
+		loggers.Errorf("client %s %s", c.ID(), err)
+	}
+	// remove client form server
+	srv.removeClient(c)
 }
 
 // 启动redis server 并开始监听TCP连接
 func (srv *Server) Serve(listener net.Listener) {
-	loggers.Errorf("TCP: listening on %s", listener.Addr())
-	// start to scan clients
-	go srv.scanClients()
+	loggers.Info("TCP: listening on %s", listener.Addr())
 	// loop for accepting tcp connection from redis client
 	for {
 		clientConn, err := listener.Accept()
@@ -93,19 +171,19 @@ func (srv *Server) Serve(listener net.Listener) {
 	loggers.Errorf("TCP: closing %s", listener.Addr())
 }
 
-func (srv *Server) addClientToServer(c *client.Client) {
+func (srv *Server) addClient(c *client.Client) {
 	srv.mu.Lock()
 	defer srv.mu.Unlock()
 
-	// add client to server's clients list
-	for i := 0; i < len(srv.clients); i++ {
-		if srv.clients[i] == nil || srv.clients[i].Closed {
-			srv.clients[i] = c
-			return
-		}
-	}
 	// TODO lmj srv.clients 有个数限制
-	srv.clients = append(srv.clients, c)
+	srv.clients[c.ID()] = c
+}
+
+func (srv *Server) removeClient(c *client.Client) {
+	srv.mu.Lock()
+	defer srv.mu.Unlock()
+	c.Close()
+	delete(srv.clients, c.ID())
 }
 
 func (srv *Server) initServer() {

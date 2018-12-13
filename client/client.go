@@ -8,41 +8,30 @@ import (
 	"redis_go/loggers"
 	"redis_go/tcp"
 	"sync"
-	"sync/atomic"
 	"time"
-)
+	)
 
-const (
-	RedisClientStatusIdle      = uint32(0) // RedisClient此时没有被处理
-	RedisClientStatusInProcess = uint32(1) // RedisClient此时正在被处理
-)
-
-var (
-	clientInc  = int64(0)
-	clientPool sync.Pool
-)
+var clientPool sync.Pool
 
 type Client struct {
-	id          int64
-	cn          net.Conn
+	id          int64              // Client ID
+	cn          net.Conn           // TCP connection
 	db          *database.Database // chosen database
-	Closed      bool
-	reader      *tcp.BufIoReader // request reader
-	writer      *tcp.BufIoWriter // response writer
-	Argv        []string         // arguments vector
-	Argc        int              // arguments counter
-	Cmd         *Command         // current command
-	LastCmd     *Command         // last command
+	Closed      bool               // isClientClosed
+	reader      *tcp.BufIoReader   // request reader
+	writer      *tcp.BufIoWriter   // response writer
+	Argv        []string           // arguments vector
+	Argc        int                // arguments counter
+	Cmd         *Command           // current command
+	LastCmd     *Command           // last command
 	Dirty       int64
 	execTimeout time.Time
 	idleTimeout time.Time // timeout
-	Status      uint32
-	Locker      sync.Mutex
 }
 
-func (c *Client) reset(cn net.Conn, defaultDB *database.Database) {
+func (c *Client) reset(clientId int64, cn net.Conn, defaultDB *database.Database) {
 	*c = Client{
-		id: atomic.AddInt64(&clientInc, 1),
+		id: clientId,
 		cn: cn,
 		db: defaultDB,
 	}
@@ -54,14 +43,14 @@ func (c *Client) release() {
 	if c.IsFakeClient() {
 		return
 	}
-	c.reader.ReturnBufIoReader()
-	c.writer.ReturnBufIoWriter()
+	tcp.ReturnBufIoReader(c.reader)
+	tcp.ReturnBufIoWriter(c.writer)
 	clientPool.Put(c)
 
 	c.cn.Close()
 }
 
-func NewClient(cn net.Conn, defaultDB *database.Database) *Client {
+func NewClient(clientId int64, cn net.Conn, defaultDB *database.Database) *Client {
 	var c *Client
 	if obj := clientPool.Get(); obj != nil {
 		loggers.Debug("Get Client from ClientPool")
@@ -70,7 +59,7 @@ func NewClient(cn net.Conn, defaultDB *database.Database) *Client {
 		loggers.Debug("Can not get Client from ClientPool, return a new Client")
 		c = new(Client)
 	}
-	c.reset(cn, defaultDB)
+	c.reset(clientId, cn, defaultDB)
 	return c
 }
 
