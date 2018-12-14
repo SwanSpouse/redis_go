@@ -78,7 +78,7 @@ func InitServerConfig() *ServerConfig {
 	sc.ReaderPoolNum = RedisIOReaderPoolThreadNum
 	sc.WriterPoolNum = RedisIOWriterPoolThreadNum
 	sc.RdbFilename = RedisRDBDefaultFilePath
-	sc.AofState = RedisAofOff
+	sc.AofState = RedisAofOn
 	sc.AofFSync = RedisAofFSyncAlways
 	sc.AofFilename = RedisAofDefaultFilePath
 	return sc

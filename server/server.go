@@ -37,8 +37,9 @@ type Server struct {
 	Dirty            int64
 	rdbLastSave      time.Time
 	aofSelectDBId    int
-	aofBuf           []byte
-	aofLastSave      time.Time
+	aofLock          sync.Mutex // aof lock
+	aofBuf           []byte     // append only file buffer
+	aofLastSave      time.Time  // aof last save time
 }
 
 func NewServer(config *conf.ServerConfig) *Server {
@@ -138,9 +139,8 @@ func (srv *Server) IOLoop(conn net.Conn) {
 		if srv.Config.AofState == conf.RedisAofOn && c.Cmd.Flags&client.RedisCmdWrite > 0 && c.Dirty != 0 {
 			loggers.Debug("Client exec a write cmd or make db dirty")
 			srv.propagate(c)
-
-			// 将srv aof_buf中的数据同步到文件中
-			//srv.flushAppendOnlyFile()
+			// 现在默认将每个写命令都刷写到aof文件中
+			srv.flushAppendOnlyFile()
 			c.Dirty = 0
 		}
 	}

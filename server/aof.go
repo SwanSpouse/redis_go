@@ -54,11 +54,13 @@ func (srv *Server) propagate(c *client.Client) {
 	loggers.Debug("current aof debug:%s", string(srv.aofBuf))
 }
 
+// 把aofBuf中的数据刷写到文件中
 func (srv *Server) flushAppendOnlyFile() {
 	if len(srv.aofBuf) == 0 {
 		return
 	}
-
+	srv.aofLock.Lock()
+	defer srv.aofLock.Unlock()
 	if srv.Config.AofFSync == conf.RedisAofFSyncEverySec {
 		// TODO 这里有策略可以进行延迟写
 		loggers.Info("Hi~ You have a todo here. ")
@@ -69,6 +71,7 @@ func (srv *Server) flushAppendOnlyFile() {
 	encoder, err := aof.NewEncoder(srv.Config.AofFilename)
 	if err != nil || encoder == nil {
 		loggers.Errorf("new aof encoder error:%+v", err)
+		return
 	}
 	if n, err := encoder.Write(srv.aofBuf); err != nil {
 		loggers.Errorf("flush aof data to file error:%+v", err)
@@ -81,6 +84,7 @@ func (srv *Server) flushAppendOnlyFile() {
 	}
 }
 
+// 从aof文件中加载数据
 func (srv *Server) loadAppendOnlyFile() {
 	loggers.Debug("start to load append only file")
 	decoder := aof.NewDecoder(srv.Config.AofFilename)
