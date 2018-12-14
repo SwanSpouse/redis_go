@@ -5,6 +5,7 @@ import (
 )
 
 var (
+	// hash对象的实现方式
 	_ THash = (*encodings.HashDict)(nil)
 )
 

@@ -3,6 +3,7 @@ package database
 import "redis_go/encodings"
 
 var (
+	// zset对象的实现方式
 	_ TZSet = (*encodings.SortedSet)(nil)
 )
 

@@ -5,6 +5,7 @@ import (
 )
 
 var (
+	// string对象的三种实现方式
 	_ TString = (*encodings.StringRaw)(nil)
 	_ TString = (*encodings.StringInt)(nil)
 	_ TString = (*encodings.StringEmb)(nil)

@@ -7,13 +7,13 @@ var (
 	_ TBase = (*encodings.StringInt)(nil)
 	_ TBase = (*encodings.StringEmb)(nil)
 
-	_ TList = (*encodings.ListLinkedList)(nil)
+	_ TBase = (*encodings.ListLinkedList)(nil)
 
-	_ THash = (*encodings.HashDict)(nil)
+	_ TBase = (*encodings.HashDict)(nil)
 
-	_ TSet = (*encodings.HashSet)(nil)
+	_ TBase = (*encodings.HashSet)(nil)
 
-	_ TZSet = (*encodings.SortedSet)(nil)
+	_ TBase = (*encodings.SortedSet)(nil)
 )
 
 type TBase interface {
