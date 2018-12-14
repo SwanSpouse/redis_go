@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"io"
 	"net"
 	"redis_go/client"
@@ -85,10 +84,12 @@ func (srv *Server) IOLoop(conn net.Conn) {
 		if err = c.ProcessInputBuffer(); err != nil {
 			if err == io.EOF {
 				err = nil
+				break
 			} else {
-				err = fmt.Errorf("failed to read command %s", err)
+				loggers.Errorf("server read command error %+v", err)
+				c.ResponseReError(err)
+				continue
 			}
-			break
 		}
 		if !srv.isServiceAvailable() {
 			c.ResponseReError(re.ErrRedisRdbSaveInProcess)
