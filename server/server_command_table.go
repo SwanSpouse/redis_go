@@ -198,6 +198,9 @@ func (srv *Server) populateCommandTable() {
 	srv.commandTable[RedisServerCommandAofDebug] = client.NewCommand(RedisServerCommandAofDebug, 1, "r", srv)
 	srv.commandTable[RedisServerCommandAofFlush] = client.NewCommand(RedisServerCommandAofFlush, 1, "r", srv)
 
+	srv.commandTable[RedisServerCommandCommand] = client.NewCommand(RedisServerCommandCommand, 1, "r", srv)
+	srv.commandTable[RedisServerCommandExit] = client.NewCommand(RedisServerCommandExit, 1, "r", srv)
+
 	// debug command
 	srv.commandTable[RedisDebugCommandRuntimeStat] = client.NewCommand(RedisDebugCommandRuntimeStat, 1, "r", srv)
 

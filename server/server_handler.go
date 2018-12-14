@@ -39,6 +39,8 @@ const (
 	RedisServerCommandTime          = "TIME"
 	RedisServerCommandAofDebug      = "AOFDEBUG"
 	RedisServerCommandAofFlush      = "AOFFLUSH"
+	RedisServerCommandCommand       = "COMMAND"
+	RedisServerCommandExit          = "EXIT"
 
 	RedisDebugCommandRuntimeStat = "RUNTIME_STAT"
 )
@@ -85,6 +87,8 @@ func (srv *Server) Process(cli *client.Client) {
 		srv.aofDebug(cli)
 	case RedisServerCommandAofFlush:
 		srv.aofFlush(cli)
+	case RedisServerCommandCommand:
+		srv.command(cli)
 	case RedisDebugCommandRuntimeStat:
 		srv.runtimeStat(cli)
 	default:
@@ -183,16 +187,26 @@ func (srv *Server) bgSave(cli *client.Client) {
 	go srv.doSave(cli, encoder)
 }
 
+// TODO @lmj
+func (srv *Server) command(cli *client.Client) {
+	cli.ResponseOK()
+	loggers.Info("receive 'command' command from client, do nothing")
+}
+
+func (srv *Server) exit(cli *client.Client) {
+	cli.ResponseOK()
+}
+
 func (srv *Server) aofDebug(cli *client.Client) {
 	cli.ResponseOK()
 	loggers.Debug("current aof buf:%s", string(srv.aofBuf))
 }
 
 func (srv *Server) aofFlush(cli *client.Client) {
-	cli.ResponseOK()
 	loggers.Debug("current aof buf:%s", string(srv.aofBuf))
 	srv.flushAppendOnlyFile()
 	loggers.Debug("current aof buf:%s", string(srv.aofBuf))
+	cli.ResponseOK()
 }
 
 func (srv *Server) runtimeStat(cli *client.Client) {
