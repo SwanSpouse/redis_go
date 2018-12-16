@@ -40,16 +40,15 @@ type Server struct {
 	aofLock          sync.Mutex // aof lock
 	aofBuf           []byte     // append only file buffer
 	aofLastSave      time.Time  // aof last save time
+	TimeEventLoop    *EventLoop // redis time event
 }
 
 func NewServer(config *conf.ServerConfig) *Server {
-	if config == nil {
-		config = conf.InitServerConfig()
-	}
 	server := &Server{
-		Config:       config,
-		commandTable: make(map[string]*client.Command),
-		clients:      make(map[int64]*client.Client),
+		Config:        config,
+		commandTable:  make(map[string]*client.Command),
+		clients:       make(map[int64]*client.Client),
+		TimeEventLoop: NewEventLoop(),
 	}
 	// init general parameters
 	server.initServer()
@@ -59,6 +58,8 @@ func NewServer(config *conf.ServerConfig) *Server {
 	server.initDB()
 	// init commandTable table
 	server.populateCommandTable()
+
+	// 在这里把 serverCron 添加到timeEvent里面
 	// init time events
 	go server.initTimeEvents()
 	// load data
@@ -205,13 +206,13 @@ func (srv *Server) initDB() {
 }
 
 func (srv *Server) initIOPool() {
-	for i := 0; i < srv.Config.ReaderPoolNum; i++ {
+	for i := 0; i < srv.Config.ReaderPoolSize; i++ {
 		tcp.ReaderPool.Put(tcp.NewBufIoReaderWithoutConn())
 	}
-	for i := 0; i < srv.Config.WriterPoolNum; i++ {
+	for i := 0; i < srv.Config.WriterPoolSize; i++ {
 		tcp.WriterPool.Put(tcp.NewBufIoWriterWithoutConn())
 	}
-	loggers.Debug("Successful init reader and writer pool. ReaderPoolSize:%d, WriterPoolSize:%d", srv.Config.ReaderPoolNum, srv.Config.WriterPoolNum)
+	loggers.Debug("Successful init reader and writer pool. ReaderPoolSize:%d, WriterPoolSize:%d", srv.Config.ReaderPoolSize, srv.Config.WriterPoolSize)
 }
 
 func (srv *Server) initTimeEvents() {
