@@ -136,8 +136,10 @@ func (srv *Server) IOLoop(conn net.Conn) {
 		if srv.Config.AofState == conf.RedisAofOn && c.Cmd.Flags&client.RedisCmdWrite > 0 && c.Dirty != 0 {
 			loggers.Debug("Client exec a write cmd or make db dirty")
 			srv.propagate(c)
-			// 现在默认将每个写命令都刷写到aof文件中
-			srv.flushAppendOnlyFile()
+			// 如果配置的是每次都要把命令写入，每次都要把命令刷写到文件中
+			if srv.Config.AofFSync == conf.RedisAofFSyncAlways {
+				srv.flushAppendOnlyFile()
+			}
 			c.Dirty = 0
 		}
 	}
@@ -231,10 +233,10 @@ func (srv *Server) getDefaultDB() *database.Database {
 func (srv *Server) loadDataFromDisk() {
 	startTime := time.Now()
 	if srv.Config.AofState == conf.RedisAofOn {
-		loggers.Info("redis aof start to load data from disk at %s", startTime.Format("20060102 15:04:05"))
+		loggers.Info("redis AOF start to load data from disk at %s", startTime.Format("20060102 15:04:05"))
 		srv.loadAppendOnlyFile()
 	} else {
-		loggers.Info("redis rdb start to load data from disk at %s", startTime.Format("20060102 15:04:05"))
+		loggers.Info("redis RDB start to load data from disk at %s", startTime.Format("20060102 15:04:05"))
 		srv.rdbLoad()
 	}
 }
