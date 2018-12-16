@@ -43,9 +43,6 @@ type Server struct {
 }
 
 func NewServer(config *conf.ServerConfig) *Server {
-	if config == nil {
-		config = conf.InitServerConfig()
-	}
 	server := &Server{
 		Config:       config,
 		commandTable: make(map[string]*client.Command),
@@ -205,13 +202,13 @@ func (srv *Server) initDB() {
 }
 
 func (srv *Server) initIOPool() {
-	for i := 0; i < srv.Config.ReaderPoolNum; i++ {
+	for i := 0; i < srv.Config.ReaderPoolSize; i++ {
 		tcp.ReaderPool.Put(tcp.NewBufIoReaderWithoutConn())
 	}
-	for i := 0; i < srv.Config.WriterPoolNum; i++ {
+	for i := 0; i < srv.Config.WriterPoolSize; i++ {
 		tcp.WriterPool.Put(tcp.NewBufIoWriterWithoutConn())
 	}
-	loggers.Debug("Successful init reader and writer pool. ReaderPoolSize:%d, WriterPoolSize:%d", srv.Config.ReaderPoolNum, srv.Config.WriterPoolNum)
+	loggers.Debug("Successful init reader and writer pool. ReaderPoolSize:%d, WriterPoolSize:%d", srv.Config.ReaderPoolSize, srv.Config.WriterPoolSize)
 }
 
 func (srv *Server) initTimeEvents() {
