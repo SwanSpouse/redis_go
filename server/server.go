@@ -25,6 +25,7 @@ const (
 
 // Redis server
 type Server struct {
+	TcpListener      net.Listener
 	clientIDSequence int64 // client auto increasing sequence id
 	Config           *conf.ServerConfig
 	Databases        []*database.Database     /* database*/
@@ -42,6 +43,8 @@ type Server struct {
 	aofBuf           []byte     // append only file buffer
 	aofLastSave      time.Time  // aof last save time
 	TimeEventLoop    *EventLoop // redis time event
+	WaitGroup        util.WaitGroupWrapper
+	ExitChan         chan int
 }
 
 func NewServer(config *conf.ServerConfig) *Server {
@@ -50,6 +53,7 @@ func NewServer(config *conf.ServerConfig) *Server {
 		commandTable:  make(map[string]*client.Command),
 		clients:       make(map[int64]*client.Client),
 		TimeEventLoop: NewEventLoop(),
+		ExitChan:      make(chan int),
 	}
 	// init general parameters
 	server.initServer()
@@ -65,9 +69,6 @@ func NewServer(config *conf.ServerConfig) *Server {
 
 	// 在这里把 serverCron 添加到timeEvent里面
 	server.TimeEventLoop.NewTimeEvent(100, 0, true, server.ServerCron)
-
-	// 处理时间事件
-	go server.processTimeEvents()
 
 	// load data
 	server.loadDataFromDisk()
@@ -162,11 +163,13 @@ func (srv *Server) IOLoop(conn net.Conn) {
 }
 
 // 启动redis server 并开始监听TCP连接
-func (srv *Server) Serve(listener net.Listener) {
-	loggers.Info("TCP: listening on %s", listener.Addr())
+func (srv *Server) TCPServe() {
+	loggers.Info("TCP: listening on %s", srv.TcpListener.Addr())
+
 	// loop for accepting tcp connection from redis client
 	for {
-		clientConn, err := listener.Accept()
+		// 接收来自客户端的请求
+		clientConn, err := srv.TcpListener.Accept()
 		if err != nil {
 			// ignore temporary errors
 			if netError, ok := err.(net.Error); ok && netError.Temporary() {
@@ -178,7 +181,7 @@ func (srv *Server) Serve(listener net.Listener) {
 		}
 		go srv.IOLoop(clientConn)
 	}
-	loggers.Errorf("TCP: closing %s", listener.Addr())
+	loggers.Errorf("TCP: closing %s", srv.TcpListener.Addr())
 }
 
 func (srv *Server) addClient(c *client.Client) {
@@ -224,23 +227,33 @@ func (srv *Server) initIOPool() {
 }
 
 func (srv *Server) processTimeEvents() {
-	for range time.NewTicker(100 * time.Millisecond).C {
-		srv.TimeEventLoop.lock.Lock()
+	loggers.Debug("start to processTimeEvents")
+	workTicker := time.NewTicker(100 * time.Millisecond)
+	for {
+		select {
+		case <-workTicker.C:
+			srv.TimeEventLoop.lock.Lock()
 
-		currentTime := util.GetCurrentMillisecond()
-		for timeEventId, timeEvent := range srv.TimeEventLoop.events {
-			// 超过时间间隔，需要被执行
-			if currentTime-srv.TimeEventLoop.lastTime >= timeEvent.Interval {
-				timeEvent.Proc()
-				// 执行一次的任务在执行过后进行删除
-				if !timeEvent.runInCircle {
-					delete(srv.TimeEventLoop.events, timeEventId)
+			currentTime := util.GetCurrentMillisecond()
+			for timeEventId, timeEvent := range srv.TimeEventLoop.events {
+				// 超过时间间隔，需要被执行
+				if currentTime-srv.TimeEventLoop.lastTime >= timeEvent.Interval {
+					timeEvent.Proc()
+					// 执行一次的任务在执行过后进行删除
+					if !timeEvent.runInCircle {
+						delete(srv.TimeEventLoop.events, timeEventId)
+					}
 				}
 			}
+			srv.TimeEventLoop.lastTime = currentTime
+			srv.TimeEventLoop.lock.Unlock()
+		case <-srv.ExitChan:
+			goto exit
 		}
-		srv.TimeEventLoop.lastTime = currentTime
-		srv.TimeEventLoop.lock.Unlock()
 	}
+exit:
+	loggers.Info("PROCESS TIME EVENTS: closing")
+	workTicker.Stop()
 }
 
 func (srv *Server) getDefaultDB() *database.Database {
