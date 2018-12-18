@@ -9,6 +9,7 @@ import (
 	re "redis_go/error"
 	"redis_go/loggers"
 	"redis_go/tcp"
+	"redis_go/util"
 	"runtime"
 	"strings"
 	"sync"
@@ -52,18 +53,25 @@ func NewServer(config *conf.ServerConfig) *Server {
 	}
 	// init general parameters
 	server.initServer()
+
 	// init Reader & Writer Sync Pool
 	server.initIOPool()
+
 	// init databases
 	server.initDB()
+
 	// init commandTable table
 	server.populateCommandTable()
 
 	// 在这里把 serverCron 添加到timeEvent里面
-	// init time events
-	go server.initTimeEvents()
+	server.TimeEventLoop.NewTimeEvent(100, 0, true, server.ServerCron)
+
+	// 处理时间事件
+	go server.processTimeEvents()
+
 	// load data
 	server.loadDataFromDisk()
+
 	loggers.Debug("redis server: %+v", server)
 	return server
 }
@@ -215,14 +223,24 @@ func (srv *Server) initIOPool() {
 	loggers.Debug("Successful init reader and writer pool. ReaderPoolSize:%d, WriterPoolSize:%d", srv.Config.ReaderPoolSize, srv.Config.WriterPoolSize)
 }
 
-func (srv *Server) initTimeEvents() {
-	//ticker := time.NewTicker(time.Second)
-	//for _ = range ticker.C {
-	//	log.Info("TICKER INFO client list length %d", len(srv.clients))
-	//	for i, item := range srv.clients {
-	//		log.Info("TICKER current client list index %d, info:%+v", i, item)
-	//	}
-	//}
+func (srv *Server) processTimeEvents() {
+	for range time.NewTicker(100 * time.Millisecond).C {
+		srv.TimeEventLoop.lock.Lock()
+
+		currentTime := util.GetCurrentMillisecond()
+		for timeEventId, timeEvent := range srv.TimeEventLoop.events {
+			// 超过时间间隔，需要被执行
+			if currentTime-srv.TimeEventLoop.lastTime >= timeEvent.Interval {
+				timeEvent.Proc()
+				// 执行一次的任务在执行过后进行删除
+				if !timeEvent.runInCircle {
+					delete(srv.TimeEventLoop.events, timeEventId)
+				}
+			}
+		}
+		srv.TimeEventLoop.lastTime = currentTime
+		srv.TimeEventLoop.lock.Unlock()
+	}
 }
 
 func (srv *Server) getDefaultDB() *database.Database {
@@ -241,4 +259,17 @@ func (srv *Server) loadDataFromDisk() {
 		loggers.Info("redis rdb start to load data from disk at %s", startTime.Format("20060102 15:04:05"))
 		srv.rdbLoad()
 	}
+}
+
+/**
+ServerCron主要负责一下工作:
+	更新服务器的各类统计信息，比如时间、内存占用、数据库占用情况等。
+	清理数据库中的过期键值对。
+	对不合理的数据库进行大小调整。
+	关闭和清理连接失效的客户端。
+	尝试进行 AOF 或 RDB 持久化操作。
+	如果服务器是主节点的话，对附属节点进行定期同步。
+	如果处于集群模式的话，对集群进行定期同步和连接测试。
+*/
+func (srv *Server) ServerCron() {
 }
