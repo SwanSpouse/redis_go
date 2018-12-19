@@ -64,9 +64,12 @@ type CommandArgument []byte
 
 //------------------------------------------------------------------------------------------------
 
-var (
-	WriterPool sync.Pool // Writer连接池
-)
+// Writer连接池
+var WriterPool = &sync.Pool{
+	New: func() interface{} {
+		return new(BufIoWriter)
+	},
+}
 
 type BufIoWriter struct {
 	io.Writer
@@ -75,14 +78,7 @@ type BufIoWriter struct {
 }
 
 func NewBufIoWriter(cn net.Conn) *BufIoWriter {
-	var w *BufIoWriter
-	if v := WriterPool.Get(); v != nil {
-		loggers.Debug("Get BufIoWriter from WriterPool")
-		w = v.(*BufIoWriter)
-	} else {
-		loggers.Debug("Can not get BufIoWriter from WriterPool, return a New BufIoWriter")
-		w = new(BufIoWriter)
-	}
+	w := WriterPool.Get().(*BufIoWriter)
 	w.Reset(cn)
 	return w
 }
@@ -91,8 +87,10 @@ func ReturnBufIoWriter(w *BufIoWriter) {
 	WriterPool.Put(w)
 }
 
-func NewBufIoWriterWithoutConn() *BufIoWriter {
-	return new(BufIoWriter)
+func InitBufIoWriterPool(size int) {
+	for i := 0; i < size; i ++ {
+		WriterPool.Put(new(BufIoWriter))
+	}
 }
 
 // returns the number of buffered bytes

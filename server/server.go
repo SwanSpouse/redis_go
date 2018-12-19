@@ -85,6 +85,8 @@ func (srv *Server) isServiceAvailable() bool {
 // 处理来自客户端的请求
 func (srv *Server) IOLoop(conn net.Conn) {
 	loggers.Info("TCP: new client(%s)", conn.RemoteAddr())
+	// TODO lmj srv.clients 有个数限制
+
 	c := client.NewClient(atomic.AddInt64(&srv.clientIDSequence, 1), conn, srv.getDefaultDB())
 	srv.addClient(c)
 
@@ -188,7 +190,6 @@ func (srv *Server) addClient(c *client.Client) {
 	srv.mu.Lock()
 	defer srv.mu.Unlock()
 
-	// TODO lmj srv.clients 有个数限制
 	srv.clients[c.ID()] = c
 }
 
@@ -196,6 +197,7 @@ func (srv *Server) removeClient(c *client.Client) {
 	srv.mu.Lock()
 	defer srv.mu.Unlock()
 	c.Close()
+	client.ReturnClient(c)
 	delete(srv.clients, c.ID())
 }
 
@@ -217,12 +219,8 @@ func (srv *Server) initDB() {
 }
 
 func (srv *Server) initIOPool() {
-	for i := 0; i < srv.Config.ReaderPoolSize; i++ {
-		tcp.ReaderPool.Put(tcp.NewBufIoReaderWithoutConn())
-	}
-	for i := 0; i < srv.Config.WriterPoolSize; i++ {
-		tcp.WriterPool.Put(tcp.NewBufIoWriterWithoutConn())
-	}
+	tcp.InitBufIoReaderPool(srv.Config.ReaderPoolSize)
+	tcp.InitBufIoWriterPool(srv.Config.WriterPoolSize)
 	loggers.Debug("Successful init reader and writer pool. ReaderPoolSize:%d, WriterPoolSize:%d", srv.Config.ReaderPoolSize, srv.Config.WriterPoolSize)
 }
 
