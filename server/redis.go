@@ -84,6 +84,24 @@ func (p *Program) Init() {
 	p.Server = server
 }
 
+func (p *Program) InitForMock(inputConfig *conf.ServerConfig) {
+	var opts *conf.ServerConfig
+	if inputConfig == nil {
+		// 用默认值初始化config
+		opts = conf.NewServerConfig()
+	} else {
+		opts = inputConfig
+	}
+	server := NewServer(opts)
+	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", server.Config.BindAddr, server.Config.Port))
+	if err != nil || listener == nil {
+		os.Exit(1)
+	}
+	server.TcpListener = listener
+
+	p.Server = server
+}
+
 func (p *Program) Start() {
 	// 依次启动后台服务
 	p.WaitGroup.Wrap(func() {

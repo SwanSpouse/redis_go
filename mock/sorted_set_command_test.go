@@ -6,29 +6,28 @@ import (
 	. "github.com/onsi/gomega"
 	"net"
 	"redis_go/handlers"
-	"redis_go/loggers"
 	"redis_go/server"
 	"redis_go/util"
 )
 
 var _ = Describe("TestRedisSortedSetCommands", func() {
-	var cn net.Conn
 	var w *RequestWriter
 	var r *ResponseReader
+
 	sortedSetCommandTestBaseKey := "sorted_set_command_test_base_key"
-
-	srv := server.NewServer(nil)
-	lis, err := net.Listen("tcp", "127.0.0.1:9735")
-	if err != nil {
-		loggers.Errorf("server start error %+v", err)
-	}
-	go srv.Serve(lis)
-	loggers.Info("redis server start at %s:%s", "127.0.0.1", "9735")
-
 	BeforeEach(func() {
-		cn, err = net.Dial("tcp", "127.0.0.1:9735")
+		cn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", MockAddr, MockPort))
+		Expect(err).To(BeNil())
+
 		w = NewRequestWriter(cn)
 		r = NewResponseReader(cn)
+
+		// first truncate all DB
+		w.WriteCmdString(server.RedisServerCommandFlushAll)
+		w.Flush()
+		ret, err := r.Read()
+		Expect(err).To(BeNil())
+		Expect(ret[0]).To(Equal("OK"))
 
 		// init basic set
 		input := make([]string, 0)
@@ -39,7 +38,7 @@ var _ = Describe("TestRedisSortedSetCommands", func() {
 		}
 		w.WriteCmdString(handlers.RedisSortedSetCommandZAdd, input...)
 		w.Flush()
-		ret, err := r.Read()
+		ret, err = r.Read()
 		Expect(err).To(BeNil())
 		Expect(ret[0]).To(Equal("10"))
 	})

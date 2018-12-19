@@ -6,31 +6,29 @@ import (
 	. "github.com/onsi/gomega"
 	"net"
 	"redis_go/handlers"
-	"redis_go/loggers"
 	"redis_go/server"
-)
+	)
 
 var _ = Describe("TestRedisSetCommand", func() {
-	var cn net.Conn
 	var w *RequestWriter
 	var r *ResponseReader
 
 	setCmdTestBaseKey := "redis_set_command_test_common_key"
 
-	srv := server.NewServer(nil)
-	lis, err := net.Listen("tcp", "127.0.0.1:9734")
-	if err != nil {
-		loggers.Errorf("server start error %+v", err)
-	}
-	go srv.Serve(lis)
-	loggers.Info("redis server start at %s:%s", "127.0.0.1", "9734")
-
 	BeforeEach(func() {
-		cn, err = net.Dial("tcp", "127.0.0.1:9734")
+		cn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", MockAddr, MockPort))
+		Expect(err).To(BeNil())
+
 		w = NewRequestWriter(cn)
 		r = NewResponseReader(cn)
 
 		// init basic set
+		w.WriteCmdString(server.RedisServerCommandFlushAll)
+		w.Flush()
+		ret, err := r.Read()
+		Expect(err).To(BeNil())
+		Expect(ret[0]).To(Equal("OK"))
+
 		input := make([]string, 0)
 		input = append(input, setCmdTestBaseKey)
 		for i := 0; i < 10; i++ {
@@ -38,17 +36,9 @@ var _ = Describe("TestRedisSetCommand", func() {
 		}
 		w.WriteCmdString(handlers.RedisSetCommandSADD, input...)
 		w.Flush()
-		ret, err := r.Read()
+		ret, err = r.Read()
 		Expect(err).To(BeNil())
 		Expect(ret[0]).To(Equal("10"))
-	})
-
-	AfterEach(func() {
-		w.WriteCmdString(handlers.RedisKeyCommandDel, setCmdTestBaseKey)
-		w.Flush()
-		ret, err := r.Read()
-		Expect(err).To(BeNil())
-		Expect(ret[0]).To(Equal("1"))
 	})
 
 	It("Test redis set command SAdd SCard", func() {

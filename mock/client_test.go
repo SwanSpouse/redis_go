@@ -6,38 +6,29 @@ import (
 	. "github.com/onsi/gomega"
 	"net"
 	re "redis_go/error"
-	"redis_go/loggers"
 	"redis_go/server"
 	"redis_go/tcp"
-	"testing"
 )
-
-func TestRedisClient(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Test Redis Mock Test")
-}
 
 var _ = Describe("MockRedisClient", func() {
 	var cn net.Conn
 	var w *RequestWriter
 	var r *ResponseReader
-
-	srv := server.NewServer(nil)
-	lis, err := net.Listen("tcp", "127.0.0.1:9739")
-	if err != nil {
-		loggers.Errorf("server start error %+v", err)
-		return
-	}
-
-	go srv.Serve(lis)
-	loggers.Info("redis server start at %s:%s", "127.0.0.1", "9739")
+	var err error
 
 	BeforeEach(func() {
-		cn, err = net.Dial("tcp", "127.0.0.1:9739")
+		cn, err = net.Dial("tcp", fmt.Sprintf("127.0.0.1:%d", MockPort))
 		Expect(err).To(BeNil())
 
 		w = NewRequestWriter(cn)
 		r = NewResponseReader(cn)
+
+		// first truncate all DB
+		w.WriteCmdString(server.RedisServerCommandFlushAll)
+		w.Flush()
+		ret, err := r.Read()
+		Expect(err).To(BeNil())
+		Expect(ret[0]).To(Equal("OK"))
 	})
 
 	AfterEach(func() {
