@@ -9,9 +9,13 @@ import (
 	"redis_go/tcp"
 	"sync"
 	"time"
-	)
+)
 
-var clientPool sync.Pool
+var clientPool = &sync.Pool{
+	New: func() interface{} {
+		return new(Client)
+	},
+}
 
 type Client struct {
 	id          int64              // Client ID
@@ -30,13 +34,19 @@ type Client struct {
 }
 
 func (c *Client) reset(clientId int64, cn net.Conn, defaultDB *database.Database) {
-	*c = Client{
-		id: clientId,
-		cn: cn,
-		db: defaultDB,
-	}
+	c.id = clientId
+	c.cn = cn
+	c.db = defaultDB
+	c.Closed = false
 	c.reader = tcp.NewBufIoReader(cn)
 	c.writer = tcp.NewBufIoWriter(cn)
+	c.Argv = nil
+	c.Argc = 0
+	c.Cmd = nil
+	c.LastCmd = nil
+	c.Dirty = 0
+	c.execTimeout = time.Time{}
+	c.idleTimeout = time.Time{}
 }
 
 func (c *Client) release() {
@@ -45,22 +55,17 @@ func (c *Client) release() {
 	}
 	tcp.ReturnBufIoReader(c.reader)
 	tcp.ReturnBufIoWriter(c.writer)
-	clientPool.Put(c)
-
 	c.cn.Close()
 }
 
 func NewClient(clientId int64, cn net.Conn, defaultDB *database.Database) *Client {
-	var c *Client
-	if obj := clientPool.Get(); obj != nil {
-		loggers.Debug("Get Client from ClientPool")
-		c = obj.(*Client)
-	} else {
-		loggers.Debug("Can not get Client from ClientPool, return a new Client")
-		c = new(Client)
-	}
+	c := clientPool.Get().(*Client)
 	c.reset(clientId, cn, defaultDB)
 	return c
+}
+
+func ReturnClient(c *Client) {
+	clientPool.Put(c)
 }
 
 func NewFakeClient() *Client {

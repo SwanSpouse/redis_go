@@ -16,19 +16,15 @@ type BufIoReader struct {
 	w   int // writer index
 }
 
-var (
-	ReaderPool sync.Pool // Reader连接池
-)
+// Reader连接池
+var ReaderPool = &sync.Pool{
+	New: func() interface{} {
+		return new(BufIoReader)
+	},
+}
 
 func NewBufIoReader(cn net.Conn) *BufIoReader {
-	var r *BufIoReader
-	if v := ReaderPool.Get(); v != nil {
-		loggers.Debug("Get BufIoReader from ReaderPool")
-		r = v.(*BufIoReader)
-	} else {
-		loggers.Debug("Can not get BufIoReader from ReaderPool, return a New BufIOReader")
-		r = new(BufIoReader)
-	}
+	r := ReaderPool.Get().(*BufIoReader)
 	r.Reset(cn)
 	return r
 }
@@ -37,8 +33,10 @@ func ReturnBufIoReader(r *BufIoReader) {
 	ReaderPool.Put(r)
 }
 
-func NewBufIoReaderWithoutConn() *BufIoReader {
-	return new(BufIoReader)
+func InitBufIoReaderPool(size int) {
+	for i := 0; i < size; i ++ {
+		ReaderPool.Put(new(BufIoReader))
+	}
 }
 
 // reset buffer & rd
