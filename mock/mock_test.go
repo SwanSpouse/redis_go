@@ -2,6 +2,7 @@ package mock
 
 import (
 	. "github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
 	"redis_go/conf"
 	"redis_go/server"
@@ -21,6 +22,7 @@ func TestAll(t *testing.T) {
 	p.InitForMock(defaultConfig)
 	p.Start()
 
+	config.GinkgoConfig.FailFast = true
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Redis Mock Test")
 
