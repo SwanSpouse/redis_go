@@ -6,28 +6,27 @@ import (
 	. "github.com/onsi/gomega"
 	"net"
 	"redis_go/handlers"
-	"redis_go/loggers"
 	"redis_go/server"
 )
 
 var _ = Describe("TestRedisListCommand", func() {
-	var cn net.Conn
 	var w *RequestWriter
 	var r *ResponseReader
 
 	commonKey := "redis_list_test_common_key"
-	srv := server.NewServer(nil)
-	lis, err := net.Listen("tcp", "127.0.0.1:9732")
-	if err != nil {
-		loggers.Errorf("server start error %+v", err)
-	}
-	go srv.Serve(lis)
-	loggers.Info("redis server start at %s:%s", "127.0.0.1", "9732")
-
 	BeforeEach(func() {
-		cn, err = net.Dial("tcp", "127.0.0.1:9732")
+		cn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", MockAddr, MockPort))
+		Expect(err).To(BeNil())
+
 		w = NewRequestWriter(cn)
 		r = NewResponseReader(cn)
+
+		// first truncate all DB
+		w.WriteCmdString(server.RedisServerCommandFlushAll)
+		w.Flush()
+		ret, err := r.Read()
+		Expect(err).To(BeNil())
+		Expect(ret[0]).To(Equal("OK"))
 
 		input := make([]string, 0)
 		input = append(input, commonKey)
@@ -36,7 +35,7 @@ var _ = Describe("TestRedisListCommand", func() {
 		}
 		w.WriteCmdString(handlers.RedisListCommandRPush, input...)
 		w.Flush()
-		ret, err := r.Read()
+		ret, err = r.Read()
 		Expect(err).To(BeNil())
 		Expect(ret[0]).To(Equal("10"))
 	})

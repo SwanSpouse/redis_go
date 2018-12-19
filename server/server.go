@@ -181,7 +181,7 @@ func (srv *Server) TCPServe() {
 		}
 		go srv.IOLoop(clientConn)
 	}
-	loggers.Errorf("TCP: closing %s", srv.TcpListener.Addr())
+	loggers.Info("TCP: closing %s", srv.TcpListener.Addr())
 }
 
 func (srv *Server) addClient(c *client.Client) {

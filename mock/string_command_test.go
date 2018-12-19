@@ -6,27 +6,25 @@ import (
 	. "github.com/onsi/gomega"
 	"net"
 	"redis_go/handlers"
-	"redis_go/loggers"
 	"redis_go/server"
 )
 
 var _ = Describe("TestRedisStringCommand", func() {
-	var cn net.Conn
 	var w *RequestWriter
 	var r *ResponseReader
-
-	srv := server.NewServer(nil)
-	lis, err := net.Listen("tcp", "127.0.0.1:9731")
-	if err != nil {
-		loggers.Errorf("server start error %+v", err)
-	}
-	go srv.Serve(lis)
-	loggers.Info("redis server start at %s:%s", "127.0.0.1", "9731")
-
 	BeforeEach(func() {
-		cn, err = net.Dial("tcp", "127.0.0.1:9731")
+		cn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", MockAddr, MockPort))
+		Expect(err).To(BeNil())
+
 		w = NewRequestWriter(cn)
 		r = NewResponseReader(cn)
+
+		// first truncate all DB
+		w.WriteCmdString(server.RedisServerCommandFlushAll)
+		w.Flush()
+		ret, err := r.Read()
+		Expect(err).To(BeNil())
+		Expect(ret[0]).To(Equal("OK"))
 	})
 
 	It("test redis string command set and get", func() {

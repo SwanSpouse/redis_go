@@ -93,7 +93,7 @@ func NewServerConfig() *ServerConfig {
 		ReaderPoolSize: RedisIOReaderPoolThreadNum,
 		WriterPoolSize: RedisIOWriterPoolThreadNum,
 		RdbFilename:    RedisRDBDefaultFilePath,
-		AofState:       RedisAofOff,
+		AofState:       RedisAofOn,
 		AofFSync:       RedisAofFSyncAlways,
 		AofFilename:    RedisAofDefaultFilePath,
 	}

@@ -60,9 +60,9 @@ func (srv *Server) Process(cli *client.Client) {
 	case RedisServerCommandDebug:
 		cli.ResponseReError(re.ErrFunctionNotImplement)
 	case RedisServerCommandFlushAll:
-		cli.ResponseReError(re.ErrFunctionNotImplement)
+		srv.flushAll(cli)
 	case RedisServerCommandFlushDB:
-		cli.ResponseReError(re.ErrFunctionNotImplement)
+		srv.flushDB(cli)
 	case RedisServerCommandInfo:
 		cli.ResponseReError(re.ErrFunctionNotImplement)
 	case RedisServerCommandLastSave:
@@ -150,6 +150,21 @@ func (srv *Server) doSave(cli *client.Client, encoder *rdb.Encoder) {
 	}
 	encoder.EncodeFooter()
 	loggers.Info("redis rdb save finished")
+	cli.ResponseOK()
+}
+
+// 清空Client当前所处的数据库
+// TODO @lmj 这里是不是应该有锁。
+func (srv *Server) flushDB(cli *client.Client) {
+	cli.SelectedDatabase().FlushDB()
+	cli.ResponseOK()
+}
+
+// 清空所有数据库
+func (srv *Server) flushAll(cli *client.Client) {
+	for _, db := range srv.Databases {
+		db.FlushDB()
+	}
 	cli.ResponseOK()
 }
 
