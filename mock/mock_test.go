@@ -12,12 +12,17 @@ import (
 var MockAddr = "127.0.0.1"
 var MockPort = 9736
 
+// 如果想要在测试中开启AOF，需要在这里把开关打开
+var LoadDataFromAofFile bool
+
 // run all mock test
 func TestAll(t *testing.T) {
 	p := &server.Program{}
 	defaultConfig := conf.NewServerConfig()
 	defaultConfig.Port = MockPort
-	defaultConfig.AofState = conf.RedisAofOff
+	if LoadDataFromAofFile {
+		defaultConfig.AofState = conf.RedisAofOn
+	}
 
 	p.InitForMock(defaultConfig)
 	p.Start()
