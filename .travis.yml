@@ -1,0 +1,40 @@
+# 使用的语言
+language: go
+
+# 使用的go版本
+go:
+- 1.8.x
+- 1.9.x
+- 1.10.x
+- 1.11.x
+
+# 仓库的分支
+branches:
+  only:
+  - master
+
+# 环境
+env:
+- GOARCH=amd64
+- GOARCH=386
+
+sudo: false
+
+# 在install需要执行
+before_install:
+- go get github.com/mitchellh/hashstructure
+- go get github.com/cupcake/rdb/crc64
+- go get github.com/BurntSushi/toml
+- go get github.com/mreiferson/go-options
+- go get github.com/onsi/ginkgo
+- go get github.com/onsi/gomega
+- go get github.com/kusora/raven-go
+
+# 需要执行的命令
+script:
+- wget -O dep https://github.com/golang/dep/releases/download/v0.4.1/dep-linux-amd64
+- chmod +x dep
+- ./test.sh
+
+notifications:
+  email: false
