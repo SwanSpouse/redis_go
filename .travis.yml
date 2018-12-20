@@ -22,19 +22,14 @@ sudo: false
 
 # 在install需要执行
 before_install:
-- go get github.com/mitchellh/hashstructure
-- go get github.com/cupcake/rdb/crc64
-- go get github.com/BurntSushi/toml
-- go get github.com/mreiferson/go-options
-- go get github.com/onsi/ginkgo
-- go get github.com/onsi/gomega
-- go get github.com/kusora/raven-go
+- go get github.com/mattn/goveralls
 
 # 需要执行的命令
 script:
 - wget -O dep https://github.com/golang/dep/releases/download/v0.4.1/dep-linux-amd64
 - chmod +x dep
 - ./test.sh
+- ./coverage.sh --coveralls
 
 notifications:
-  email: false
+  email: limingji0503@126.com
