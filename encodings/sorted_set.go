@@ -2,11 +2,12 @@ package encodings
 
 import (
 	"fmt"
-	re "redis_go/error"
-	"redis_go/raw_type"
-	"redis_go/util"
 	"strconv"
 	"time"
+
+	re "github.com/SwanSpouse/redis_go/error"
+	"github.com/SwanSpouse/redis_go/raw_type"
+	"github.com/SwanSpouse/redis_go/util"
 )
 
 type SortedSet struct {

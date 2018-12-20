@@ -3,18 +3,19 @@ package server
 import (
 	"io"
 	"net"
-	"redis_go/client"
-	"redis_go/conf"
-	"redis_go/database"
-	re "redis_go/error"
-	"redis_go/loggers"
-	"redis_go/tcp"
-	"redis_go/util"
 	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/SwanSpouse/redis_go/client"
+	"github.com/SwanSpouse/redis_go/conf"
+	"github.com/SwanSpouse/redis_go/database"
+	re "github.com/SwanSpouse/redis_go/error"
+	"github.com/SwanSpouse/redis_go/loggers"
+	"github.com/SwanSpouse/redis_go/tcp"
+	"github.com/SwanSpouse/redis_go/util"
 )
 
 const (

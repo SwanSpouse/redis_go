@@ -1,6 +1,6 @@
 package database
 
-import "redis_go/encodings"
+import "github.com/SwanSpouse/redis_go/encodings"
 
 var (
 	_ TBase = (*encodings.StringRaw)(nil)

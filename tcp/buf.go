@@ -1,7 +1,7 @@
 package tcp
 
 import (
-	re "redis_go/error"
+	re "github.com/SwanSpouse/redis_go/error"
 )
 
 type buffer []byte

@@ -2,8 +2,9 @@ package server
 
 import (
 	"fmt"
-	"redis_go/client"
-	"redis_go/handlers"
+
+	"github.com/SwanSpouse/redis_go/client"
+	"github.com/SwanSpouse/redis_go/handlers"
 )
 
 /*

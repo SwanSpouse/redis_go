@@ -3,8 +3,9 @@ package mock
 import (
 	"fmt"
 	"io"
-	"redis_go/loggers"
-	"redis_go/tcp"
+
+	"github.com/SwanSpouse/redis_go/loggers"
+	"github.com/SwanSpouse/redis_go/tcp"
 )
 
 /**

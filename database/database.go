@@ -1,8 +1,8 @@
 package database
 
 import (
-	"redis_go/loggers"
-	"redis_go/raw_type"
+	"github.com/SwanSpouse/redis_go/loggers"
+	"github.com/SwanSpouse/redis_go/raw_type"
 )
 
 type Database struct {

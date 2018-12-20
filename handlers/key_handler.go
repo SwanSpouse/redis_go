@@ -2,10 +2,11 @@ package handlers
 
 import (
 	"math/rand"
-	"redis_go/client"
-	re "redis_go/error"
 	"strings"
 	"time"
+
+	"github.com/SwanSpouse/redis_go/client"
+	re "github.com/SwanSpouse/redis_go/error"
 )
 
 var (

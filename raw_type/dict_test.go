@@ -1,9 +1,10 @@
 package raw_type
 
 import (
+	"testing"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"testing"
 )
 
 func TestWriteTest(t *testing.T) {

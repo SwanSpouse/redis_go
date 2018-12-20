@@ -1,12 +1,14 @@
 package mock
 
 import (
-	. "github.com/onsi/ginkgo"
-	"github.com/onsi/ginkgo/config"
-	. "github.com/onsi/gomega"
-	"redis_go/conf"
-	"redis_go/server"
 	"testing"
+
+	"github.com/SwanSpouse/redis_go/conf"
+	"github.com/SwanSpouse/redis_go/server"
+	"github.com/onsi/ginkgo/config"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 var MockAddr = "127.0.0.1"

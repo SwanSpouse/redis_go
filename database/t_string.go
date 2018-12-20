@@ -1,7 +1,7 @@
 package database
 
 import (
-	"redis_go/encodings"
+	"github.com/SwanSpouse/redis_go/encodings"
 )
 
 var (

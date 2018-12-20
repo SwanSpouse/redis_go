@@ -2,12 +2,14 @@ package mock
 
 import (
 	"fmt"
+	"net"
+
+	re "github.com/SwanSpouse/redis_go/error"
+	"github.com/SwanSpouse/redis_go/server"
+	"github.com/SwanSpouse/redis_go/tcp"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"net"
-	re "redis_go/error"
-	"redis_go/server"
-	"redis_go/tcp"
 )
 
 var _ = Describe("MockRedisClient", func() {

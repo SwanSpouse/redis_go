@@ -4,10 +4,11 @@ import (
 	"bufio"
 	"errors"
 	"os"
-	re "redis_go/error"
-	"redis_go/util"
 	"strconv"
 	"strings"
+
+	re "github.com/SwanSpouse/redis_go/error"
+	"github.com/SwanSpouse/redis_go/util"
 )
 
 type Decoder struct {

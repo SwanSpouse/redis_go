@@ -3,9 +3,10 @@ package encodings
 import (
 	"fmt"
 	"math"
-	re "redis_go/error"
 	"strconv"
 	"time"
+
+	re "github.com/SwanSpouse/redis_go/error"
 )
 
 type StringInt struct {

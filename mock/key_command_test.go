@@ -1,12 +1,14 @@
 package mock
 
 import (
+	"fmt"
+	"net"
+
+	"github.com/SwanSpouse/redis_go/handlers"
+	"github.com/SwanSpouse/redis_go/server"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"net"
-	"redis_go/handlers"
-	"redis_go/server"
-	"fmt"
 )
 
 var _ = Describe("Test Redis key command", func() {

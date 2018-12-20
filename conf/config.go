@@ -1,8 +1,9 @@
 package conf
 
 import (
-	"redis_go/loggers"
 	"time"
+
+	"github.com/SwanSpouse/redis_go/loggers"
 )
 
 const (

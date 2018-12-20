@@ -2,11 +2,13 @@ package mock
 
 import (
 	"fmt"
+	"net"
+
+	"github.com/SwanSpouse/redis_go/handlers"
+	"github.com/SwanSpouse/redis_go/server"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"net"
-	"redis_go/handlers"
-	"redis_go/server"
 )
 
 var _ = Describe("TestRedisStringCommand", func() {
