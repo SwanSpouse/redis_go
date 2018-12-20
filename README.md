@@ -1,8 +1,6 @@
 
 [![Build Status](https://www.travis-ci.org/SwanSpouse/redis_go.svg?branch=master)](https://www.travis-ci.org/SwanSpouse/redis_go)
-
 [![Go Report Card](https://goreportcard.com/badge/github.com/SwanSpouse/redis_go)](https://goreportcard.com/report/github.com/SwanSpouse/redis_go)
-
 [![Coverage Status](https://coveralls.io/repos/github/SwanSpouse/redis_go/badge.svg?branch=master)](https://coveralls.io/github/SwanSpouse/redis_go?branch=master)
 
 ### redis go
