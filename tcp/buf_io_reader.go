@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"io"
 	"net"
-	re "redis_go/error"
-	"redis_go/loggers"
 	"sync"
+
+	re "github.com/SwanSpouse/redis_go/error"
+	"github.com/SwanSpouse/redis_go/loggers"
 )
 
 type BufIoReader struct {
@@ -34,7 +35,7 @@ func ReturnBufIoReader(r *BufIoReader) {
 }
 
 func InitBufIoReaderPool(size int) {
-	for i := 0; i < size; i ++ {
+	for i := 0; i < size; i++ {
 		ReaderPool.Put(new(BufIoReader))
 	}
 }

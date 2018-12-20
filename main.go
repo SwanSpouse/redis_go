@@ -1,10 +1,11 @@
 package main
 
 import (
-	"redis_go/server"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/SwanSpouse/redis_go/server"
 )
 
 // Run runs your Service.

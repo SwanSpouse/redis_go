@@ -2,10 +2,12 @@ package mock
 
 import (
 	"fmt"
+	"net"
+
+	"github.com/SwanSpouse/redis_go/handlers"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"net"
-	"redis_go/handlers"
 )
 
 var _ = Describe("Redis aof test", func() {

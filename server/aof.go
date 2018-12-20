@@ -3,13 +3,14 @@ package server
 import (
 	"fmt"
 	"io"
-	"redis_go/aof"
-	"redis_go/client"
-	"redis_go/conf"
-	"redis_go/handlers"
-	"redis_go/loggers"
 	"strings"
 	"time"
+
+	"github.com/SwanSpouse/redis_go/aof"
+	"github.com/SwanSpouse/redis_go/client"
+	"github.com/SwanSpouse/redis_go/conf"
+	"github.com/SwanSpouse/redis_go/handlers"
+	"github.com/SwanSpouse/redis_go/loggers"
 )
 
 func appendStrToByteArr(input []byte, args ...string) []byte {

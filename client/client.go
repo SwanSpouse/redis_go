@@ -3,12 +3,13 @@ package client
 import (
 	"errors"
 	"net"
-	"redis_go/database"
-	re "redis_go/error"
-	"redis_go/loggers"
-	"redis_go/tcp"
 	"sync"
 	"time"
+
+	"github.com/SwanSpouse/redis_go/database"
+	re "github.com/SwanSpouse/redis_go/error"
+	"github.com/SwanSpouse/redis_go/loggers"
+	"github.com/SwanSpouse/redis_go/tcp"
 )
 
 var clientPool = &sync.Pool{

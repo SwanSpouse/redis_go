@@ -3,10 +3,11 @@ package aof
 import (
 	"io"
 	"os"
-	"redis_go/database"
-	"redis_go/encodings"
-	"redis_go/loggers"
-	"redis_go/util"
+
+	"github.com/SwanSpouse/redis_go/database"
+	"github.com/SwanSpouse/redis_go/encodings"
+	"github.com/SwanSpouse/redis_go/loggers"
+	"github.com/SwanSpouse/redis_go/util"
 )
 
 type Encoder struct {

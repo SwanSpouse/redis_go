@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"redis_go/client"
+	"github.com/SwanSpouse/redis_go/client"
 )
 
 var (

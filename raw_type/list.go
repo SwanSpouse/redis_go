@@ -2,9 +2,10 @@ package raw_type
 
 import (
 	"fmt"
-	"redis_go/loggers"
 	"reflect"
 	"sync"
+
+	"github.com/SwanSpouse/redis_go/loggers"
 )
 
 /*==============================      ListNode       =================================*/

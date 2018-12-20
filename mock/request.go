@@ -2,7 +2,8 @@ package mock
 
 import (
 	"io"
-	"redis_go/tcp"
+
+	"github.com/SwanSpouse/redis_go/tcp"
 )
 
 /**

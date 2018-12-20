@@ -2,9 +2,10 @@ package raw_type
 
 import (
 	"fmt"
+	"testing"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"testing"
 )
 
 func TestDebugSkipList(t *testing.T) {

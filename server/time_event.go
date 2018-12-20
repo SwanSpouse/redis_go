@@ -1,9 +1,10 @@
 package server
 
 import (
-	"redis_go/util"
 	"sync"
 	"sync/atomic"
+
+	"github.com/SwanSpouse/redis_go/util"
 )
 
 type EventLoop struct {

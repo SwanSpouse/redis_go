@@ -1,8 +1,9 @@
 package server
 
 import (
-	"redis_go/loggers"
 	"testing"
+
+	"github.com/SwanSpouse/redis_go/loggers"
 )
 
 func TestCatAppendOnlyGenericCommand(t *testing.T) {

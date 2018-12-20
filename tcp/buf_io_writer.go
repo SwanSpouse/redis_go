@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"io"
 	"net"
-	re "redis_go/error"
-	"redis_go/loggers"
 	"reflect"
 	"strconv"
 	"strings"
 	"sync"
+
+	re "github.com/SwanSpouse/redis_go/error"
+	"github.com/SwanSpouse/redis_go/loggers"
 )
 
 // response type iota
@@ -88,7 +89,7 @@ func ReturnBufIoWriter(w *BufIoWriter) {
 }
 
 func InitBufIoWriterPool(size int) {
-	for i := 0; i < size; i ++ {
+	for i := 0; i < size; i++ {
 		WriterPool.Put(new(BufIoWriter))
 	}
 }

@@ -1,13 +1,14 @@
 package handlers
 
 import (
-	"redis_go/client"
-	"redis_go/database"
-	"redis_go/encodings"
-	re "redis_go/error"
-	"redis_go/loggers"
 	"strconv"
 	"strings"
+
+	"github.com/SwanSpouse/redis_go/client"
+	"github.com/SwanSpouse/redis_go/database"
+	"github.com/SwanSpouse/redis_go/encodings"
+	re "github.com/SwanSpouse/redis_go/error"
+	"github.com/SwanSpouse/redis_go/loggers"
 )
 
 var (

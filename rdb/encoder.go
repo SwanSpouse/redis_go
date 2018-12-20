@@ -3,12 +3,13 @@ package rdb
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/cupcake/rdb/crc64"
 	"hash"
 	"io"
 	"math"
 	"os"
 	"strconv"
+
+	"github.com/cupcake/rdb/crc64"
 )
 
 const Version = 6

@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	"redis_go/client"
-	re "redis_go/error"
-	"redis_go/loggers"
+	"github.com/SwanSpouse/redis_go/client"
+	re "github.com/SwanSpouse/redis_go/error"
+	"github.com/SwanSpouse/redis_go/loggers"
 )
 
 var (

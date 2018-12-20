@@ -1,11 +1,11 @@
 package server
 
 import (
-	"redis_go/client"
-	"redis_go/handlers"
-	"redis_go/loggers"
-	"redis_go/rdb"
-	"redis_go/util"
+	"github.com/SwanSpouse/redis_go/client"
+	"github.com/SwanSpouse/redis_go/handlers"
+	"github.com/SwanSpouse/redis_go/loggers"
+	"github.com/SwanSpouse/redis_go/rdb"
+	"github.com/SwanSpouse/redis_go/util"
 )
 
 var (

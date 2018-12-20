@@ -2,13 +2,15 @@ package raw_type
 
 import (
 	"fmt"
-	"github.com/mitchellh/hashstructure"
 	"math"
 	"math/rand"
-	"redis_go/loggers"
 	"reflect"
 	"sync"
 	"time"
+
+	"github.com/SwanSpouse/redis_go/loggers"
+
+	"github.com/mitchellh/hashstructure"
 )
 
 const (
