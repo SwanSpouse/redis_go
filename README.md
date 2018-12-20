@@ -1,4 +1,6 @@
 
+[![Build Status](https://www.travis-ci.org/SwanSpouse/redis_go.svg?branch=master)](https://www.travis-ci.org/SwanSpouse/redis_go)
+
 ### redis go
 
 最近在学习Redis，所以萌生了用golang重写一个redis的想法。因此有了这个项目。
