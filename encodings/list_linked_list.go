@@ -57,14 +57,14 @@ func (ll *ListLinkedList) LPop() string {
 	list := ll.GetValue().(*raw_type.List)
 	value := list.ListFirst().NodeValue()
 	ll.SetValue(list.ListRemoveNode(list.ListFirst()))
-	return value
+	return value.(string)
 }
 
 func (ll *ListLinkedList) RPop() string {
 	list := ll.GetValue().(*raw_type.List)
 	value := list.ListLast().NodeValue()
 	ll.SetValue(list.ListRemoveNode(list.ListLast()))
-	return value
+	return value.(string)
 }
 
 func (ll *ListLinkedList) LIndex(index int) (string, error) {
@@ -72,7 +72,7 @@ func (ll *ListLinkedList) LIndex(index int) (string, error) {
 	if node := list.ListIndex(index); node == nil {
 		return "", re.ErrNilValue
 	} else {
-		return node.NodeValue(), nil
+		return node.NodeValue().(string), nil
 	}
 }
 
@@ -174,7 +174,7 @@ func (ll *ListLinkedList) LRange(start int, stop int) []string {
 	stopNode := list.ListIndex(stop)
 
 	for node := startNode; node != stopNode.NodeNext(); node = node.NodeNext() {
-		ret = append(ret, node.NodeValue())
+		ret = append(ret, node.NodeValue().(string))
 	}
 	return ret
 }
@@ -197,7 +197,7 @@ func (ll *ListLinkedList) GetAllMembers() []string {
 		return ret
 	} else {
 		for node := linkedList.ListFirst(); node != nil; node = node.NodeNext() {
-			ret = append(ret, node.NodeValue())
+			ret = append(ret, node.NodeValue().(string))
 		}
 		return ret
 	}

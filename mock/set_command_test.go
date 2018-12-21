@@ -105,6 +105,7 @@ var _ = Describe("TestRedisSetCommand", func() {
 		if _, ok := members[ret[0]]; !ok {
 			Expect(true).To(Equal(false))
 		}
+
 		w.WriteCmdString(handlers.RedisSetCommandSCARD, setCmdTestBaseKey)
 		w.Flush()
 		ret, _ = r.Read()
@@ -116,6 +117,7 @@ var _ = Describe("TestRedisSetCommand", func() {
 		if _, ok := members[ret[0]]; !ok {
 			Expect(true).To(Equal(false))
 		}
+
 		w.WriteCmdString(handlers.RedisSetCommandSCARD, setCmdTestBaseKey)
 		w.Flush()
 		ret, _ = r.Read()
@@ -125,6 +127,7 @@ var _ = Describe("TestRedisSetCommand", func() {
 		w.Flush()
 		ret, _ = r.Read()
 		Expect(ret[0]).To(Equal("1"))
+
 		w.WriteCmdString(handlers.RedisSetCommandSCARD, setCmdTestBaseKey)
 		w.Flush()
 		ret, _ = r.Read()
@@ -134,6 +137,7 @@ var _ = Describe("TestRedisSetCommand", func() {
 		w.Flush()
 		ret, _ = r.Read()
 		Expect(ret[0]).To(Equal("0"))
+
 		w.WriteCmdString(handlers.RedisSetCommandSCARD, setCmdTestBaseKey)
 		w.Flush()
 		ret, _ = r.Read()
