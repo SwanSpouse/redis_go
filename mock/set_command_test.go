@@ -95,20 +95,41 @@ var _ = Describe("TestRedisSetCommand", func() {
 	})
 
 	It("Test redis set command SPop SRem SRandMember", func() {
+		w.WriteCmdString(handlers.RedisSetCommandSREM, setCmdTestBaseKey, "item1")
+		w.Flush()
+		ret, _ := r.Read()
+		Expect(ret[0]).To(Equal("1"))
+
+		w.WriteCmdString(handlers.RedisSetCommandSCARD, setCmdTestBaseKey)
+		w.Flush()
+		ret, _ = r.Read()
+		Expect(ret[0]).To(Equal("9"))
+
+		w.WriteCmdString(handlers.RedisSetCommandSREM, setCmdTestBaseKey, "value1")
+		w.Flush()
+		ret, _ = r.Read()
+		Expect(ret[0]).To(Equal("0"))
+
+		w.WriteCmdString(handlers.RedisSetCommandSCARD, setCmdTestBaseKey)
+		w.Flush()
+		ret, _ = r.Read()
+		Expect(ret[0]).To(Equal("9"))
+
 		members := make(map[string]bool)
 		for i := 0; i < 10; i += 1 {
 			members[fmt.Sprintf("item%d", i)] = true
 		}
 		w.WriteCmdString(handlers.RedisSetCommandSPOP, setCmdTestBaseKey)
 		w.Flush()
-		ret, _ := r.Read()
+		ret, _ = r.Read()
 		if _, ok := members[ret[0]]; !ok {
 			Expect(true).To(Equal(false))
 		}
+
 		w.WriteCmdString(handlers.RedisSetCommandSCARD, setCmdTestBaseKey)
 		w.Flush()
 		ret, _ = r.Read()
-		Expect(ret[0]).To(Equal("9"))
+		Expect(ret[0]).To(Equal("8"))
 
 		w.WriteCmdString(handlers.RedisSetCommandSRANDMEMBER, setCmdTestBaseKey)
 		w.Flush()
@@ -116,24 +137,7 @@ var _ = Describe("TestRedisSetCommand", func() {
 		if _, ok := members[ret[0]]; !ok {
 			Expect(true).To(Equal(false))
 		}
-		w.WriteCmdString(handlers.RedisSetCommandSCARD, setCmdTestBaseKey)
-		w.Flush()
-		ret, _ = r.Read()
-		Expect(ret[0]).To(Equal("9"))
 
-		w.WriteCmdString(handlers.RedisSetCommandSREM, setCmdTestBaseKey, "item1")
-		w.Flush()
-		ret, _ = r.Read()
-		Expect(ret[0]).To(Equal("1"))
-		w.WriteCmdString(handlers.RedisSetCommandSCARD, setCmdTestBaseKey)
-		w.Flush()
-		ret, _ = r.Read()
-		Expect(ret[0]).To(Equal("8"))
-
-		w.WriteCmdString(handlers.RedisSetCommandSREM, setCmdTestBaseKey, "value1")
-		w.Flush()
-		ret, _ = r.Read()
-		Expect(ret[0]).To(Equal("0"))
 		w.WriteCmdString(handlers.RedisSetCommandSCARD, setCmdTestBaseKey)
 		w.Flush()
 		ret, _ = r.Read()

@@ -13,10 +13,10 @@ import (
 type ListNode struct {
 	pre   *ListNode
 	next  *ListNode
-	value string
+	value interface{}
 }
 
-func newListNode(value string) *ListNode {
+func newListNode(value interface{}) *ListNode {
 	return &ListNode{value: value}
 }
 
@@ -28,11 +28,11 @@ func (node *ListNode) NodeNext() *ListNode {
 	return node.next
 }
 
-func (node *ListNode) NodeValue() string {
+func (node *ListNode) NodeValue() interface{} {
 	return node.value
 }
 
-func (node *ListNode) SetNodeValue(val string) {
+func (node *ListNode) SetNodeValue(val interface{}) {
 	node.value = val
 }
 
@@ -224,60 +224,60 @@ func (list *List) ListRotate() *List {
 
 func (list *List) PrintListForDebug() {
 	if list == nil {
-		loggers.Info("current list length is nil")
+		loggers.Debug("current list length is nil")
 		return
 	}
-	loggers.Info("current list length is %d, headNode: %s, TailNode: %s", list.length, list.head, list.tail)
+	loggers.Debug("current list length is %d, headNode: %s, TailNode: %s", list.length, list.head, list.tail)
 	var msg string
 	for node := list.head; node != nil; node = node.next {
 		msg += fmt.Sprintf("%+v==>", node.value)
 	}
-	loggers.Info("LIST:%s", msg)
+	loggers.Debug("LIST:%s", msg)
 }
 
-///*==============================      ListIter       =================================*/
-//
-//const (
-//	RedisListIteratorDirectionStartHead = 0
-//	RedisListIteratorDirectionStartTail = 1
-//)
-//
-//type ListIter struct {
-//	next      *ListNode
-//	direction int
-//}
-//
-//func ListGetIterator(list *List, direction int) *ListIter {
-//	if list == nil {
-//		return nil
-//	}
-//	iter := &ListIter{direction: direction}
-//	if direction == RedisListIteratorDirectionStartHead {
-//		iter.next = list.head
-//	} else if direction == RedisListIteratorDirectionStartTail {
-//		iter.next = list.tail
-//	}
-//	return iter
-//}
-//
-//func ListRewind(list *List, iter *ListIter) {
-//	iter.direction = RedisListIteratorDirectionStartHead
-//	iter.next = list.head
-//}
-//
-//func ListRewindTail(list *List, iter *ListIter) {
-//	iter.direction = RedisListIteratorDirectionStartTail
-//	iter.next = list.tail
-//}
-//
-//func (it *ListIter) ListNext() *ListNode {
-//	cur := it.next
-//	if cur != nil {
-//		if it.direction == RedisListIteratorDirectionStartHead {
-//			it.next = cur.next
-//		} else {
-//			it.next = cur.pre
-//		}
-//	}
-//	return cur
-//}
+/*==============================      ListIterator       =================================*/
+
+const (
+	RedisListIteratorDirectionStartHead = 0
+	RedisListIteratorDirectionStartTail = 1
+)
+
+type ListIterator struct {
+	next      *ListNode
+	direction int
+}
+
+func ListGetIterator(list *List, direction int) *ListIterator {
+	if list == nil {
+		return nil
+	}
+	it := &ListIterator{direction: direction}
+	if direction == RedisListIteratorDirectionStartHead {
+		it.next = list.head
+	} else if direction == RedisListIteratorDirectionStartTail {
+		it.next = list.tail
+	}
+	return it
+}
+
+func ListRewind(list *List, it *ListIterator) {
+	it.direction = RedisListIteratorDirectionStartHead
+	it.next = list.head
+}
+
+func ListRewindTail(list *List, it *ListIterator) {
+	it.direction = RedisListIteratorDirectionStartTail
+	it.next = list.tail
+}
+
+func (it *ListIterator) ListNext() *ListNode {
+	cur := it.next
+	if cur != nil {
+		if it.direction == RedisListIteratorDirectionStartHead {
+			it.next = cur.next
+		} else {
+			it.next = cur.pre
+		}
+	}
+	return cur
+}
