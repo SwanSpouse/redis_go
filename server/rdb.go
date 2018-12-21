@@ -34,7 +34,7 @@ func (srv *Server) ResizeDatabase(dbSize, expiresSize uint32) {
 func (srv *Server) Set(key, value []byte, expiry int64) {
 	loggers.Info("rdb process set key:%s value:%s", key, value)
 	srv.FakeClient.Argv = []string{handlers.RedisStringCommandSet, string(key), string(value)}
-	srv.commandTable[handlers.RedisStringCommandSet].Handler.Process(srv.FakeClient)
+	srv.commandTable[handlers.RedisStringCommandSet].Proc(srv.FakeClient)
 }
 
 func (srv *Server) StartHash(key []byte, length, expiry int64) {
@@ -44,7 +44,7 @@ func (srv *Server) StartHash(key []byte, length, expiry int64) {
 func (srv *Server) Hset(key, field, value []byte) {
 	loggers.Info("rdb process HSet key:%s field:%s, value:%s", key, field, value)
 	srv.FakeClient.Argv = []string{handlers.RedisHashCommandHSet, string(key), string(field), string(value)}
-	srv.commandTable[handlers.RedisHashCommandHSet].Handler.Process(srv.FakeClient)
+	srv.commandTable[handlers.RedisHashCommandHSet].Proc(srv.FakeClient)
 }
 
 func (srv *Server) EndHash(key []byte) {
@@ -71,7 +71,7 @@ func (srv *Server) StartList(key []byte, length, expiry int64) {
 func (srv *Server) Rpush(key, value []byte) {
 	loggers.Info("rdb process RPush key:%s value%s", key, value)
 	srv.FakeClient.Argv = []string{handlers.RedisListCommandRPush, string(key), string(value)}
-	srv.commandTable[handlers.RedisListCommandRPush].Handler.Process(srv.FakeClient)
+	srv.commandTable[handlers.RedisListCommandRPush].Proc(srv.FakeClient)
 }
 
 func (srv *Server) EndList(key []byte) {

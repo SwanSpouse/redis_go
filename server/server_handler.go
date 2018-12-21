@@ -9,10 +9,6 @@ import (
 	"github.com/SwanSpouse/redis_go/rdb"
 )
 
-var (
-	_ client.BaseHandler = (*Server)(nil)
-)
-
 /*
 	这里这么写虽然和handlers里面那些逻辑有些不符。但Server 本身就是一个能够处理命令的handler
     这样想想也是合理的。
@@ -44,58 +40,6 @@ const (
 
 	RedisDebugCommandRuntimeStat = "RUNTIME_STAT"
 )
-
-func (srv *Server) Process(cli *client.Client) {
-	switch cli.Cmd.GetName() {
-	case RedisServerCommandBGSRewriteAof:
-		cli.ResponseReError(re.ErrFunctionNotImplement)
-	case RedisServerCommandBGSave:
-		srv.bgSave(cli)
-	case RedisServerCommandClient:
-		cli.ResponseReError(re.ErrFunctionNotImplement)
-	case RedisServerCommandConfig:
-		cli.ResponseReError(re.ErrFunctionNotImplement)
-	case RedisServerCommandDBSize:
-		cli.ResponseReError(re.ErrFunctionNotImplement)
-	case RedisServerCommandDebug:
-		cli.ResponseReError(re.ErrFunctionNotImplement)
-	case RedisServerCommandFlushAll:
-		srv.flushAll(cli)
-	case RedisServerCommandFlushDB:
-		srv.flushDB(cli)
-	case RedisServerCommandInfo:
-		cli.ResponseReError(re.ErrFunctionNotImplement)
-	case RedisServerCommandLastSave:
-		cli.ResponseReError(re.ErrFunctionNotImplement)
-	case RedisServerCommandMonitor:
-		cli.ResponseReError(re.ErrFunctionNotImplement)
-	case RedisServerCommandPSync:
-		cli.ResponseReError(re.ErrFunctionNotImplement)
-	case RedisServerCommandSave:
-		srv.save(cli)
-	case RedisServerCommandShutDown:
-		cli.ResponseReError(re.ErrFunctionNotImplement)
-	case RedisServerCommandSlaveOf:
-		cli.ResponseReError(re.ErrFunctionNotImplement)
-	case RedisServerCommandSlowLog:
-		cli.ResponseReError(re.ErrFunctionNotImplement)
-	case RedisServerCommandSync:
-		cli.ResponseReError(re.ErrFunctionNotImplement)
-	case RedisServerCommandTime:
-		cli.ResponseReError(re.ErrFunctionNotImplement)
-	case RedisServerCommandAofDebug:
-		srv.aofDebug(cli)
-	case RedisServerCommandAofFlush:
-		srv.aofFlush(cli)
-	case RedisServerCommandCommand:
-		srv.command(cli)
-	case RedisDebugCommandRuntimeStat:
-		srv.runtimeStat(cli)
-	default:
-		cli.ResponseReError(re.ErrUnknownCommand, cli.Cmd.GetOriginName())
-	}
-	cli.Flush()
-}
 
 func (srv *Server) doSave(cli *client.Client, encoder *rdb.Encoder) {
 	loggers.Info("redis rdb save start")
@@ -155,13 +99,13 @@ func (srv *Server) doSave(cli *client.Client, encoder *rdb.Encoder) {
 
 // 清空Client当前所处的数据库
 // TODO @lmj 这里是不是应该有锁。
-func (srv *Server) flushDB(cli *client.Client) {
+func (srv *Server) FlushDB(cli *client.Client) {
 	cli.SelectedDatabase().FlushDB()
 	cli.ResponseOK()
 }
 
 // 清空所有数据库
-func (srv *Server) flushAll(cli *client.Client) {
+func (srv *Server) FlushAll(cli *client.Client) {
 	for _, db := range srv.Databases {
 		db.FlushDB()
 	}
@@ -169,7 +113,7 @@ func (srv *Server) flushAll(cli *client.Client) {
 }
 
 // rdb save
-func (srv *Server) save(cli *client.Client) {
+func (srv *Server) Save(cli *client.Client) {
 	if srv.Status.Load() == RedisServerStatusRdbSaveInProcess || srv.Status.Load() == RedisServerStatusRdbBgSaveInProcess {
 		cli.ResponseReError(re.ErrRedisRdbSaveInProcess)
 		return
@@ -186,7 +130,7 @@ func (srv *Server) save(cli *client.Client) {
 }
 
 // rdb bg save
-func (srv *Server) bgSave(cli *client.Client) {
+func (srv *Server) BgSave(cli *client.Client) {
 	if srv.Status.Load() == RedisServerStatusRdbSaveInProcess || srv.Status.Load() == RedisServerStatusRdbBgSaveInProcess {
 		cli.ResponseReError(re.ErrRedisRdbSaveInProcess)
 		return
@@ -203,28 +147,28 @@ func (srv *Server) bgSave(cli *client.Client) {
 }
 
 // TODO @lmj
-func (srv *Server) command(cli *client.Client) {
+func (srv *Server) Command(cli *client.Client) {
 	cli.ResponseOK()
 	loggers.Info("receive 'command' command from client, do nothing")
 }
 
-func (srv *Server) exit(cli *client.Client) {
+func (srv *Server) Exit(cli *client.Client) {
 	cli.ResponseOK()
 }
 
-func (srv *Server) aofDebug(cli *client.Client) {
+func (srv *Server) AofDebug(cli *client.Client) {
 	cli.ResponseOK()
 	loggers.Debug("current aof buf:%s", string(srv.aofBuf))
 }
 
-func (srv *Server) aofFlush(cli *client.Client) {
+func (srv *Server) AofFlush(cli *client.Client) {
 	loggers.Debug("current aof buf:%s", string(srv.aofBuf))
 	srv.flushAppendOnlyFile()
 	loggers.Debug("current aof buf:%s", string(srv.aofBuf))
 	cli.ResponseOK()
 }
 
-func (srv *Server) runtimeStat(cli *client.Client) {
+func (srv *Server) RuntimeStat(cli *client.Client) {
 	cli.ResponseOK()
 
 	loggers.Info("list all clients' info ")

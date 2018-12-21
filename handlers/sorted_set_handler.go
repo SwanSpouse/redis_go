@@ -9,10 +9,6 @@ import (
 	"github.com/SwanSpouse/redis_go/util"
 )
 
-var (
-	_ client.BaseHandler = (*SortedSetHandler)(nil)
-)
-
 const (
 	RedisSortedSetCommandZAdd             = "ZADD"
 	RedisSortedSetCommandZCard            = "ZCARD"
@@ -39,48 +35,6 @@ var setEncodingTypeSortedSet = map[string]bool{
 }
 
 type SortedSetHandler struct {
-}
-
-func (handler *SortedSetHandler) Process(cli *client.Client) {
-	switch cli.Cmd.GetName() {
-	case RedisSortedSetCommandZAdd:
-		handler.ZAdd(cli)
-	case RedisSortedSetCommandZCard:
-		handler.ZCard(cli)
-	case RedisSortedSetCommandZCount:
-		handler.ZCount(cli)
-	case RedisSortedSetCommandZIncrBy:
-		handler.ZIncrBy(cli)
-	case RedisSortedSetCommandZRange:
-		handler.ZRange(cli)
-	case RedisSortedSetCommandZRangeByScore:
-		handler.ZRangeByScore(cli)
-	case RedisSortedSetCommandZRank:
-		handler.ZRank(cli)
-	case RedisSortedSetCommandZRem:
-		handler.ZRem(cli)
-	case RedisSortedSetCommandZRemRangeByRank:
-		handler.ZRemRangeByRank(cli)
-	case RedisSortedSetCommandZRemRangeByScore:
-		handler.ZRemRangeByScore(cli)
-	case RedisSortedSetCommandZRevRange:
-		handler.ZRevRange(cli)
-	case RedisSortedSetCommandZRevRangeByScore:
-		handler.ZRevRangeByScore(cli)
-	case RedisSortedSetCommandZRevRank:
-		handler.ZRevRank(cli)
-	case RedisSortedSetCommandZScore:
-		handler.ZScore(cli)
-	case RedisSortedSetCommandZUnionStore:
-		cli.ResponseReError(re.ErrFunctionNotImplement)
-	case RedisSortedSetCommandZInterStore:
-		cli.ResponseReError(re.ErrFunctionNotImplement)
-	case RedisSortedSetCommandZScan:
-		cli.ResponseReError(re.ErrFunctionNotImplement)
-	default:
-		cli.ResponseReError(re.ErrUnknownCommand, cli.Cmd.GetOriginName())
-	}
-	cli.Flush()
 }
 
 func getTZSetValueByKey(cli *client.Client, key string) (database.TZSet, error) {

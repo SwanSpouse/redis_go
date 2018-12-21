@@ -11,10 +11,6 @@ import (
 	"github.com/SwanSpouse/redis_go/loggers"
 )
 
-var (
-	_ client.BaseHandler = (*ListHandler)(nil)
-)
-
 const (
 	RedisListCommandLIndex    = "LINDEX"
 	RedisListCommandLInsert   = "LINSERT"
@@ -40,44 +36,6 @@ var listEncodingTypeDict = map[string]bool{
 }
 
 type ListHandler struct {
-}
-
-func (handler *ListHandler) Process(cli *client.Client) {
-	switch cli.Cmd.GetName() {
-	case RedisListCommandLIndex:
-		handler.LIndex(cli)
-	case RedisListCommandLInsert:
-		handler.LInsert(cli)
-	case RedisListCommandLLen:
-		handler.LLen(cli)
-	case RedisListCommandLPop:
-		handler.LPop(cli)
-	case RedisListCommandLPush:
-		handler.LPush(cli)
-	case RedisListCommandLPushX:
-		cli.ResponseReError(re.ErrFunctionNotImplement)
-	case RedisListCommandLRange:
-		handler.LRange(cli)
-	case RedisListCommandLRem:
-		handler.LRem(cli)
-	case RedisListCommandLSet:
-		handler.LSet(cli)
-	case RedisListCommandLTrim:
-		handler.LTrim(cli)
-	case RedisListCommandRPop:
-		handler.RPop(cli)
-	case RedisListCommandRPopLPush:
-		cli.ResponseReError(re.ErrFunctionNotImplement)
-	case RedisListCommandRPush:
-		handler.RPush(cli)
-	case RedisListCommandRpushX:
-		cli.ResponseReError(re.ErrFunctionNotImplement)
-	case RedisListCommandLDebug:
-		handler.Debug(cli)
-	default:
-		cli.ResponseReError(re.ErrUnknownCommand, cli.Cmd.GetOriginName())
-	}
-	cli.Flush()
 }
 
 func getTListValueByKey(cli *client.Client, key string) (database.TList, error) {

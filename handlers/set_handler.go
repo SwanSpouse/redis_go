@@ -8,10 +8,6 @@ import (
 	"github.com/SwanSpouse/redis_go/loggers"
 )
 
-var (
-	_ client.BaseHandler = (*SetHandler)(nil)
-)
-
 const (
 	RedisSetCommandSADD        = "SADD"
 	RedisSetCommandSCARD       = "SCARD"
@@ -36,44 +32,6 @@ var setEncodingTypeDict = map[string]bool{
 }
 
 type SetHandler struct{}
-
-func (handler *SetHandler) Process(cli *client.Client) {
-	switch cli.Cmd.GetName() {
-	case RedisSetCommandSADD:
-		handler.SAdd(cli)
-	case RedisSetCommandSCARD:
-		handler.SCard(cli)
-	case RedisSetCommandSDIFF:
-		cli.ResponseReError(re.ErrFunctionNotImplement)
-	case RedisSetCommandSDIFFSTORE:
-		cli.ResponseReError(re.ErrFunctionNotImplement)
-	case RedisSetCommandSINTER:
-		cli.ResponseReError(re.ErrFunctionNotImplement)
-	case RedisSetCommandSINTERSTORE:
-		cli.ResponseReError(re.ErrFunctionNotImplement)
-	case RedisSetCommandSISMEMBER:
-		handler.SIsMember(cli)
-	case RedisSetCommandSMEMBERS:
-		handler.SMembers(cli)
-	case RedisSetCommandSMOVE:
-		cli.ResponseReError(re.ErrFunctionNotImplement)
-	case RedisSetCommandSPOP:
-		handler.SPop(cli)
-	case RedisSetCommandSRANDMEMBER:
-		handler.SRandMember(cli)
-	case RedisSetCommandSREM:
-		handler.SRem(cli)
-	case RedisSetCommandSUNION:
-		cli.ResponseReError(re.ErrFunctionNotImplement)
-	case RedisSetCommandSUNIONSTORE:
-		cli.ResponseReError(re.ErrFunctionNotImplement)
-	case RedisSetCommandSSCAN:
-		cli.ResponseReError(re.ErrFunctionNotImplement)
-	default:
-		cli.ResponseReError(re.ErrUnknownCommand, cli.Cmd.GetOriginName())
-	}
-	cli.Flush()
-}
 
 func getTSetValueByKey(cli *client.Client, key string) (database.TSet, error) {
 	baseType := cli.SelectedDatabase().SearchKeyInDB(key)

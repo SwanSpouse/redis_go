@@ -8,10 +8,6 @@ import (
 	"github.com/SwanSpouse/redis_go/loggers"
 )
 
-var (
-	_ client.BaseHandler = (*HashHandler)(nil)
-)
-
 const (
 	RedisHashCommandHDel         = "HDEL"
 	RedisHashCommandHExists      = "HEXISTS"
@@ -37,48 +33,6 @@ var hashEncodingTypeDict = map[string]bool{
 }
 
 type HashHandler struct {
-}
-
-func (handler *HashHandler) Process(cli *client.Client) {
-	switch cli.Cmd.GetName() {
-	case RedisHashCommandHDel:
-		handler.HDel(cli)
-	case RedisHashCommandHExists:
-		handler.HExists(cli)
-	case RedisHashCommandHGet:
-		handler.HGet(cli)
-	case RedisHashCommandHGetAll:
-		handler.HGetAll(cli)
-	case RedisHashCommandHIncrBy:
-		handler.HIncrBy(cli)
-	case RedisHashCommandHIncrByFloat:
-		handler.HIncrByFloat(cli)
-	case RedisHashCommandHKeys:
-		handler.HKeys(cli)
-	case RedisHashCommandHLen:
-		handler.HLen(cli)
-	case RedisHashCommandHMGet:
-		handler.HMGet(cli)
-	case RedisHashCommandHMSet:
-		handler.HMSet(cli)
-	case RedisHashCommandHSet:
-		handler.HSet(cli)
-	case RedisHashCommandHSetNX:
-		handler.HSetNX(cli)
-	case RedisHashCommandHVals:
-		handler.HVals(cli)
-	case RedisHashCommandHScan:
-		cli.ResponseReError(re.ErrFunctionNotImplement)
-		//handler.HScan(cli)
-	case RedisHashCommandHStrLen:
-		handler.HStrLen(cli)
-	case RedisHashCommandHDebug:
-		handler.HDebug(cli)
-	default:
-		cli.ResponseReError(re.ErrUnknownCommand, cli.Cmd.GetOriginName())
-	}
-	// 最后统一发送数据
-	cli.Flush()
 }
 
 func getTHashValueByKey(cli *client.Client, key string) (database.THash, error) {
