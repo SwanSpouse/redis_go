@@ -3,6 +3,8 @@ package client
 import (
 	"fmt"
 	"strings"
+
+	re "github.com/SwanSpouse/redis_go/error"
 )
 
 const (
@@ -22,26 +24,29 @@ const (
 	RedisCmdSkipMonitor      = 2048 /* "M" flag */
 )
 
-type BaseHandler interface {
-	Process(*Client)
-}
-
 type Command struct {
-	name        string      // command name
-	Arity       int         // command args
-	SFlags      string      //
-	Flags       int         //
-	microsecond int64       // execute time in microsecond
-	calls       int64       // call times
-	Handler     BaseHandler // redis命令的对应handler
+	name        string        // command name
+	Arity       int           // command args
+	SFlags      string        //
+	Flags       int           //
+	microsecond int64         // execute time in microsecond
+	calls       int64         // call times
+	Proc        func(*Client) // 处理相应命令的方法
 }
 
-func NewCommand(name string, arity int, sflags string, proc BaseHandler) *Command {
+func NewCommand(name string, arity int, sflags string, proc func(*Client)) *Command {
 	return &Command{
-		name:    name,
-		Arity:   arity,
-		SFlags:  sflags,
-		Handler: proc,
+		name:   name,
+		Arity:  arity,
+		SFlags: sflags,
+		Proc: func(cli *Client) {
+			if proc == nil {
+				cli.ResponseReError(re.ErrFunctionNotImplement)
+			} else {
+				proc(cli)
+			}
+			cli.Flush()
+		},
 	}
 }
 

@@ -119,7 +119,7 @@ func (srv *Server) loadAppendOnlyFile() {
 		srv.FakeClient.Argc = out.Argc
 		srv.FakeClient.Argv = out.Argv
 		// process command
-		cmd.Handler.Process(srv.FakeClient)
+		cmd.Proc(srv.FakeClient)
 		srv.FakeClient.Argc = 0
 		srv.FakeClient.Argv = nil
 	}

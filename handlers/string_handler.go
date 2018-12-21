@@ -11,10 +11,6 @@ import (
 	"github.com/SwanSpouse/redis_go/loggers"
 )
 
-var (
-	_ client.BaseHandler = (*StringHandler)(nil)
-)
-
 const (
 	RedisStringCommandAppend      = "APPEND"
 	RedisStringCommandBitCount    = "BITCOUNT"
@@ -48,53 +44,6 @@ var stringEncodingTypeDict = map[string]bool{
 }
 
 type StringHandler struct{}
-
-func (handler *StringHandler) Process(cli *client.Client) {
-	switch cli.Cmd.GetName() {
-	case RedisStringCommandAppend:
-		handler.Append(cli)
-	case RedisStringCommandBitCount, RedisStringCommandBitop, RedisStringCommandGetBit, RedisStringCommandSetBit:
-		cli.ResponseReError(re.ErrFunctionNotImplement)
-	case RedisStringCommandDecr:
-		handler.Decr(cli)
-	case RedisStringCommandDecrBy:
-		handler.DecrBy(cli)
-	case RedisStringCommandGet:
-		handler.Get(cli)
-	case RedisStringCommandGetRange:
-		cli.ResponseReError(re.ErrFunctionNotImplement)
-	case RedisStringCommandGetSet:
-		handler.GetSet(cli)
-	case RedisStringCommandIncr:
-		handler.Incr(cli)
-	case RedisStringCommandIncrBy:
-		handler.IncrBy(cli)
-	case RedisStringCommandIncrByFloat:
-		handler.IncrByFloat(cli)
-	case RedisStringCommandMGet:
-		handler.MGet(cli)
-	case RedisStringCommandMSet:
-		handler.MSet(cli)
-	case RedisStringCommandMSetNx:
-		handler.MSetNx(cli)
-	case RedisStringCommandPSetEx:
-		cli.ResponseReError(re.ErrFunctionNotImplement)
-	case RedisStringCommandSet:
-		handler.Set(cli)
-	case RedisStringCommandSetNx:
-		handler.SetNx(cli)
-	case RedisStringCommandSetEX:
-		cli.ResponseReError(re.ErrFunctionNotImplement)
-	case RedisStringCommandSetRange:
-		cli.ResponseReError(re.ErrFunctionNotImplement)
-	case RedisStringCommandStrLen:
-		handler.Strlen(cli)
-	default:
-		cli.ResponseReError(re.ErrUnknownCommand, cli.Cmd.GetOriginName())
-	}
-	// 最后统一发送数据
-	cli.Flush()
-}
 
 func getTStringValueByKey(cli *client.Client, key string) (database.TString, error) {
 	// 获取key在数据库中对应的value(TBase:BaseType)

@@ -2,12 +2,7 @@ package handlers
 
 import (
 	"github.com/SwanSpouse/redis_go/client"
-	re "github.com/SwanSpouse/redis_go/error"
-	"github.com/SwanSpouse/redis_go/loggers"
-)
-
-var (
-	_ client.BaseHandler = (*ConnectionHandler)(nil)
+		"github.com/SwanSpouse/redis_go/loggers"
 )
 
 const (
@@ -21,43 +16,24 @@ const (
 type ConnectionHandler struct {
 }
 
-func (handler *ConnectionHandler) Process(cli *client.Client) {
-	switch cli.Cmd.GetName() {
-	case RedisConnectionCommandPing:
-		handler.ping(cli)
-	case RedisConnectionCommandAuth:
-		handler.auth(cli)
-	case RedisConnectionCommandEcho:
-		handler.echo(cli)
-	case RedisConnectionCommandQuit:
-		handler.quit(cli)
-	case RedisConnectionCommandSelect:
-		handler.cmdSelect(cli)
-	default:
-		cli.ResponseReError(re.ErrUnknownCommand, cli.Cmd.GetOriginName())
-		return
-	}
-	cli.Flush()
-}
-
-func (handler *ConnectionHandler) ping(cli *client.Client) {
+func (handler *ConnectionHandler) Ping(cli *client.Client) {
 	msg := "PONG"
 	loggers.Info("message we send to cli %+v", msg)
 	cli.Response(msg)
 }
 
-func (handler *ConnectionHandler) auth(cli *client.Client) {
+func (handler *ConnectionHandler) Auth(cli *client.Client) {
 
 }
 
-func (handler *ConnectionHandler) echo(cli *client.Client) {
+func (handler *ConnectionHandler) Echo(cli *client.Client) {
 	cli.Response(cli.Argv[1])
 }
 
-func (handler *ConnectionHandler) quit(cli *client.Client) {
+func (handler *ConnectionHandler) Quit(cli *client.Client) {
 
 }
 
-func (handler *ConnectionHandler) cmdSelect(cli *client.Client) {
+func (handler *ConnectionHandler) CmdSelect(cli *client.Client) {
 	cli.ResponseOK()
 }

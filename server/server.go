@@ -138,7 +138,7 @@ func (srv *Server) IOLoop(conn net.Conn) {
 		// TODO 判断是否是事务相关命令
 		// TODO 判断命令造成了多少个dirty, 执行时间等一些统计信息
 		// 在这里对client端发送过来的命令进行处理
-		command.Handler.Process(c)
+		command.Proc(c)
 
 		// 在rdb save结束之后，重新统计dirty数量并记录本次rdb结束的时间
 		if c.Cmd.GetName() == RedisServerCommandSave {
