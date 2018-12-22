@@ -109,7 +109,6 @@ func (ss *SortedSet) ZIncrBy(key string, increment string) (float64, error) {
 		obj.SetScore(newScore)
 		return newScore, nil
 	}
-	return 0.0, nil
 }
 
 func (ss *SortedSet) ZRange(lower, upper string) ([]string, error) {
@@ -270,7 +269,6 @@ func (ss *SortedSet) ZScore(key string) (float64, error) {
 	} else {
 		return obj.GetScore(), nil
 	}
-	return 0.0, nil
 }
 
 func (ss *SortedSet) String() string {

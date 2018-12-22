@@ -198,7 +198,6 @@ func (d *Decoder) Decode() error {
 			expiry = 0
 		}
 	}
-	panic("should not reached")
 }
 
 func (d *Decoder) readString() ([]byte, error) {
@@ -407,6 +406,4 @@ func (d *Decoder) readFloat64() (float64, error) {
 		f, err := strconv.ParseFloat(string(floatBytes), 64)
 		return f, err
 	}
-
-	panic("not reached")
 }

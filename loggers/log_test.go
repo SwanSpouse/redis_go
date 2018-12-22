@@ -1,8 +1,8 @@
 package loggers
 
 import (
-	"testing"
 	"fmt"
+	"testing"
 )
 
 func TestLogColor(t *testing.T) {

@@ -6,7 +6,9 @@ import (
 
 type ProtoError string
 
-func (p ProtoError) Error() string { return string(p) }
+func (p ProtoError) Error() string {
+	return string(p)
+}
 
 func ProtoErrorf(m string, args ...interface{}) error {
 	return ProtoError(fmt.Sprintf(m, args...))
