@@ -25,7 +25,7 @@ var _ = Describe("test list ", func() {
 		for i := 10; i < 20; i++ {
 			list = list.ListAddNodeTail(fmt.Sprintf("%d", i))
 		}
-		Expect(list.length).To(Equal(20))
+		Expect(list.length).To(Equal(20)) 
 	})
 
 	It("test iterator from head and tail", func() {
