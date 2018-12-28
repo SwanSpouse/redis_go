@@ -70,7 +70,7 @@ func (list *List) ListLast() *ListNode {
 	return list.tail
 }
 
-func (list *List) ListAddNodeHead(value string) *List {
+func (list *List) ListAddNodeHead(value interface{}) *List {
 	list.Locker.Lock()
 	defer list.Locker.Unlock()
 
@@ -91,7 +91,7 @@ func (list *List) ListAddNodeHead(value string) *List {
 	return list
 }
 
-func (list *List) ListAddNodeTail(value string) *List {
+func (list *List) ListAddNodeTail(value interface{}) *List {
 	list.Locker.Lock()
 	defer list.Locker.Unlock()
 
@@ -112,7 +112,7 @@ func (list *List) ListAddNodeTail(value string) *List {
 	return list
 }
 
-func (list *List) ListInsertNode(oldNode *ListNode, value string, after bool) *List {
+func (list *List) ListInsertNode(oldNode *ListNode, value interface{}, after bool) *List {
 	list.Locker.Lock()
 	defer list.Locker.Unlock()
 
@@ -146,7 +146,7 @@ func (list *List) ListInsertNode(oldNode *ListNode, value string, after bool) *L
 	return list
 }
 
-func (list *List) ListSearchKey(key string) *ListNode {
+func (list *List) ListSearchKey(key interface{}) *ListNode {
 	list.Locker.Lock()
 	defer list.Locker.Unlock()
 
@@ -238,16 +238,18 @@ func (list *List) PrintListForDebug() {
 /*==============================      ListIterator       =================================*/
 
 const (
-	RedisListIteratorDirectionStartHead = 0
-	RedisListIteratorDirectionStartTail = 1
+	RedisListIteratorDirectionStartHead = ListIteratorDirection(0)
+	RedisListIteratorDirectionStartTail = ListIteratorDirection(1)
 )
+
+type ListIteratorDirection int
 
 type ListIterator struct {
 	next      *ListNode
-	direction int
+	direction ListIteratorDirection
 }
 
-func ListGetIterator(list *List, direction int) *ListIterator {
+func ListGetIterator(list *List, direction ListIteratorDirection) *ListIterator {
 	if list == nil {
 		return nil
 	}
