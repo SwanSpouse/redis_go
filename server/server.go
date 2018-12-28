@@ -14,6 +14,7 @@ import (
 	"github.com/SwanSpouse/redis_go/database"
 	re "github.com/SwanSpouse/redis_go/error"
 	"github.com/SwanSpouse/redis_go/loggers"
+	"github.com/SwanSpouse/redis_go/raw_type"
 	"github.com/SwanSpouse/redis_go/tcp"
 	"github.com/SwanSpouse/redis_go/util"
 )
@@ -46,15 +47,20 @@ type Server struct {
 	TimeEventLoop    *EventLoop // redis time event
 	WaitGroup        util.WaitGroupWrapper
 	ExitChan         chan int
+	PubSubLock       sync.RWMutex              // pub sub operation lock
+	PubSubChannels   map[string]*raw_type.List // channels a client is interested in (SUBSCRIBE)
+	PubSubPatterns   *raw_type.List            // patterns a client is interested in (SUBSCRIBE)
 }
 
 func NewServer(config *conf.ServerConfig) *Server {
 	server := &Server{
-		Config:        config,
-		commandTable:  make(map[string]*client.Command),
-		clients:       make(map[int64]*client.Client),
-		TimeEventLoop: NewEventLoop(),
-		ExitChan:      make(chan int),
+		Config:         config,
+		commandTable:   make(map[string]*client.Command),
+		clients:        make(map[int64]*client.Client),
+		TimeEventLoop:  NewEventLoop(),
+		ExitChan:       make(chan int),
+		PubSubChannels: make(map[string]*raw_type.List),
+		PubSubPatterns: raw_type.ListCreate(),
 	}
 	// init general parameters
 	server.initServer()

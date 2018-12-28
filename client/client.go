@@ -9,6 +9,7 @@ import (
 	"github.com/SwanSpouse/redis_go/database"
 	re "github.com/SwanSpouse/redis_go/error"
 	"github.com/SwanSpouse/redis_go/loggers"
+	"github.com/SwanSpouse/redis_go/raw_type"
 	"github.com/SwanSpouse/redis_go/tcp"
 )
 
@@ -19,19 +20,21 @@ var clientPool = &sync.Pool{
 }
 
 type Client struct {
-	id          int64              // Client ID
-	cn          net.Conn           // TCP connection
-	db          *database.Database // chosen database
-	Closed      bool               // isClientClosed
-	reader      *tcp.BufIoReader   // request reader
-	writer      *tcp.BufIoWriter   // response writer
-	Argv        []string           // arguments vector
-	Argc        int                // arguments counter
-	Cmd         *Command           // current command
-	LastCmd     *Command           // last command
-	Dirty       int64
-	execTimeout time.Time
-	idleTimeout time.Time // timeout
+	id             int64              // Client ID
+	cn             net.Conn           // TCP connection
+	db             *database.Database // chosen database
+	Closed         bool               // isClientClosed
+	reader         *tcp.BufIoReader   // request reader
+	writer         *tcp.BufIoWriter   // response writer
+	Argv           []string           // arguments vector
+	Argc           int                // arguments counter
+	Cmd            *Command           // current command
+	LastCmd        *Command           // last command
+	Dirty          int64
+	PubSubChannels *raw_type.Dict /* channels a client is interested in (SUBSCRIBE) */
+	PubSubPatterns *raw_type.List /* patterns a client is interested in (SUBSCRIBE) */
+	execTimeout    time.Time
+	idleTimeout    time.Time // timeout
 }
 
 func (c *Client) reset(clientId int64, cn net.Conn, defaultDB *database.Database) {
@@ -46,6 +49,8 @@ func (c *Client) reset(clientId int64, cn net.Conn, defaultDB *database.Database
 	c.Cmd = nil
 	c.LastCmd = nil
 	c.Dirty = 0
+	c.PubSubChannels = raw_type.NewDict()
+	c.PubSubPatterns = raw_type.ListCreate()
 	c.execTimeout = time.Time{}
 	c.idleTimeout = time.Time{}
 }
