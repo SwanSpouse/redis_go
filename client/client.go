@@ -21,6 +21,7 @@ var clientPool = &sync.Pool{
 
 type Client struct {
 	id             int64              // Client ID
+	Name           string             // client name
 	cn             net.Conn           // TCP connection
 	db             *database.Database // chosen database
 	Closed         bool               // isClientClosed

@@ -49,4 +49,5 @@ const (
 	ErrRedisRdbSaveInProcess  = ProtoError("ERR redis rdb save is in process")
 	ErrAofFormat              = ProtoError("Bad file format reading the append only file: make a backup of your AOF file, then use ./redis-check-aof --fix <filename>")
 	ErrPubSubCommand          = ProtoError("ERR Unknown PUBSUB subcommand or wrong number of arguments for %s")
+	ErrClientCommand          = ProtoError("ERR Syntax error, try CLIENT (LIST | KILL | GETNAME | SETNAME | PAUSE | REPLY)")
 )
