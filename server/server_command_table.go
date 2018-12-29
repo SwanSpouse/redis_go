@@ -208,7 +208,7 @@ func (srv *Server) populateCommandTable() {
 	srv.commandTable[RedisPubSubCommandPUnsubscribe] = client.NewCommand(RedisPubSubCommandPUnsubscribe, -1, "rpslt", srv.PUnsubscribe)
 	srv.commandTable[RedisPubSubCommandSubscribe] = client.NewCommand(RedisPubSubCommandSubscribe, -2, "rpslt", srv.Subscribe)
 	srv.commandTable[RedisPubSubCommandUnsubscribe] = client.NewCommand(RedisPubSubCommandUnsubscribe, -1, "rpslt", srv.Unsubscribe)
-	srv.commandTable[RedisPubSubCommandPubSub] = client.NewCommand(RedisPubSubCommandPubSub, -2, "r", nil)
+	srv.commandTable[RedisPubSubCommandPubSub] = client.NewCommand(RedisPubSubCommandPubSub, -2, "r", srv.PubSub)
 
 	// debug command
 	srv.commandTable[RedisDebugCommandRuntimeStat] = client.NewCommand(RedisDebugCommandRuntimeStat, 1, "r", srv.RuntimeStat)
