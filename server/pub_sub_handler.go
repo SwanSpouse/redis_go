@@ -3,9 +3,12 @@ package server
 import (
 	"regexp"
 
+	"fmt"
 	"github.com/SwanSpouse/redis_go/client"
+	re "github.com/SwanSpouse/redis_go/error"
 	"github.com/SwanSpouse/redis_go/loggers"
 	"github.com/SwanSpouse/redis_go/raw_type"
+	"strings"
 )
 
 const (
@@ -15,6 +18,10 @@ const (
 	RedisPubSubCommandPUnsubscribe = "PUNSUBSCRIBE"
 	RedisPubSubCommandSubscribe    = "SUBSCRIBE"
 	RedisPubSubCommandUnsubscribe  = "UNSUBSCRIBE"
+
+	RedisPubSubCommandPubSubCommandChannels = "CHANNELS"
+	RedisPubSubCommandPubSubCommandNumSub   = "NUMSUB"
+	RedisPubSubCommandPubSubNumPat          = "NUMPAT"
 )
 
 const (
@@ -83,7 +90,20 @@ func (srv *Server) Unsubscribe(cli *client.Client) {
 }
 
 func (srv *Server) PubSub(cli *client.Client) {
-	panic("Not implement")
+	srv.PubSubLock.RLock()
+	defer srv.PubSubLock.RUnlock()
+
+	switch strings.ToUpper(cli.Argv[1]) {
+	case RedisPubSubCommandPubSubCommandChannels:
+		srv.pubSubCommandChannels(cli)
+	case RedisPubSubCommandPubSubCommandNumSub:
+		srv.pubSubCommandNumSub(cli)
+	case RedisPubSubCommandPubSubNumPat:
+		srv.pubSunCommandNumPat(cli)
+	default:
+		cli.ResponseReError(re.ErrPubSubCommand, cli.Argv[1])
+	}
+	cli.Flush()
 }
 
 // 发送消息
@@ -247,4 +267,30 @@ func (srv *Server) unsubscribePattern(cli *client.Client, pattern string, notify
 		cli.Flush()
 	}
 	return ret
+}
+
+// 返回有订阅Client的channelName
+func (srv *Server) pubSubCommandChannels(cli *client.Client) {
+	responseSlice := make([]string, 0)
+	for channelName, clientList := range srv.PubSubChannels {
+		if clientList.ListLength() > 0 {
+			responseSlice = append(responseSlice, channelName)
+		}
+	}
+	cli.Response(responseSlice)
+}
+
+// 返回所有普通订阅的channelName 以及 其订阅者的数量
+func (srv *Server) pubSubCommandNumSub(cli *client.Client) {
+	responseSlice := make([]string, 0)
+	for channelName, clientList := range srv.PubSubChannels {
+		responseSlice = append(responseSlice, channelName)
+		responseSlice = append(responseSlice, fmt.Sprintf("%d", clientList.ListLength()))
+	}
+	cli.Response(responseSlice)
+}
+
+// 返回所有模式订阅的数量
+func (srv *Server) pubSunCommandNumPat(cli *client.Client) {
+	cli.Response(srv.PubSubPatterns.ListLength())
 }
