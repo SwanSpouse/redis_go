@@ -59,6 +59,7 @@ func (srv *Server) populateCommandTable() {
 	hashHandler := new(handlers.HashHandler)
 	setHandler := new(handlers.SetHandler)
 	sortedSetHandler := new(handlers.SortedSetHandler)
+	clientHandler := new(handlers.ClientHandler)
 
 	// connection command
 	srv.commandTable[handlers.RedisConnectionCommandPing] = client.NewCommand(handlers.RedisConnectionCommandPing, 1, "r", connectionHandler.Ping)
@@ -209,6 +210,9 @@ func (srv *Server) populateCommandTable() {
 	srv.commandTable[RedisPubSubCommandSubscribe] = client.NewCommand(RedisPubSubCommandSubscribe, -2, "rpslt", srv.Subscribe)
 	srv.commandTable[RedisPubSubCommandUnsubscribe] = client.NewCommand(RedisPubSubCommandUnsubscribe, -1, "rpslt", srv.Unsubscribe)
 	srv.commandTable[RedisPubSubCommandPubSub] = client.NewCommand(RedisPubSubCommandPubSub, -2, "r", srv.PubSub)
+
+	// client command
+	srv.commandTable[handlers.RedisClientCommand] = client.NewCommand(handlers.RedisClientCommand, 1, "r", clientHandler.Client)
 
 	// debug command
 	srv.commandTable[RedisDebugCommandRuntimeStat] = client.NewCommand(RedisDebugCommandRuntimeStat, 1, "r", srv.RuntimeStat)
